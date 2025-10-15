@@ -588,7 +588,7 @@ const DocumentsView: React.FC<{ client: Client }> = ({ client }) => {
         const fetchDocuments = async () => {
             try {
                 const token = localStorage.getItem('authToken');
-                const res = await fetch(`/api/clients/${client.id}/documents`, {
+                const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/clients/${client.id}/documents`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
                 const docs: Document[] = await res.json();
@@ -617,7 +617,7 @@ const DocumentsView: React.FC<{ client: Client }> = ({ client }) => {
             formData.append('document', file);
             formData.append('clientId', client.id);
 
-            const response = await fetch(`/api/clients/${client.id}/documents`, {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/clients/${client.id}/documents`, {
                 method: 'POST',
                 body: formData,
                 headers: {
@@ -650,7 +650,7 @@ const DocumentsView: React.FC<{ client: Client }> = ({ client }) => {
             const token = localStorage.getItem('authToken'); // make sure to use the correct key
             if (!token) throw new Error('No token found');
 
-            const response = await fetch(`/api/clients/documents/${docId}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/clients/documents/${docId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -895,7 +895,7 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
         // Fetch the full hydrated client (includes applicants, notes, etc.)
         const fetchClient = async () => {
             try {
-                const res = await fetch(`/clients/${client.id}`);
+                const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/clients/${client.id}`);
                 const data = await res.json();
                 setEditedClient(data);
             } catch (err) {
