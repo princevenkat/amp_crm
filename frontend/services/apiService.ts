@@ -9,7 +9,8 @@ import type {
   TeamMember,
 } from "../types";
 
-const API_BASE_URL = "http://localhost:3001/api"; // In a real app, use environment variables
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:3001/api"; // In a real app, use environment variables
 
 // --- Auth Token Management ---
 let authToken: string | null = localStorage.getItem("authToken");

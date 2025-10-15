@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
       port: 3000,
       host: "0.0.0.0",
       proxy: {
-        "/api": "http://localhost:3001", // <-- Add this line
+        "/api": JSON.stringify(env.VITE_API_BASE_URL), // <-- Add this line
       },
     },
     plugins: [react()],
