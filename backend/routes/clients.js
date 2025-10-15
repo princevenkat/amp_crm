@@ -485,7 +485,7 @@ router.delete('/:id', protect, async (req, res) => {
     try {
         await connection.beginTransaction();
         // Delete from all related tables first
-        await connection.query('DELETE FROM applicants WHERE client_id = ?', [id]);
+        await connection.query('DELETE FROM applicants WHERE clientId = ?', [id]);
         await connection.query('DELETE FROM documents WHERE clientId = ?', [id]);
         await connection.query('DELETE FROM notes WHERE clientId = ?', [id]);
         await connection.query('DELETE FROM mortgage_details WHERE clientId = ?', [id]);
