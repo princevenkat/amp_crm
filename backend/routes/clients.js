@@ -8,66 +8,133 @@ import multer from 'multer';
 import path from 'path';  // <-- needed for file extensions
 import fs from 'fs';
 
+import { put, del } from '@vercel/blob';
+
+
 const router = express.Router();
 
 // ----------------- Multer setup -----------------
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const uploadPath = 'uploads/';
-        if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath);
-        cb(null, uploadPath);
-    },
-    filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname);
-        cb(null, `${file.fieldname}-${Date.now()}${ext}`);
-    },
-});
+// const storage = multer.diskStorage({
+//     destination: (req, file, cb) => {
+//         const uploadPath = 'uploads/';
+//         if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath);
+//         cb(null, uploadPath);
+//     },
+//     filename: (req, file, cb) => {
+//         const ext = path.extname(file.originalname);
+//         cb(null, `${file.fieldname}-${Date.now()}${ext}`);
+//     },
+// });
 
-const upload = multer({ storage });
+// const upload = multer({ storage });
 
+
+const upload = multer({ storage: multer.memoryStorage() });
+
+// ----------------- Upload document to Vercel Blob -----------------
 router.post('/:id/documents', protect, upload.single('document'), async (req, res) => {
     const { id } = req.params;
     if (!req.file) return res.status(400).json({ message: 'No file uploaded.' });
 
-    const file = req.file;
-    const url = `/uploads/${file.filename}`;
-    const docId = `doc-${Date.now()}`;
+    try {
+        // Upload file buffer to Vercel Blob
+        const file = req.file;
+        const blobKey = `clients/${id}/${Date.now()}-${file.originalname}`;
 
-    await db.query(
-        'INSERT INTO documents (id, clientId, filename, filetype, uploadDate, url) VALUES (?, ?, ?, ?, ?, ?)',
-        [docId, id, file.originalname, path.extname(file.originalname).slice(1), new Date(), url]
-    );
+        const blob = await put(blobKey, file.buffer, {
+            access: 'public', // or 'private' if you want signed URLs
+            contentType: file.mimetype,
+        });
 
-    res.status(201).json({
-        id: docId,
-        clientId: id,
-        fileName: file.originalname,
-        fileType: path.extname(file.originalname).slice(1),
-        uploadDate: new Date().toISOString().split('T')[0],
-        url,
-    });
+        const docId = uuidv4();
+
+        await db.query(
+            'INSERT INTO documents (id, clientId, filename, filetype, uploadDate, url) VALUES (?, ?, ?, ?, ?, ?)',
+            [docId, id, file.originalname, path.extname(file.originalname).slice(1), new Date(), blob.url]
+        );
+
+        res.status(201).json({
+            id: docId,
+            clientId: id,
+            fileName: file.originalname,
+            fileType: path.extname(file.originalname).slice(1),
+            uploadDate: new Date().toISOString().split('T')[0],
+            url: blob.url,
+        });
+    } catch (err) {
+        console.error('Upload error:', err);
+        res.status(500).json({ message: 'Failed to upload document.' });
+    }
 });
-// DELETE /api/documents/:id
+
+// ----------------- Delete document from Vercel Blob -----------------
 router.delete('/documents/:id', protect, async (req, res) => {
     const { id } = req.params;
 
     try {
-        // Fetch document info from DB
+        // Get file URL from DB
         const [rows] = await db.query('SELECT url FROM documents WHERE id = ?', [id]);
         if (!rows.length) return res.status(404).json({ message: 'Document not found' });
 
-        const filePath = `uploads/${rows[0].url.split('/').pop()}`; // Adjust if needed
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath); // Delete file from disk
+        const fileUrl = rows[0].url;
 
-        // Delete from database
+        // Delete file from Blob storage
+        await del(fileUrl);
+
+        // Delete from DB
         await db.query('DELETE FROM documents WHERE id = ?', [id]);
 
         res.json({ message: 'Document deleted successfully' });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Failed to delete document' });
+        console.error('Delete error:', err);
+        res.status(500).json({ message: 'Failed to delete document.' });
     }
 });
+
+
+// router.post('/:id/documents', protect, upload.single('document'), async (req, res) => {
+//     const { id } = req.params;
+//     if (!req.file) return res.status(400).json({ message: 'No file uploaded.' });
+
+//     const file = req.file;
+//     const url = `/uploads/${file.filename}`;
+//     const docId = `doc-${Date.now()}`;
+
+//     await db.query(
+//         'INSERT INTO documents (id, clientId, filename, filetype, uploadDate, url) VALUES (?, ?, ?, ?, ?, ?)',
+//         [docId, id, file.originalname, path.extname(file.originalname).slice(1), new Date(), url]
+//     );
+
+//     res.status(201).json({
+//         id: docId,
+//         clientId: id,
+//         fileName: file.originalname,
+//         fileType: path.extname(file.originalname).slice(1),
+//         uploadDate: new Date().toISOString().split('T')[0],
+//         url,
+//     });
+// });
+// // DELETE /api/documents/:id
+// router.delete('/documents/:id', protect, async (req, res) => {
+//     const { id } = req.params;
+
+//     try {
+//         // Fetch document info from DB
+//         const [rows] = await db.query('SELECT url FROM documents WHERE id = ?', [id]);
+//         if (!rows.length) return res.status(404).json({ message: 'Document not found' });
+
+//         const filePath = `uploads/${rows[0].url.split('/').pop()}`; // Adjust if needed
+//         if (fs.existsSync(filePath)) fs.unlinkSync(filePath); // Delete file from disk
+
+//         // Delete from database
+//         await db.query('DELETE FROM documents WHERE id = ?', [id]);
+
+//         res.json({ message: 'Document deleted successfully' });
+//     } catch (err) {
+//         console.error(err);
+//         res.status(500).json({ message: 'Failed to delete document' });
+//     }
+// });
 // -------------------------------------------------
 
 
