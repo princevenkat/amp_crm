@@ -1,0 +1,300 @@
+import React, { useState, useContext, useMemo } from 'react';
+import { DataContext } from '../contexts/DataContext';
+import { ChevronLeftIcon, ChevronRightIcon, SearchIcon } from '../components/ui/Icons';
+import type { Task } from '../types';
+import { Modal } from '../components/ui/Modal';
+import { View, TaskStatus } from '../types';
+
+// Helper to get color classes for task status badges
+const getStatusBadgeColorClass = (status: TaskStatus) => {
+    switch (status) {
+        case TaskStatus.Enquiry:
+            return 'bg-purple-100 text-purple-800';
+        case TaskStatus.AIP:
+            return 'bg-blue-100 text-blue-800';
+        case TaskStatus.FMA:
+            return 'bg-amber-100 text-amber-800';
+        case TaskStatus.Offered:
+            return 'bg-indigo-100 text-indigo-800';
+        case TaskStatus.CommissionDue:
+            return 'bg-pink-100 text-pink-800';
+        case TaskStatus.Completed:
+            return 'bg-green-100 text-green-800';
+        case TaskStatus.NPW:
+            return 'bg-gray-200 text-gray-800';
+        default:
+            return 'bg-gray-100 text-gray-800';
+    }
+};
+
+// Helper to get color classes for interactive calendar events, including hover states
+const getStatusEventColorClass = (status: TaskStatus) => {
+    switch (status) {
+        case TaskStatus.Enquiry:
+            return 'bg-purple-100 text-purple-800 hover:bg-purple-200';
+        case TaskStatus.AIP:
+            return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
+        case TaskStatus.FMA:
+            return 'bg-amber-100 text-amber-800 hover:bg-amber-200';
+        case TaskStatus.Offered:
+            return 'bg-indigo-100 text-indigo-800 hover:bg-indigo-200';
+        case TaskStatus.CommissionDue:
+            return 'bg-pink-100 text-pink-800 hover:bg-pink-200';
+        case TaskStatus.Completed:
+            return 'bg-green-100 text-green-800 hover:bg-green-200';
+        case TaskStatus.NPW:
+            return 'bg-gray-200 text-gray-800 hover:bg-gray-300';
+        default:
+            return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
+    }
+}
+
+const CalendarDay: React.FC<{ day: number; date: Date; isCurrentMonth: boolean; isToday: boolean; tasks: Task[]; onTaskClick: (task: Task) => void; }> = ({ day, isCurrentMonth, isToday, tasks, onTaskClick }) => {
+    const dayClasses = `border-t border-r border-gray-200 p-2 h-24 md:h-28 relative flex flex-col ${isCurrentMonth ? 'bg-surface' : 'bg-gray-50'}`;
+    const dayNumberClasses = `text-sm ${isToday ? 'bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center font-bold' : (isCurrentMonth ? 'text-text-primary' : 'text-text-secondary/50')}`;
+
+    return (
+        <div className={dayClasses}>
+            <div className={dayNumberClasses}>
+                {day}
+            </div>
+            <div className="flex-grow overflow-y-auto text-xs mt-1 space-y-1">
+                 {tasks.map(task => (
+                    <div 
+                        key={task.id} 
+                        className={`p-1 rounded-md truncate cursor-pointer transition-colors ${getStatusEventColorClass(task.status)}`}
+                        title={task.title}
+                        onClick={() => onTaskClick(task)}
+                    >
+                        {task.title}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+export const CalendarView: React.FC = () => {
+    const { tasks, clients, setCurrentView, setSelectedClientIdForNav, setSelectedTaskIdForNav } = useContext(DataContext);
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const searchResults = useMemo(() => {
+        if (!searchTerm.trim()) {
+            return [];
+        }
+        const lowercasedFilter = searchTerm.toLowerCase();
+        const results = tasks.filter(task => {
+            const client = task.clientId ? clients.find(c => c.id === task.clientId) : null;
+            return client ? client.name.toLowerCase().includes(lowercasedFilter) : false;
+        });
+        return results.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+    }, [searchTerm, tasks, clients]);
+
+    const handleTaskClick = (task: Task) => {
+        setSelectedTask(task);
+    };
+
+    const handleCloseModal = () => {
+        setSelectedTask(null);
+    };
+    
+    const handleSearchResultClick = (task: Task) => {
+        setCurrentDate(new Date(task.dueDate));
+        handleTaskClick(task);
+    };
+
+    const handleNavigateToClient = (clientId: string) => {
+        if (clientId) {
+            setSelectedClientIdForNav(clientId);
+            setCurrentView(View.Leads); // 'Leads' view handles both leads and clients
+        }
+        handleCloseModal();
+    };
+
+    const handleNavigateToTask = (taskId: string) => {
+        if (taskId) {
+            setSelectedTaskIdForNav(taskId);
+            setCurrentView(View.Tasks);
+        }
+        handleCloseModal();
+    };
+
+    const changeMonth = (offset: number) => {
+        setCurrentDate(prev => {
+            const newDate = new Date(prev);
+            newDate.setMonth(newDate.getMonth() + offset);
+            return newDate;
+        });
+    };
+    
+    const getCalendarGrid = (year: number, month: number) => {
+        const startDate = new Date(year, month, 1);
+        const endDate = new Date(year, month + 1, 0);
+        const daysInMonth = endDate.getDate();
+        const startDayOfWeek = startDate.getDay();
+        
+        const grid: Date[] = [];
+        
+        const prevMonthEndDate = new Date(year, month, 0);
+        const daysInPrevMonth = prevMonthEndDate.getDate();
+        for (let i = startDayOfWeek - 1; i >= 0; i--) {
+            grid.push(new Date(year, month - 1, daysInPrevMonth - i));
+        }
+
+        for (let i = 1; i <= daysInMonth; i++) {
+            grid.push(new Date(year, month, i));
+        }
+
+        const endDayOfWeek = endDate.getDay();
+        for (let i = 1; i < 7 - endDayOfWeek; i++) {
+            grid.push(new Date(year, month + 1, i));
+        }
+        
+        return grid;
+    }
+    
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const calendarGrid = getCalendarGrid(year, month);
+    const today = new Date();
+
+    const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    const clientForSelectedTask = selectedTask?.clientId 
+        ? clients.find(c => c.id === selectedTask.clientId)
+        : null;
+
+    return (
+        <div className="p-4 sm:p-8">
+            {selectedTask && (
+                <Modal 
+                    isOpen={!!selectedTask} 
+                    onClose={handleCloseModal}
+                    title="Task Overview"
+                >
+                     <div className="space-y-4">
+                        <div className="flex items-start justify-between">
+                            <h3 className="text-xl font-bold text-text-primary pr-4">{selectedTask.title}</h3>
+                            <span className={`px-2 py-1 text-xs rounded-full font-semibold whitespace-nowrap ${getStatusBadgeColorClass(selectedTask.status)}`}>
+                                {selectedTask.status}
+                            </span>
+                        </div>
+                        {clientForSelectedTask && (
+                             <p className="text-sm font-semibold text-secondary">Client: {clientForSelectedTask.name}</p>
+                        )}
+                        <p className="text-text-secondary whitespace-pre-wrap">{selectedTask.description || 'No description provided.'}</p>
+                        <div className="flex justify-end gap-4 pt-4 border-t">
+                            <button 
+                                onClick={() => handleNavigateToTask(selectedTask.id)}
+                                className="bg-gray-200 hover:bg-gray-300 text-text-primary font-semibold py-2 px-4 rounded-md"
+                            >
+                                Task Details
+                            </button>
+                            {clientForSelectedTask && (
+                                <button 
+                                    onClick={() => handleNavigateToClient(clientForSelectedTask.id)}
+                                    className="bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-md"
+                                >
+                                    Client Details
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </Modal>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                {/* Left Column for Search and Results */}
+                <div className="lg:col-span-1">
+                     <h1 className="text-3xl font-bold mb-8">Calendar</h1>
+                     <div className="relative mb-4">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                            {SearchIcon}
+                        </span>
+                        <input
+                            type="text"
+                            placeholder="Search by client..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full bg-surface border border-gray-200 rounded-lg py-2 pl-10 pr-4 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        />
+                    </div>
+                    {searchTerm.trim() && (
+                        <div className="mt-4 space-y-2 max-h-[60vh] overflow-y-auto">
+                            <h3 className="font-semibold text-text-primary mb-2">Search Results ({searchResults.length})</h3>
+                            {searchResults.length > 0 ? (
+                                searchResults.map(task => {
+                                    const client = clients.find(c => c.id === task.clientId);
+                                    const taskDate = new Date(task.dueDate);
+                                    return (
+                                        <div 
+                                            key={task.id} 
+                                            onClick={() => handleSearchResultClick(task)}
+                                            className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 cursor-pointer border"
+                                        >
+                                            <div className="text-center flex-shrink-0 w-12">
+                                                <p className="text-xs text-text-secondary">{taskDate.toLocaleString('default', { month: 'short' })}</p>
+                                                <p className="text-lg font-bold text-text-primary">{taskDate.getDate()}</p>
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="font-semibold text-sm text-text-primary leading-tight">{task.title}</p>
+                                                {client && <p className="text-xs text-secondary mt-0.5">{client.name}</p>}
+                                                <p className={`text-xs mt-1 font-semibold ${getStatusBadgeColorClass(task.status)} px-1.5 py-0.5 rounded-full inline-block`}>{task.status}</p>
+                                            </div>
+                                        </div>
+                                    )
+                                })
+                            ) : (
+                                <p className="text-sm text-text-secondary text-center p-4">No tasks found for "{searchTerm}".</p>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                {/* Right Column for Calendar */}
+                <div className="lg:col-span-3">
+                    <div className="flex justify-center md:justify-end items-center gap-4 mb-4">
+                        <button onClick={() => changeMonth(-1)} className="p-2 rounded-md hover:bg-gray-100">{ChevronLeftIcon}</button>
+                        <h2 className="text-xl font-semibold w-40 text-center">
+                            {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                        </h2>
+                        <button onClick={() => changeMonth(1)} className="p-2 rounded-md hover:bg-gray-100">{ChevronRightIcon}</button>
+                    </div>
+
+                    <div className="bg-surface border border-gray-200 rounded-lg shadow-sm">
+                        <div className="grid grid-cols-7">
+                            {daysOfWeek.map(day => (
+                                <div key={day} className="text-center font-medium py-3 text-text-secondary border-b border-gray-200">{day}</div>
+                            ))}
+                        </div>
+                        <div className="overflow-x-auto">
+                            <div className="grid grid-cols-7 min-w-[700px] md:min-w-full">
+                                {calendarGrid.map((date, index) => {
+                                    const tasksForDay = tasks.filter(t => {
+                                        const taskDate = new Date(t.dueDate);
+                                        return taskDate.getFullYear() === date.getFullYear() &&
+                                            taskDate.getMonth() === date.getMonth() &&
+                                            taskDate.getDate() === date.getDate();
+                                    });
+                                    return (
+                                    <CalendarDay 
+                                        key={index} 
+                                        date={date}
+                                        day={date.getDate()} 
+                                        isCurrentMonth={date.getMonth() === month}
+                                        isToday={date.toDateString() === today.toDateString()}
+                                        tasks={tasksForDay}
+                                        onTaskClick={handleTaskClick}
+                                    />
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};

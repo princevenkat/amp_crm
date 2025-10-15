@@ -1,0 +1,385 @@
+{
+  "clients": [
+    {
+      "id": "cli-001",
+      "name": "Eleanor Vance",
+      "email": "eleanor.v@example.com",
+      "phone": "555-0301",
+      "caseReference": "EV-2024-001",
+      "primaryAdvisor": "John Doe",
+      "admin": "Emily White",
+      "applicationType": "Single",
+      "applicants": [
+        {
+          "title": "Mrs",
+          "firstName": "Eleanor",
+          "middleName": "Jane",
+          "surname": "Vance",
+          "gender": "Female",
+          "dob": "1985-05-20",
+          "homeTelephone": "555-0101",
+          "mobileNumber": "555-0301",
+          "email": "eleanor.v@example.com",
+          "currentAddress": "456 Oak Avenue, Springfield",
+          "noOfDependents": 2,
+          "nationality": "British"
+        }
+      ],
+      "property": {
+        "address": "456 Oak Avenue, Springfield",
+        "propertyValue": 750000,
+        "purchasePrice": 650000,
+        "dateOfPurchase": "2020-01-15",
+        "yearBuilt": 1995,
+        "propertyType": "Detached",
+        "isExLocal": false,
+        "bedrooms": 4,
+        "livingRooms": 2,
+        "kitchens": 1,
+        "bathrooms": 2,
+        "separateToilets": 1,
+        "hasGarageOrParking": true
+      },
+      "productDetails": {
+        "businessWritten": "Mortgage & Protection",
+        "mortgage": {
+          "mortgageType": "Remortgage without Capital raising",
+          "dateOfFMA": "2024-06-01",
+          "dateOffered": "2024-06-15",
+          "lender": "Springfield Bank",
+          "lenderReference": "SB-987654",
+          "propertyValue": 750000,
+          "mortgageLoanAmount": 450000,
+          "brokerFees": 500,
+          "procurationFees": 1600,
+          "rate": "3.15%",
+          "productType": "Fixed",
+          "productTerm": "5 years",
+          "rateExpiry": "2027-06-30",
+          "renewalReminderDate": "2027-03-30",
+          "mortgageTerm": "25 years",
+          "advisor": "John Doe"
+        },
+        "protection": {
+          "typeOfInsurance": "Level term",
+          "provider": "SecureLife Co.",
+          "providerReference": "SL-123456",
+          "amountAssured": 300000,
+          "term": "25 years",
+          "premium": 35.5,
+          "dateOnRisk": "2024-06-20",
+          "commission": 450,
+          "advisor": "Jane Smith"
+        },
+        "solicitor": {
+          "name": "James Harris",
+          "company": "Harris & Co Legal",
+          "email": "j.harris.law@example.com",
+          "phone": "555-0201"
+        },
+        "estateAgent": {
+          "companyName": "Springfield Realty",
+          "personDealingWith": "Sarah Connor",
+          "address": "123 Main St, Springfield",
+          "phone": "555-0401"
+        }
+      },
+      "documents": [
+        {
+          "id": "doc-001",
+          "fileName": "Passport_Scan_EV.pdf",
+          "fileType": "pdf",
+          "uploadDate": "2024-05-12",
+          "url": "#"
+        },
+        {
+          "id": "doc-002",
+          "fileName": "Proof_of_Address.jpeg",
+          "fileType": "jpeg",
+          "uploadDate": "2024-05-12",
+          "url": "#"
+        }
+      ],
+      "notes": [
+        {
+          "id": "note-001",
+          "text": "Client is keen to complete by the end of August. Followed up with solicitor.",
+          "author": "John Doe",
+          "date": "2024-07-18"
+        }
+      ],
+      "status": "Active",
+      "caseStatus": "Renewal",
+      "lastContacted": "2024-07-15",
+      "avatar": "https://picsum.photos/seed/eleanor/100/100",
+      "createdDate": "2024-05-10",
+      "product": {
+        "type": "Mortgage & Protection"
+      },
+      "value": 450000
+    },
+    {
+      "id": "cli-002",
+      "name": "Marcus Thorne",
+      "email": "marcus.t@example.com",
+      "phone": "555-0302",
+      "caseReference": "MT-2024-002",
+      "primaryAdvisor": "Jane Smith",
+      "admin": "Emily White",
+      "applicationType": "Joint",
+      "applicants": [
+        {
+          "title": "Mr",
+          "firstName": "Marcus",
+          "middleName": "James",
+          "surname": "Thorne",
+          "gender": "Male",
+          "dob": "1992-11-30",
+          "homeTelephone": "555-0102",
+          "mobileNumber": "555-0302",
+          "email": "marcus.t@example.com",
+          "currentAddress": "789 Pine Street, Gotham",
+          "noOfDependents": 0,
+          "nationality": "American"
+        },
+        {
+          "title": "Mrs",
+          "firstName": "Eleanor",
+          "middleName": "Jane",
+          "surname": "Thorne",
+          "gender": "Female",
+          "dob": "1985-05-20",
+          "homeTelephone": "555-0101",
+          "mobileNumber": "555-0301",
+          "email": "eleanor.t@example.com",
+          "currentAddress": "789 Pine Street, Gotham",
+          "noOfDependents": 0,
+          "nationality": "British"
+        }
+      ],
+      "property": {
+        "address": "789 Pine Street, Gotham",
+        "propertyValue": 420000,
+        "purchasePrice": 400000,
+        "dateOfPurchase": "2023-08-01",
+        "yearBuilt": 2010,
+        "propertyType": "Flat",
+        "isExLocal": false,
+        "bedrooms": 2,
+        "livingRooms": 1,
+        "kitchens": 1,
+        "bathrooms": 1,
+        "separateToilets": 0,
+        "hasGarageOrParking": true
+      },
+      "productDetails": {
+        "businessWritten": "Mortgage Only",
+        "mortgage": {
+          "mortgageType": "Purchase",
+          "dateOfFMA": "2023-07-20",
+          "dateOffered": "2023-08-01",
+          "lender": "Gotham Financial",
+          "lenderReference": "GF-555111",
+          "propertyValue": 420000,
+          "mortgageLoanAmount": 380000,
+          "brokerFees": 0,
+          "procurationFees": 1200,
+          "rate": "4.20%",
+          "productType": "Variable",
+          "productTerm": "2 years",
+          "rateExpiry": "2025-08-15",
+          "renewalReminderDate": "2025-05-15",
+          "mortgageTerm": "30 years",
+          "advisor": "Jane Smith"
+        }
+      },
+      "documents": [],
+      "status": "Lead",
+      "caseStatus": "Initial Enquiry",
+      "lastContacted": "2024-08-01",
+      "avatar": "https://picsum.photos/seed/marcus/100/100",
+      "createdDate": "2024-08-01",
+      "product": {
+        "type": "First-Time Buyer Mortgage"
+      },
+      "value": 380000
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task-001",
+      "title": "Follow up with Eleanor Vance re: renewal docs",
+      "description": "Client needs to sign and return the renewal pack.",
+      "dueDate": "2024-09-15",
+      "status": "AIP",
+      "assignedTo": "John Doe",
+      "assignedBy": "John Doe",
+      "clientId": "cli-001"
+    },
+    {
+      "id": "task-002",
+      "title": "Prepare initial illustration for Marcus Thorne",
+      "description": "Generate illustration based on 2-year fixed rate at 3.5%.",
+      "dueDate": "2024-09-20",
+      "status": "Enquiry",
+      "assignedTo": "Jane Smith",
+      "assignedBy": "Jane Smith",
+      "clientId": "cli-002"
+    },
+    {
+      "id": "task-f07",
+      "title": "Chase solicitor for Thorne case",
+      "dueDate": "2025-10-23",
+      "status": "Offered",
+      "assignedTo": "Emily White",
+      "assignedBy": "Jane Smith",
+      "clientId": "cli-002"
+    },
+    {
+      "id": "task-f10",
+      "title": "Prepare for team meeting",
+      "dueDate": "2025-10-29",
+      "status": "AIP",
+      "assignedTo": "Super Admin",
+      "assignedBy": "System"
+    }
+  ],
+  "contacts": [
+    {
+      "id": "con-001",
+      "name": "James Harris",
+      "type": "Solicitor",
+      "email": "j.harris.law@example.com",
+      "phone": "555-0201",
+      "company": "Harris & Co Legal"
+    },
+    {
+      "id": "con-002",
+      "name": "Sophia Chen",
+      "type": "Accountant",
+      "email": "sophia.c@acmeaccounting.com",
+      "phone": "555-0202",
+      "company": "Acme Accounting"
+    }
+  ],
+  "passwords": [
+    {
+      "id": "pwd-001",
+      "ownerId": "team-3",
+      "service": "First National Bank Portal",
+      "accessLink": "https://online.fnb-portal.com",
+      "username": "john.doe.fnb",
+      "password": "$2a$10$Dq/vgSE3yRnG6/R.TK/2jeT6SGqmOuS1ut6e9ZZHy0cX.Ehbq9Q8K",
+      "memorablePhrase": "$2a$10$Dq/vgSE3yRnG6/R.TK/2jefXLWfwCAZYVfdb3WS.MARpydYiHVLjy",
+      "securityQuestions": [
+        {
+          "id": "sq-1-1",
+          "question": "First pet's name?",
+          "answer": "$2a$10$Dq/vgSE3yRnG6/R.TK/2jeswy6a24dTFC8Q/9FKYXQKV9mEL3HZOS"
+        }
+      ]
+    },
+    {
+      "id": "pwd-002",
+      "ownerId": "team-4",
+      "service": "Metropolis Mortgage Hub",
+      "accessLink": "https://broker.metropolismortgage.com",
+      "username": "jane.smith@amp.co.uk",
+      "password": "$2a$10$T76OdAglqJ9pT2DYQYvAY.qW0O4bO1qCAfiGoQTTQENgKBOqC5y5y",
+      "memorablePhrase": "$2a$10$T76OdAglqJ9pT2DYQYvAY.ZmNYfqzpw8moAx6LwZkZrQMD2HvvZWy",
+      "securityQuestions": []
+    }
+  ],
+  "ledger": [
+    {
+      "id": "led-001",
+      "date": "2024-07-20",
+      "clientName": "Eleanor Vance",
+      "description": "Mortgage Commission",
+      "amount": 3500,
+      "type": "Commission"
+    },
+    {
+      "id": "led-002",
+      "date": "2024-07-22",
+      "clientName": "-",
+      "description": "Office Software Subscription",
+      "amount": -150,
+      "type": "Expense"
+    }
+  ],
+  "proposals": [
+    {
+      "id": "prop-1",
+      "clientName": "Eleanor Vance",
+      "product": "Mortgage Renewal",
+      "status": "Accepted",
+      "sentDate": "2024-07-10",
+      "value": 450000
+    },
+    {
+      "id": "prop-2",
+      "clientName": "Marcus Thorne",
+      "product": "First-Time Buyer Mortgage",
+      "status": "Sent",
+      "sentDate": "2024-08-02",
+      "value": 380000
+    }
+  ],
+  "email_templates": [
+    {
+      "id": "tmpl-1",
+      "name": "Initial Welcome",
+      "subject": "Welcome to Advance Mortgages & Protection",
+      "lastUpdated": "2024-07-20"
+    },
+    {
+      "id": "tmpl-2",
+      "name": "Document Request",
+      "subject": "Required Documents for Your Application",
+      "lastUpdated": "2024-06-15"
+    }
+  ],
+  "team": [
+    {
+      "id": "team-1",
+      "name": "Super Admin",
+      "role": "Super Admin",
+      "email": "super@example.com",
+      "avatar": "https://picsum.photos/seed/super/100/100",
+      "password": "$2a$10$uPjGU4HS0k55SbgkTn7z9Og4zFQCiiyyHbW3TvzdNvsSBlfHipOke"
+    },
+    {
+      "id": "team-2",
+      "name": "Emily White",
+      "role": "Admin",
+      "email": "emily.w@example.com",
+      "avatar": "https://picsum.photos/seed/emily/100/100",
+      "password": "$2a$10$3DBEVSPQQyCASCwCqxTJcO49sAr/0V.kvcAO.0PpOKmuchr./qls6"
+    },
+    {
+      "id": "team-5",
+      "name": "Michael Brown",
+      "role": "Admin",
+      "email": "michael.b@example.com",
+      "avatar": "https://picsum.photos/seed/michael/100/100",
+      "password": "$2a$10$f5tXh8EvgDU31Yr.t4p3weniztnZqXpNkp5E8ZnLfr/5dmyi4ErD."
+    },
+    {
+      "id": "team-3",
+      "name": "John Doe",
+      "role": "Adviser",
+      "email": "john.d@example.com",
+      "avatar": "https://picsum.photos/seed/john/100/100",
+      "password": "$2a$10$/N.SBjPfkIAjq7XBhp5msOq0JEgR/jxV4WVYK7A8nCmhXYVjInZ8u"
+    },
+    {
+      "id": "team-4",
+      "name": "Jane Smith",
+      "role": "Adviser",
+      "email": "jane.s@example.com",
+      "avatar": "https://picsum.photos/seed/jane/100/100",
+      "password": "$2a$10$15p2qewaa1n.k1Dw0mFMAOsp6VHPVc4..AkmWGLE0d7iIzdOFqxKi"
+    }
+  ]
+}

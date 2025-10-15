@@ -1,0 +1,35 @@
+# --- Node.js ---
+node_modules/
+**/node_modules/
+
+# --- Environment variables ---
+.env
+**/.env
+
+# --- Logs ---
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+logs/
+*.log
+
+# --- Vite build output (frontend) ---
+dist/
+frontend/dist/
+
+# --- Backend build output (if any) ---
+backend/build/
+
+# --- OS-specific files ---
+.DS_Store
+Thumbs.db
+
+# --- VSCode ---
+.vscode/
+
+# --- Backend uploads (optional) ---
+#backend/uploads/
+
+# --- Others ---
+*.local
