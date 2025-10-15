@@ -895,7 +895,7 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
         // Fetch the full hydrated client (includes applicants, notes, etc.)
         const fetchClient = async () => {
             try {
-                const res = await fetch(`/api/clients/${client.id}`);
+                const res = await fetch(`/clients/${client.id}`);
                 const data = await res.json();
                 setEditedClient(data);
             } catch (err) {
