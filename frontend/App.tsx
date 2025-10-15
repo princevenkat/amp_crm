@@ -10,7 +10,7 @@ import { ClientsView } from './views/ClientsView';
 import { TasksView } from './views/TasksView';
 import { ContactsView } from './views/ContactsView';
 import { AdminView } from './views/AdminView';
-import { AiAssistantView } from './views/AiAssistantView';
+// import { AiAssistantView } from './views/AiAssistantView';
 import { DealsView } from './views/DealsView';
 import { CalendarView } from './views/CalendarView';
 import { EmailTemplatesView } from './views/EmailTemplatesView';
@@ -189,7 +189,7 @@ const App: React.FC = () => {
             case View.Calendar: return <CalendarView />;
             case View.EmailTemplates: return <EmailTemplatesView />;
             case View.Proposals: return <ProposalsView />;
-            case View.AiAssistant: return <AiAssistantView />;
+            // case View.AiAssistant: return <AiAssistantView />;
             case View.Team: return <TeamView />;
             case View.Settings: return <AdminView />;
             case View.PasswordManager: return <PasswordManagerView />;
