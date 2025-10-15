@@ -709,7 +709,7 @@ const DocumentsView: React.FC<{ client: Client }> = ({ client }) => {
                                 <td className="px-4 py-2 text-text-secondary">{doc.uploadDate}</td>
                                 <td className="px-4 py-2 space-x-2">
                                     <a
-                                        href={`backend${doc.url}`}
+                                        href={doc.url}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="text-secondary hover:underline font-semibold"
