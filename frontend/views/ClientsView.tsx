@@ -9,6 +9,8 @@ import { NewTaskForm } from '../components/forms/NewTaskForm';
 import { PlusIcon, SearchIcon, MinusIcon, EditIcon } from '../components/ui/Icons';
 import { ContactType, TaskStatus, UserRole } from '../types';
 
+import { toast, Toaster, ToastBar } from 'react-hot-toast';
+
 const emptyApplicant: Applicant = {
     title: '', firstName: '', middleName: '', surname: '', gender: '', dob: '',
     homeTelephone: '', mobileNumber: '', email: '', currentAddress: '', noOfDependents: 0, nationality: ''
@@ -290,14 +292,81 @@ const ProductView: React.FC<{
                         <label className="font-semibold text-text-secondary">Mortgage Loan Amount</label>
                         <input disabled={!isEditing} type="number" value={productDetails.mortgage?.mortgageLoanAmount || ''} onChange={(e) => onSubFieldChange('mortgage', 'mortgageLoanAmount', Number(e.target.value))} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
                     </div>
-                    <div>
+
+
+                    {/* <div>
                         <label className="font-semibold text-text-secondary">Broker Fees</label>
                         <input disabled={!isEditing} type="number" value={productDetails.mortgage?.brokerFees || ''} onChange={(e) => onSubFieldChange('mortgage', 'brokerFees', Number(e.target.value))} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
                     </div>
                     <div>
                         <label className="font-semibold text-text-secondary">Procuration Fees</label>
                         <input disabled={!isEditing} type="number" value={productDetails.mortgage?.procurationFees || ''} onChange={(e) => onSubFieldChange('mortgage', 'procurationFees', Number(e.target.value))} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                    </div> */}
+                    <div>
+                        <label className="font-semibold text-text-secondary">Fees</label>
+                        {productDetails.mortgage?.fees?.map((fee, index) => (
+                            <div key={index} className="flex items-center gap-2 mt-2">
+                                <select
+                                    disabled={!isEditing}
+                                    value={fee.type}
+                                    onChange={(e) => {
+                                        const newFees = [...(productDetails.mortgage?.fees || [])];
+                                        newFees[index].type = e.target.value;
+                                        onSubFieldChange('mortgage', 'fees', newFees);
+                                    }}
+                                    className="p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100 w-1/2"
+                                >
+                                    <option value="">Select Fee Type...</option>
+                                    <option value="Broker Fee">Broker Fee</option>
+                                    <option value="Procuration Fee">Procuration Fee</option>
+                                    <option value="Referral Fee">Referral Fee</option>
+                                    <option value="Other">Other</option>
+                                </select>
+
+                                <input
+                                    disabled={!isEditing}
+                                    type="number"
+                                    placeholder="Amount"
+                                    value={fee.amount}
+                                    onChange={(e) => {
+                                        const newFees = [...(productDetails.mortgage?.fees || [])];
+                                        newFees[index].amount = Number(e.target.value);
+                                        onSubFieldChange('mortgage', 'fees', newFees);
+                                    }}
+                                    className="p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100 w-1/2"
+                                />
+
+                                {isEditing && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const newFees = (productDetails.mortgage?.fees || []).filter((_, i) => i !== index);
+                                            onSubFieldChange('mortgage', 'fees', newFees);
+                                        }}
+                                        className="text-danger font-bold ml-2"
+                                    >
+                                        ×
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+
+                        {isEditing && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const newFees = [...(productDetails.mortgage?.fees || []), { type: '', amount: 0 }];
+                                    onSubFieldChange('mortgage', 'fees', newFees);
+                                }}
+                                className="mt-2 text-sm text-secondary hover:underline"
+                            >
+                                + Add Fee
+                            </button>
+                        )}
                     </div>
+
+
+
                     <div>
                         <label className="font-semibold text-text-secondary">Rate</label>
                         <input disabled={!isEditing} type="text" value={productDetails.mortgage?.rate || ''} onChange={(e) => onSubFieldChange('mortgage', 'rate', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
@@ -312,6 +381,7 @@ const ProductView: React.FC<{
                             <option>Capped</option>
                         </select>
                     </div>
+
                     <div>
                         <label className="font-semibold text-text-secondary">Product Term</label>
                         <input disabled={!isEditing} type="text" value={productDetails.mortgage?.productTerm || ''} onChange={(e) => onSubFieldChange('mortgage', 'productTerm', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
@@ -1321,6 +1391,12 @@ export const ClientsView: React.FC = () => {
         );
     }
 
+    const handleMoveToPipeline = async (client) => {
+        await updateClient(client.id, { status: 'Pipeline' });
+        toast.success(`${client.name} moved back to Pipeline.`);
+        // fetchClients(); // ❌ remove this line
+    };
+
     return (
         <div className="p-4 sm:p-8">
             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
@@ -1359,7 +1435,7 @@ export const ClientsView: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredClients.map(client => (
+                        {filteredClients.filter(client => client.status !== 'Pipeline').map(client => (
                             <tr key={client.id} className="border-b border-gray-200 hover:bg-gray-50">
                                 <td className="px-6 py-4 flex items-center">
                                     {/* <img src={client.avatar} alt={client.name} className="w-10 h-10 rounded-full mr-4" /> */}
@@ -1377,14 +1453,37 @@ export const ClientsView: React.FC = () => {
                                 <td className="px-6 py-4">{client.lastContacted}</td>
                                 <td className="px-6 py-4">
                                     <button onClick={() => setSelectedClient(client)} className="text-secondary hover:underline font-semibold">View</button>
-                                    {client.status === 'Archived' && (
+                                    {/* {client.status === 'Archived' && (
                                         <button
                                             onClick={() => handleRetrieveClient(client)}
                                             className="ml-4 text-primary hover:underline font-semibold"
                                         >
                                             Retrieve
                                         </button>
+                                    )} */}
+
+
+
+                                    {/* Show Retrieve button only for archived clients */}
+                                    {/* {client.status === 'Archived' && (
+                                        <button
+                                            onClick={() => handleRetrieveClient(client)}
+                                            className="ml-4 text-primary hover:underline font-semibold"
+                                        >
+                                            Retrieve
+                                        </button>
+                                    )} */}
+
+                                    {/* Show Move to Pipeline button for all non-pipeline clients */}
+                                    {client.status !== 'Pipeline' && (
+                                        <button
+                                            onClick={() => handleMoveToPipeline(client)}
+                                            className="ml-4 text-green-600 hover:underline font-semibold"
+                                        >
+                                            Move to Pipeline
+                                        </button>
                                     )}
+
                                 </td>
                             </tr>
                         ))}

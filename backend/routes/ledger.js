@@ -5,18 +5,49 @@ import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Get all ledger entries (role-based)
+// // Get all ledger entries (role-based)
+// router.get('/', protect, async (req, res) => {
+//     const { id, role } = req.user;
+
+//     try {
+//         let query = 'SELECT * FROM ledger_entries';
+//         const params = [];
+
+//         const FULL_ACCESS_ROLES = ['Admin', 'Super Admin'];
+
+//         // Advisers can only see their own ledger
+//         if (!FULL_ACCESS_ROLES.includes(role)) {
+//             query += ' WHERE ownerId = ?';
+//             params.push(id);
+//         }
+
+//         query += ' ORDER BY date DESC';
+//         const [entries] = await db.query(query, params);
+//         res.json(entries);
+//     } catch (error) {
+//         console.error("Failed to get ledger entries:", error);
+//         res.status(500).json({ message: "Server error" });
+//     }
+// });
+
+// ================== GET ALL LEDGER ENTRIES ==================
 router.get('/', protect, async (req, res) => {
     const { id, role } = req.user;
 
     try {
+        const FULL_ACCESS_ROLES = ['Admin', 'Super Admin'];
         let query = 'SELECT * FROM ledger_entries';
         const params = [];
 
-        const FULL_ACCESS_ROLES = ['Admin', 'Super Admin'];
-
-        // Advisers can only see their own ledger
-        if (!FULL_ACCESS_ROLES.includes(role)) {
+        // 🟢 Admin/Super Admin: can view all or filter by ownerId
+        if (FULL_ACCESS_ROLES.includes(role)) {
+            if (req.query.ownerId) {
+                query += ' WHERE ownerId = ?';
+                params.push(req.query.ownerId);
+            }
+        }
+        // 🟠 Adviser: only view own entries
+        else {
             query += ' WHERE ownerId = ?';
             params.push(id);
         }

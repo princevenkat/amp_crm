@@ -13,6 +13,68 @@ import { put, del } from '@vercel/blob';
 
 const router = express.Router();
 
+
+
+const syncLedgerFromFees = async (connection, client) => {
+    if (!client?.productDetails?.mortgage?.fees?.length) return;
+
+    const fees = client.productDetails.mortgage.fees;
+    const clientName = client.name;
+    // const ownerId = client.primaryAdvisor;
+
+    // Try to pull the advisor’s *user id*, fallback to createdBy if not found
+    let ownerId = null;
+
+    if (typeof client.primaryAdvisor === 'object' && client.primaryAdvisor?.id) {
+        ownerId = client.primaryAdvisor.id;
+    } else if (typeof client.primaryAdvisor === 'string' && client.primaryAdvisor.startsWith('usr-')) {
+        ownerId = client.primaryAdvisor;
+    } else if (client.createdBy) {
+        ownerId = client.createdBy;
+    }
+
+    console.log(`🔹 Syncing ${fees.length} fees for ${clientName}`);
+
+    for (const fee of fees) {
+        if (!fee || !fee.amount || (!fee.name && !fee.type)) {
+            console.warn('⚠️ Skipped fee (missing data):', fee);
+            continue;
+        }
+
+        try {
+            const entryId = `led-${uuidv4()}`;
+            const date = fee.date || new Date().toISOString().split('T')[0];
+            const description = fee.name || fee.type; // ✅ fallback
+
+            // Prevent duplicate ledger entries
+            const [exists] = await connection.query(
+                'SELECT id FROM ledger_entries WHERE clientName = ? AND description = ? AND amount = ?',
+                [clientName, description, fee.amount]
+            );
+            if (exists.length) continue;
+
+            let type = 'Fee';
+            if (/commission/i.test(description)) type = 'Commission';
+            if (/expense/i.test(description)) type = 'Expense';
+
+            await connection.query(
+                `INSERT INTO ledger_entries (id, date, clientName, description, amount, type, ownerId)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [entryId, date, clientName, description, fee.amount, type, ownerId]
+            );
+
+            console.log(`✅ Added ledger entry for ${description} (${fee.amount})`);
+        } catch (err) {
+            console.error(`❌ Ledger sync failed for fee "${fee.name || fee.type}":`, err.message);
+        }
+    }
+};
+
+
+
+
+
+
 // ----------------- Multer setup -----------------
 // const storage = multer.diskStorage({
 //     destination: (req, file, cb) => {
@@ -90,52 +152,6 @@ router.delete('/documents/:id', protect, async (req, res) => {
         res.status(500).json({ message: 'Failed to delete document.' });
     }
 });
-
-
-// router.post('/:id/documents', protect, upload.single('document'), async (req, res) => {
-//     const { id } = req.params;
-//     if (!req.file) return res.status(400).json({ message: 'No file uploaded.' });
-
-//     const file = req.file;
-//     const url = `/uploads/${file.filename}`;
-//     const docId = `doc-${Date.now()}`;
-
-//     await db.query(
-//         'INSERT INTO documents (id, clientId, filename, filetype, uploadDate, url) VALUES (?, ?, ?, ?, ?, ?)',
-//         [docId, id, file.originalname, path.extname(file.originalname).slice(1), new Date(), url]
-//     );
-
-//     res.status(201).json({
-//         id: docId,
-//         clientId: id,
-//         fileName: file.originalname,
-//         fileType: path.extname(file.originalname).slice(1),
-//         uploadDate: new Date().toISOString().split('T')[0],
-//         url,
-//     });
-// });
-// // DELETE /api/documents/:id
-// router.delete('/documents/:id', protect, async (req, res) => {
-//     const { id } = req.params;
-
-//     try {
-//         // Fetch document info from DB
-//         const [rows] = await db.query('SELECT url FROM documents WHERE id = ?', [id]);
-//         if (!rows.length) return res.status(404).json({ message: 'Document not found' });
-
-//         const filePath = `uploads/${rows[0].url.split('/').pop()}`; // Adjust if needed
-//         if (fs.existsSync(filePath)) fs.unlinkSync(filePath); // Delete file from disk
-
-//         // Delete from database
-//         await db.query('DELETE FROM documents WHERE id = ?', [id]);
-
-//         res.json({ message: 'Document deleted successfully' });
-//     } catch (err) {
-//         console.error(err);
-//         res.status(500).json({ message: 'Failed to delete document' });
-//     }
-// });
-// -------------------------------------------------
 
 
 // Helper to format MySQL dates safely to 'YYYY-MM-DD'
@@ -229,7 +245,23 @@ const hydrateClient = async (clientRow) => {
         },
         productDetails: {
             businessWritten: clientRow.businessWritten,
-            mortgage: mortgageRows[0] || null,
+            // mortgage: mortgageRows[0] || null,
+            mortgage: {
+                ...(mortgageRows[0] || {}),
+                //fees: clientRow.mortgageFees ? JSON.parse(clientRow.mortgageFees) : [],
+                fees: (() => {
+                    const f = clientRow.mortgageFees;
+                    if (!f) return [];
+                    if (typeof f === 'string') {
+                        try {
+                            return JSON.parse(f);
+                        } catch {
+                            return [];
+                        }
+                    }
+                    return Array.isArray(f) ? f : [];
+                })(),
+            },
             protection: protectionRows[0] || null,
             solicitor: {
                 name: clientRow.solicitorName,
@@ -271,7 +303,7 @@ const ALL_CLIENT_FIELDS_FOR_UPDATE = `
     propertyAddress = ?, propertyValue = ?, purchasePrice = ?, dateOfPurchase = ?, yearBuilt = ?, propertyTypeProp = ?,
     isExLocal = ?, bedrooms = ?, livingRooms = ?, kitchens = ?, bathrooms = ?, separateToilets = ?,
     hasGarageOrParking = ?, flatsInBlock = ?, storeysInBlock = ?, floorOfFlat = ?, leaseRemaining = ?,
-    groundRent = ?, serviceCharge = ?, businessWritten = ?,
+    groundRent = ?, serviceCharge = ?, businessWritten = ?, mortgageFees = ?,
     solicitorName = ?, solicitorCompany = ?, solicitorEmail = ?, solicitorPhone = ?,
     accountantName = ?, accountantCompany = ?, accountantEmail = ?, accountantPhone = ?,
     surveyorName = ?, surveyorCompany = ?, surveyorEmail = ?, surveyorPhone = ?,
@@ -299,6 +331,7 @@ const getClientDataAsArray = (clientData) => [
     clientData.property?.isExLocal, clientData.property?.bedrooms, clientData.property?.livingRooms, clientData.property?.kitchens, clientData.property?.bathrooms, clientData.property?.separateToilets,
     clientData.property?.hasGarageOrParking, clientData.property?.flatsInBlock, clientData.property?.storeysInBlock, clientData.property?.floorOfFlat, clientData.property?.leaseRemaining,
     clientData.property?.groundRent, clientData.property?.serviceCharge, clientData.productDetails?.businessWritten,
+    JSON.stringify(clientData.productDetails?.mortgage?.fees || []),
     clientData.productDetails?.solicitor?.name, clientData.productDetails?.solicitor?.company, clientData.productDetails?.solicitor?.email, clientData.productDetails?.solicitor?.phone,
     clientData.productDetails?.accountant?.name, clientData.productDetails?.accountant?.company, clientData.productDetails?.accountant?.email, clientData.productDetails?.accountant?.phone,
     clientData.productDetails?.surveyor?.name, clientData.productDetails?.surveyor?.company, clientData.productDetails?.surveyor?.email, clientData.productDetails?.surveyor?.phone,
@@ -399,6 +432,7 @@ router.post('/', protect, async (req, res) => {
             separateToilets: clientData.property?.separateToilets,
             hasGarageOrParking: clientData.property?.hasGarageOrParking,
             businessWritten: clientData.productDetails?.businessWritten,
+            mortgageFees: JSON.stringify(clientData.productDetails?.mortgage?.fees || []), // 🟢 add this line
             solicitorName: clientData.productDetails?.solicitor?.name,
             solicitorCompany: clientData.productDetails?.solicitor?.company,
             solicitorEmail: clientData.productDetails?.solicitor?.email,
@@ -445,11 +479,15 @@ router.post('/', protect, async (req, res) => {
             }
         }
 
+        //await connection.commit();
+
+        // 🔹 Sync Ledger Entries (inside same transaction)
+        await syncLedgerFromFees(connection, clientData);
+        // ✅ Commit once — includes both client + ledger inserts
         await connection.commit();
 
         const [newClientRow] = await db.query('SELECT * FROM clients WHERE id = ?', [newId]);
         const newClient = await hydrateClient(newClientRow[0]);
-
         res.status(201).json(newClient);
     } catch (error) {
         await connection.rollback();
@@ -568,10 +606,23 @@ router.put('/:id', protect, async (req, res) => {
             );
         }
 
+        // await connection.commit();
+
+        // 🔹 Sync Ledger Entries (inside same transaction)
+        if (typeof merged.productDetails?.mortgage?.fees === 'string') {
+            try {
+                merged.productDetails.mortgage.fees = JSON.parse(merged.productDetails.mortgage.fees);
+            } catch (err) {
+                console.error("Failed to parse mortgage fees JSON:", err);
+            }
+        }
+        await syncLedgerFromFees(connection, merged);
+        // ✅ Commit once — includes both client + ledger inserts
         await connection.commit();
 
         const [updatedRows] = await connection.query('SELECT * FROM clients WHERE id = ?', [id]);
         const updatedClient = await hydrateClient(updatedRows[0]);
+
         res.json(updatedClient);
 
     } catch (error) {

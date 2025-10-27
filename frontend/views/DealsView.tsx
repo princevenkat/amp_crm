@@ -200,7 +200,7 @@ const EditLeadView: React.FC<{ lead: Client; onSave: (updatedLead: Client) => vo
     return (
         <div className="p-4 sm:p-8">
             <button onClick={onCancel} className="mb-6 text-sm text-secondary hover:underline">&larr; Back to Pipeline</button>
-            <h1 className="text-3xl font-bold mb-2">Edit Lead</h1>
+            <h1 className="text-3xl font-bold mb-2">Edit Pipeline</h1>
             <p className="text-text-secondary mb-8">Editing information for {lead.name}.</p>
 
             {/* Success message */}
@@ -278,7 +278,7 @@ export const DealsView: React.FC = () => {
 
     const leads = useMemo(() => {
         return clients.filter(client =>
-            client.status === 'Lead' &&
+            (client.status === 'Lead' || client.status === 'Pipeline') &&
             (client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 client.email.toLowerCase().includes(searchTerm.toLowerCase()))
         );

@@ -78,6 +78,11 @@ export type BusinessWrittenType =
   | "Mortgage & Protection"
   | "";
 
+export interface MortgageFee {
+  type: string; // e.g. "Broker Fee", "Procuration Fee", "Referral Fee"
+  amount: number;
+}
+
 export interface MortgageDetails {
   mortgageType:
     | "Purchase"
@@ -94,6 +99,7 @@ export interface MortgageDetails {
   mortgageLoanAmount: number;
   brokerFees: number;
   procurationFees: number;
+  fees: MortgageFee[];
   rate: string;
   productType: "Fixed" | "Variable" | "Discount" | "Capped" | "";
   productTerm: string; // e.g., "2 years"
