@@ -25,6 +25,11 @@ import { BusinessLedgerView } from './views/BusinessLedgerView';
 import { ChevronDownIcon, LogOutIcon, MenuIcon } from './components/ui/Icons';
 import { NotificationBell } from './components/NotificationBell';
 
+
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ResetPasswordView } from "./views/ResetPasswordView";
+
+
 const ADVISER_VIEWS = [
     View.Dashboard, View.Deals, View.Leads, View.Contacts, View.Tasks, View.Calendar,
     View.PasswordManager, View.BusinessLedger, View.Settings
@@ -228,23 +233,56 @@ const App: React.FC = () => {
         return <LoginView onLogin={login} />;
     }
 
+    // return (
+    //     <div className="flex h-screen bg-background">
+    //         <Sidebar
+    //             currentView={currentView}
+    //             setView={handleSetView}
+    //             isOpen={isSidebarOpen}
+    //             setIsOpen={setIsSidebarOpen}
+    //         />
+    //         <main className="flex-1 flex flex-col lg:ml-64">
+    //             <Navbar onLogout={logout} onMenuClick={() => setIsSidebarOpen(true)} />
+    //             <div className="flex-1 overflow-y-auto bg-background">
+    //                 {renderView()}
+    //             </div>
+    //         </main>
+
+
+    //     </div>
+    // );
     return (
-        <div className="flex h-screen bg-background">
-            <Sidebar
-                currentView={currentView}
-                setView={handleSetView}
-                isOpen={isSidebarOpen}
-                setIsOpen={setIsSidebarOpen}
-            />
-            <main className="flex-1 flex flex-col lg:ml-64">
-                <Navbar onLogout={logout} onMenuClick={() => setIsSidebarOpen(true)} />
-                <div className="flex-1 overflow-y-auto bg-background">
-                    {renderView()}
-                </div>
-            </main>
+        <BrowserRouter>
+            <Routes>
+                {/* 🟢 Password reset page (public route) */}
+                <Route path="/reset-password" element={<ResetPasswordView />} />
 
-
-        </div>
+                {/* 🟢 Main application (protected area) */}
+                <Route
+                    path="*"
+                    element={
+                        !currentUser ? (
+                            <LoginView onLogin={login} />
+                        ) : (
+                            <div className="flex h-screen bg-background">
+                                <Sidebar
+                                    currentView={currentView}
+                                    setView={handleSetView}
+                                    isOpen={isSidebarOpen}
+                                    setIsOpen={setIsSidebarOpen}
+                                />
+                                <main className="flex-1 flex flex-col lg:ml-64">
+                                    <Navbar onLogout={logout} onMenuClick={() => setIsSidebarOpen(true)} />
+                                    <div className="flex-1 overflow-y-auto bg-background">
+                                        {renderView()}
+                                    </div>
+                                </main>
+                            </div>
+                        )
+                    }
+                />
+            </Routes>
+        </BrowserRouter>
     );
 };
 
