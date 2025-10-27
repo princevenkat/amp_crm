@@ -128,7 +128,6 @@ router.post('/forgot-password', async (req, res) => {
     if (rows.length === 0) {
       return res.status(200).json({ message: 'If that email exists, a reset link has been sent.' });
     }
-
     const user = rows[0];
     const resetToken = crypto.randomBytes(32).toString('hex');
     const expiresAt = Date.now() + 1000 * 60 * 10; // 10 minutes
@@ -136,7 +135,7 @@ router.post('/forgot-password', async (req, res) => {
     passwordResetTokens.set(resetToken, { userId: user.id, expiresAt });
 
     //const resetLink = `http://localhost:3000/reset-password?token=${resetToken}`;
-    const resetLink = `${process.env.VITE_SERVER_APP_URL}/reset-password?token=${resetToken}`;
+    const resetLink = `${process.env.APP_URL}/reset-password?token=${resetToken}`;
 
     const transporter = nodemailer.createTransport({
       service: 'gmail',
