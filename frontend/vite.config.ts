@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
       port: 3000,
       host: "0.0.0.0",
       proxy: {
-        "/api": JSON.stringify(env.VITE_API_BASE_URL), // <-- Add this line
+        "/api": env.VITE_API_BASE_URL, // <-- Add this line
       },
     },
     plugins: [react()],
