@@ -67,7 +67,7 @@ export const TeamView: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
                 {teamMembers.map(member => (
                     <Card key={member.id} className="text-center group relative py-[40px]">
-                        {canManageTeam && (
+                        {/* {canManageTeam && (
                             <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                 <button
                                     onClick={() => handleOpenEditModal(member)}
@@ -84,7 +84,36 @@ export const TeamView: React.FC = () => {
                                     {MinusIcon}
                                 </button>
                             </div>
+                        )} */}
+                        {canManageTeam && (
+                            <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                {/* ✏️ Edit button */}
+                                <button
+                                    onClick={() => handleOpenEditModal(member)}
+                                    className="text-gray-500 bg-white/80 backdrop-blur-sm p-2 rounded-full hover:text-secondary hover:bg-white"
+                                    aria-label="Edit member"
+                                >
+                                    {EditIcon}
+                                </button>
+
+                                {/* 🗑️ Delete button rules:
+        - Hide if currentUser is viewing themselves
+        - Hide if currentUser is Admin and member is SuperAdmin
+    */}
+                                {currentUser?.id !== member.id &&
+                                    !(currentUser?.role === UserRole.Admin && member.role === UserRole.SuperAdmin) && (
+                                        <button
+                                            onClick={() => handleDeleteMember(member.id)}
+                                            className="text-gray-500 bg-white/80 backdrop-blur-sm p-2 rounded-full hover:text-danger hover:bg-white"
+                                            aria-label="Delete member"
+                                        >
+                                            {MinusIcon}
+                                        </button>
+                                    )}
+                            </div>
                         )}
+
+
                         <CardContent>
                             {/* <img src={member.avatar} alt={member.name} className="w-24 h-24 rounded-full mx-auto mb-4" /> */}
                             <h3 className="text-lg font-bold text-text-primary">{member.name}</h3>
