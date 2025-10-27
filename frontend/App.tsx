@@ -158,7 +158,7 @@ const Navbar: React.FC<{ onLogout: () => void; onMenuClick: () => void; }> = ({ 
                 {MenuIcon}
             </button>
             <div className="flex items-center space-x-6">
-                <NotificationBell />
+                {/* <NotificationBell /> */}
                 <div className="relative">
                     <div onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="flex items-center space-x-3 cursor-pointer">
                         {/* <img src={currentUser.avatar} alt="User" className="w-9 h-9 rounded-full" /> */}

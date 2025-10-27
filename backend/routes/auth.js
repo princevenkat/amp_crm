@@ -8,6 +8,8 @@ import pool from '../mysql-connector.js';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 
+import dotenv from 'dotenv';
+dotenv.config();
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-key';
@@ -133,7 +135,8 @@ router.post('/forgot-password', async (req, res) => {
 
     passwordResetTokens.set(resetToken, { userId: user.id, expiresAt });
 
-    const resetLink = `http://localhost:3000/reset-password?token=${resetToken}`;
+    //const resetLink = `http://localhost:3000/reset-password?token=${resetToken}`;
+    const resetLink = `${process.env.VITE_SERVER_APP_URL}/reset-password?token=${resetToken}`;
 
     const transporter = nodemailer.createTransport({
       service: 'gmail',
