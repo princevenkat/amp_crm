@@ -64,6 +64,7 @@ const Sidebar: React.FC<{
     const { currentUser } = useContext(DataContext);
     if (!currentUser) return null;
 
+    const currentYear = new Date().getFullYear();
     return (
         <>
 
@@ -95,9 +96,16 @@ const Sidebar: React.FC<{
 
             {/* Sidebar */}
             < aside className={`w-64 bg-sidebar flex flex-col fixed h-full border-r border-gray-700 z-30 transform transition-transform lg:transform-none ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
-                <div className="h-16 flex items-center px-4 gap-3">
+                <div className="flex items-center px-4 py-4 gap-3 bg-white rounded-br-2xl mb-3 ">
 
-                    <span className="text-white text-sm uppercase font-bold">Advance Mortgages & Protection</span>
+                    <img
+                        src="/logo.png"
+                        alt="Advance Mortgages & Protection Logo"
+                        className="h-50 object-contain"
+                    />
+                    {/* <span className="text-white text-sm uppercase font-bold">Advance Mortgages & Protection</span> */}
+
+
                 </div>
                 <nav className="flex-grow px-4">
                     {NAV_SECTIONS.map((section, sectionIndex) => (
@@ -124,6 +132,11 @@ const Sidebar: React.FC<{
                         </Fragment>
                     ))}
                 </nav>
+                <div class="text-center text-white/75 text-xs py-5">
+                    <div>© {currentYear} - Advance Mortgages.</div>
+                    <div>by <a href="https://amigosoft.in/" target="_blank"> Amigosoft </a> All rights reserved </div>
+                </div>
+
             </aside >
         </>
     );
@@ -148,7 +161,7 @@ const Navbar: React.FC<{ onLogout: () => void; onMenuClick: () => void; }> = ({ 
                 <NotificationBell />
                 <div className="relative">
                     <div onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="flex items-center space-x-3 cursor-pointer">
-                        <img src={currentUser.avatar} alt="User" className="w-9 h-9 rounded-full" />
+                        {/* <img src={currentUser.avatar} alt="User" className="w-9 h-9 rounded-full" /> */}
                         <div>
                             <p className="text-sm font-medium text-text-primary">{currentUser.name}</p>
                             <p className="text-xs text-text-secondary">{currentUser.role}</p>
@@ -229,6 +242,8 @@ const App: React.FC = () => {
                     {renderView()}
                 </div>
             </main>
+
+
         </div>
     );
 };

@@ -7,7 +7,7 @@ import { NewTaskForm } from '../components/forms/NewTaskForm';
 
 type GroupByType = 'status' | 'client' | 'assignee';
 
-// Helper to determine the color class for the task card's border based on due date and status
+// 🟩 Border color logic
 const getTaskBorderColorClass = (dueDate: string, status: Task['status']): string => {
     if (status === 'Completed') return 'border-success';
     const today = new Date();
@@ -15,27 +15,26 @@ const getTaskBorderColorClass = (dueDate: string, status: Task['status']): strin
     const taskDueDate = new Date(dueDate);
     taskDueDate.setHours(0, 0, 0, 0);
 
-    if (taskDueDate < today) return 'border-danger'; // Overdue
-    if (taskDueDate.getTime() === today.getTime()) return 'border-warning'; // Due today
-    return 'border-secondary'; // Upcoming
+    if (taskDueDate < today) return 'border-danger';
+    if (taskDueDate.getTime() === today.getTime()) return 'border-warning';
+    return 'border-secondary';
 };
 
-// Helper to get a human-readable string for the due date
+// 🟩 Relative due date display
 const getRelativeDueDate = (dueDate: string): string => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const taskDueDate = new Date(dueDate);
     taskDueDate.setHours(0, 0, 0, 0);
 
-    const diffTime = taskDueDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffDays = Math.ceil((taskDueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
     if (diffDays < 0) return `Overdue by ${Math.abs(diffDays)} day(s)`;
     if (diffDays === 0) return 'Due today';
     return `Due in ${diffDays} day(s)`;
 };
 
-
+// 🟩 Single Task Card
 const TaskCard: React.FC<{ task: Task; onEdit: (task: Task) => void }> = ({ task, onEdit }) => {
     const { deleteTask, clients } = useContext(DataContext);
     const client = task.clientId ? clients.find(c => c.id === task.clientId) : null;
@@ -43,26 +42,26 @@ const TaskCard: React.FC<{ task: Task; onEdit: (task: Task) => void }> = ({ task
     const borderColorClass = getTaskBorderColorClass(task.dueDate, task.status);
 
     return (
-        <div className={`bg-surface p-4 rounded-lg shadow-sm mb-3 border border-l-4 ${borderColorClass} relative group`}>
+        <div className={`bg-surface p-4 rounded-lg shadow-sm mb-3 border-l-4 ${borderColorClass} relative group`}>
             <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button 
-                    onClick={() => onEdit(task)} 
+                <button
+                    onClick={() => onEdit(task)}
                     className="text-gray-400 hover:text-secondary p-1"
                     aria-label="Edit task"
                 >
                     {EditIcon}
                 </button>
-                <button 
-                    onClick={() => deleteTask(task.id)} 
+                <button
+                    onClick={() => deleteTask(task.id)}
                     className="text-gray-400 hover:text-danger p-1"
                     aria-label="Delete task"
                 >
                     {MinusIcon}
                 </button>
             </div>
-            
+
             <p className="font-semibold text-text-primary pr-12">{task.title}</p>
-            
+
             {client && (
                 <div className="text-xs text-secondary font-medium mt-1">
                     <span>{client.name}</span>
@@ -70,20 +69,29 @@ const TaskCard: React.FC<{ task: Task; onEdit: (task: Task) => void }> = ({ task
                     <span>Ref: {client.caseReference}</span>
                 </div>
             )}
-            
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-3 text-xs text-text-secondary border-t pt-2">
-                <div><strong>Due:</strong> {task.dueDate} ({getRelativeDueDate(task.dueDate)})</div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-4 gap-y-2 mt-3 text-xs text-text-secondary border-t pt-2">
+                <div>
+                    <strong>Due:</strong>{" "}
+                    {new Date(task.dueDate).toLocaleDateString(undefined, {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                    })}{" "}
+                    ({getRelativeDueDate(task.dueDate)})
+                </div>
                 <div><strong>Assigned to:</strong> {task.assignedTo}</div>
                 <div><strong>Status:</strong> <span className="font-semibold text-text-primary">{task.status}</span></div>
                 <div><strong>Assigned by:</strong> {task.assignedBy}</div>
                 {client?.caseStatus && (
-                     <div className="col-span-2"><strong>Case Status:</strong> {client.caseStatus}</div>
+                    <div className="lg:col-span-2"><strong>Case Status:</strong> {client.caseStatus}</div>
                 )}
             </div>
         </div>
     );
-}
+};
 
+// 🟩 Group of tasks (status/client/assignee)
 const TaskGroup: React.FC<{ title: string; tasks: Task[]; onEditTask: (task: Task) => void }> = ({ title, tasks, onEditTask }) => {
     const [isOpen, setIsOpen] = useState(true);
 
@@ -97,9 +105,9 @@ const TaskGroup: React.FC<{ title: string; tasks: Task[]; onEditTask: (task: Tas
                 <span className={`transform transition-transform`}>{isOpen ? MinusIcon : PlusIcon}</span>
             </button>
             {isOpen && (
-                <div className="border border-t-0 rounded-b-lg p-4">
+                <div className="border border-t-0 rounded-b-lg p-4 grid lg:grid-cols-3 gap-5">
                     {tasks.length > 0 ? (
-                         tasks.map(task => <TaskCard key={task.id} task={task} onEdit={onEditTask} />)
+                        tasks.map(task => <TaskCard key={task.id} task={task} onEdit={onEditTask} />)
                     ) : (
                         <p className="text-sm text-text-secondary">No tasks in this group.</p>
                     )}
@@ -109,36 +117,32 @@ const TaskGroup: React.FC<{ title: string; tasks: Task[]; onEditTask: (task: Tas
     );
 };
 
+// 🟩 Main view
 export const TasksView: React.FC = () => {
-    const { tasks, addTask, updateTask, clients, selectedTaskIdForNav, setSelectedTaskIdForNav } = useContext(DataContext);
+    const {
+        tasks,
+        addTask,
+        updateTask,
+        clients,
+        selectedTaskIdForNav,
+        setSelectedTaskIdForNav,
+    } = useContext(DataContext);
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
     const [groupBy, setGroupBy] = useState<GroupByType>('status');
 
-    const handleOpenEditModal = (task: Task) => {
-        setTaskToEdit(task);
-        setIsModalOpen(true);
-    };
-    
+    // 🟦 Auto-open modal when navigating to a task
     useEffect(() => {
         if (selectedTaskIdForNav) {
             const taskToOpen = tasks.find(t => t.id === selectedTaskIdForNav);
             if (taskToOpen) {
-                handleOpenEditModal(taskToOpen);
-                setSelectedTaskIdForNav(null); // Reset after navigation
+                setTaskToEdit(taskToOpen);
+                setIsModalOpen(true);
+                setSelectedTaskIdForNav(null);
             }
         }
     }, [selectedTaskIdForNav, tasks, setSelectedTaskIdForNav]);
-
-    const handleOpenCreateModal = () => {
-        setTaskToEdit(null);
-        setIsModalOpen(true);
-    };
-
-    const handleCloseModal = () => {
-        setTaskToEdit(null);
-        setIsModalOpen(false);
-    };
 
     const handleSaveTask = async (taskData: Omit<Task, 'id'>) => {
         if (taskToEdit) {
@@ -146,21 +150,23 @@ export const TasksView: React.FC = () => {
         } else {
             await addTask(taskData);
         }
-        handleCloseModal();
+        setTaskToEdit(null);
+        setIsModalOpen(false);
     };
-    
+
     const groupedTasks = useMemo(() => {
-        const groups: { [key: string]: Task[] } = {};
-        
+        const groups: Record<string, Task[]> = {};
+
         tasks.forEach(task => {
             let key: string;
             switch (groupBy) {
-                case 'client':
+                case 'client': {
                     const client = task.clientId ? clients.find(c => c.id === task.clientId) : null;
                     key = client ? client.name : 'No Client';
                     break;
+                }
                 case 'assignee':
-                    key = task.assignedTo;
+                    key = task.assignedTo || 'Unassigned';
                     break;
                 case 'status':
                 default:
@@ -168,38 +174,44 @@ export const TasksView: React.FC = () => {
                     break;
             }
 
-            if (!groups[key]) {
-                groups[key] = [];
-            }
+            if (!groups[key]) groups[key] = [];
             groups[key].push(task);
         });
 
-        // Sort tasks within each group by due date
         Object.keys(groups).forEach(key => {
             groups[key].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
         });
-        
-        return Object.entries(groups).sort(([keyA], [keyB]) => keyA.localeCompare(keyB));
+
+        return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
     }, [tasks, groupBy, clients]);
 
     return (
         <div className="p-4 sm:p-8">
-            <Modal title={taskToEdit ? "Edit Task" : "Create New Task"} isOpen={isModalOpen} onClose={handleCloseModal}>
-                <NewTaskForm 
-                    onSubmit={handleSaveTask} 
-                    onCancel={handleCloseModal} 
+
+            <Modal
+                title={taskToEdit ? 'Edit Task' : 'Create New Task'}
+                isOpen={isModalOpen}
+                onClose={() => {
+                    setTaskToEdit(null);
+                    setIsModalOpen(false);
+                }}
+            >
+                <NewTaskForm
+                    onSubmit={handleSaveTask}
+                    onCancel={() => setIsModalOpen(false)}
                     initialData={taskToEdit}
                 />
             </Modal>
+
             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
                 <h1 className="text-3xl font-bold">Task Manager</h1>
-                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
+                <div className="flex  sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
                     <div className="flex items-center gap-2">
                         <label htmlFor="group-by" className="text-sm font-medium">Group by:</label>
                         <select
                             id="group-by"
                             value={groupBy}
-                            onChange={(e) => setGroupBy(e.target.value as GroupByType)}
+                            onChange={e => setGroupBy(e.target.value as GroupByType)}
                             className="bg-surface border border-gray-200 rounded-lg py-2 px-3 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
                         >
                             <option value="status">Status</option>
@@ -207,23 +219,26 @@ export const TasksView: React.FC = () => {
                             <option value="assignee">Assignee</option>
                         </select>
                     </div>
-                     <button 
-                        onClick={handleOpenCreateModal}
+
+                    <button
+                        onClick={() => {
+                            setTaskToEdit(null);
+                            setIsModalOpen(true);
+                        }}
                         className="flex items-center justify-center gap-2 bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-md transition-colors"
                     >
                         {PlusIcon}
                         <span>New Task</span>
                     </button>
-                 </div>
+                </div>
             </div>
+
             <div>
                 {groupedTasks.map(([groupTitle, tasksInGroup]) => (
-                    <TaskGroup 
-                        key={groupTitle}
-                        title={groupTitle}
-                        tasks={tasksInGroup}
-                        onEditTask={handleOpenEditModal}
-                    />
+                    <TaskGroup key={groupTitle} title={groupTitle} tasks={tasksInGroup} onEditTask={(task) => {
+                        setTaskToEdit(task);
+                        setIsModalOpen(true);
+                    }} />
                 ))}
             </div>
         </div>

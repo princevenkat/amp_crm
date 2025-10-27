@@ -16,12 +16,19 @@ const getSecurityQuestions = async (entryId) => {
 // Get password entries
 router.get('/', protect, async (req, res) => {
     const { id, role } = req.user;
-    
+
     try {
         let query = 'SELECT * FROM password_entries';
         const params = [];
 
-        if (role !== 'Admin' && role !== 'Super Admin') {
+        // if (role !== 'Admin' && role !== 'Super Admin') {
+        //     query += ' WHERE ownerId = ?';
+        //     params.push(id);
+        // }
+
+        const FULL_ACCESS_ROLES = ['Admin', 'Super Admin', 'Adviser'];
+
+        if (!FULL_ACCESS_ROLES.includes(role)) {
             query += ' WHERE ownerId = ?';
             params.push(id);
         }
@@ -41,7 +48,7 @@ router.get('/', protect, async (req, res) => {
                 securityQuestions,
             };
         }));
-        
+
         res.json(sanitizedEntries);
     } catch (error) {
         console.error("Failed to get passwords:", error);

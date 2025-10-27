@@ -175,6 +175,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return false;
     };
 
+
+
+
     const addTask = async (task: Omit<Task, 'id'>) => {
         const newTask = await api.createTask(task);
         setTasks(prev => [newTask, ...prev]);

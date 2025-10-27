@@ -1062,7 +1062,8 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
         handleCloseTaskModal();
     };
 
-    const clientTasks = tasks.filter(task => task.clientId === client.id);
+    // const clientTasks = tasks.filter(task => task.clientId === client.id);
+    const clientTasks = tasks.filter(task => String(task.clientId) === String(client.id));
 
     const advisors = useMemo(() => teamMembers.filter(m => m.role === UserRole.Adviser).map(m => m.name), [teamMembers]);
     const admins = useMemo(() => teamMembers.filter(m => m.role === UserRole.Admin).map(m => m.name), [teamMembers]);
@@ -1158,7 +1159,7 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
             <button onClick={onBack} className="mb-6 text-sm text-secondary hover:underline">&larr; Back to Clients</button>
             <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-8 gap-4">
                 <div className="flex items-center">
-                    <img src={client.avatar} alt={client.name} className="w-16 h-16 sm:w-20 sm:h-20 rounded-full mr-4 sm:mr-6" />
+                    {/* <img src={client.avatar} alt={client.name} className="w-16 h-16 sm:w-20 sm:h-20 rounded-full mr-4 sm:mr-6" /> */}
                     <div>
                         <h1 className="text-2xl sm:text-3xl font-bold">{editedClient.name} {editedClient.applicationType === 'Joint' && `& ${editedClient.applicants[1]?.firstName} ${editedClient.applicants[1]?.surname}`}</h1>
                         {!isEditing ? (
@@ -1361,7 +1362,7 @@ export const ClientsView: React.FC = () => {
                         {filteredClients.map(client => (
                             <tr key={client.id} className="border-b border-gray-200 hover:bg-gray-50">
                                 <td className="px-6 py-4 flex items-center">
-                                    <img src={client.avatar} alt={client.name} className="w-10 h-10 rounded-full mr-4" />
+                                    {/* <img src={client.avatar} alt={client.name} className="w-10 h-10 rounded-full mr-4" /> */}
                                     <div>
                                         <p className="font-semibold text-text-primary">{client.name}</p>
                                         <p className="text-xs text-text-secondary">{client.email}</p>

@@ -31,11 +31,11 @@ export const NAV_SECTIONS: NavItem[][] = [
     { id: View.Tasks, label: "Tasks", icon: TasksIcon },
     { id: View.Calendar, label: "Calendar", icon: CalendarIcon },
     { id: View.Proposals, label: "Proposals", icon: ProposalsIcon },
-    {
-      id: View.EmailTemplates,
-      label: "Email Templates",
-      icon: EmailTemplatesIcon,
-    },
+    // {
+    //   id: View.EmailTemplates,
+    //   label: "Email Templates",
+    //   icon: EmailTemplatesIcon,
+    // },
   ],
   [
     {

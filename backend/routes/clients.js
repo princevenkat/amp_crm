@@ -307,10 +307,45 @@ const getClientDataAsArray = (clientData) => [
 
 
 // Get all clients
+// router.get('/', protect, async (req, res) => {
+//     try {
+//         const [clientRows] = await db.query('SELECT * FROM clients ORDER BY createdDate DESC');
+//         const hydratedClients = await Promise.all(clientRows.map(hydrateClient));
+//         res.json(hydratedClients);
+//     } catch (error) {
+//         console.error("Failed to get clients:", error);
+//         res.status(500).json({ message: "Server error getting clients" });
+//     }
+// });
+
 router.get('/', protect, async (req, res) => {
     try {
-        const [clientRows] = await db.query('SELECT * FROM clients ORDER BY createdDate DESC');
+        const user = req.user; // populated from JWT by protect middleware
+        let clientRows = [];
+
+        if (user.role === 'Admin' || user.role === 'Super Admin') {
+            // 🟢 Admin sees all clients
+            [clientRows] = await db.query(`
+                SELECT * FROM clients 
+                ORDER BY createdDate DESC
+            `);
+        }
+        else if (user.role === 'Advisor' || user.role === 'Adviser') {
+            // 🟠 Advisor sees only their own or assigned clients
+            [clientRows] = await db.query(`
+                SELECT * FROM clients
+                WHERE primaryAdvisor = ? OR createdBy = ?
+                ORDER BY createdDate DESC
+            `, [user.id, user.id]);
+        }
+        else {
+            // 🚫 No valid role
+            return res.status(403).json({ message: 'Unauthorized role' });
+        }
+
+        // Hydrate the client data (attach applicants, documents, etc.)
         const hydratedClients = await Promise.all(clientRows.map(hydrateClient));
+
         res.json(hydratedClients);
     } catch (error) {
         console.error("Failed to get clients:", error);
@@ -318,12 +353,15 @@ router.get('/', protect, async (req, res) => {
     }
 });
 
+
 // Create a new client
 router.post('/', protect, async (req, res) => {
     const clientData = req.body;
     const newId = `cli-${uuidv4()}`;
     const avatar = `https://picsum.photos/seed/${clientData.name.split(' ')[0]}/100/100`;
     const connection = await db.getConnection();
+
+    const createdBy = req.user.id;
 
 
     try {
@@ -333,6 +371,7 @@ router.post('/', protect, async (req, res) => {
         const clientInsertData = {
             id: newId,
             avatar,
+            createdBy,
             createdDate: clientData.createdDate,
             name: clientData.name,
             email: clientData.email,

@@ -33,7 +33,7 @@ router.post('/', protect, adminOnly, async (req, res) => {
 
         const salt = bcrypt.genSaltSync(10);
         const hashedPassword = bcrypt.hashSync(password, salt);
-        
+
         const newMember = {
             id: `team-${uuidv4()}`,
             name,
@@ -47,7 +47,7 @@ router.post('/', protect, adminOnly, async (req, res) => {
             'INSERT INTO team_members (id, name, email, role, password, avatar) VALUES (?, ?, ?, ?, ?, ?)',
             [newMember.id, newMember.name, newMember.email, newMember.role, newMember.password, newMember.avatar]
         );
-        
+
         const { password: _, ...memberData } = newMember;
         res.status(201).json(memberData);
     } catch (error) {
@@ -79,9 +79,9 @@ router.put('/:id', protect, adminOnly, async (req, res) => {
 
         updateQuery += ' WHERE id = ?';
         queryParams.push(id);
-        
+
         await db.query(updateQuery, queryParams);
-        
+
         const [updatedRows] = await db.query('SELECT id, name, role, email, avatar FROM team_members WHERE id = ?', [id]);
         res.json(updatedRows[0]);
 
