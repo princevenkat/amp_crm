@@ -19,7 +19,7 @@ import { TeamView } from './views/TeamView';
 import { LoginView } from './views/LoginView';
 import { PasswordManagerView } from './views/PasswordManagerView';
 import { BusinessLedgerView } from './views/BusinessLedgerView';
-
+import { NotFoundView } from "./views/NotFoundView";
 
 // Import UI Components
 import { ChevronDownIcon, LogOutIcon, MenuIcon } from './components/ui/Icons';
@@ -281,7 +281,10 @@ const App: React.FC = () => {
                         )
                     }
                 />
+                {/* 👇 Catch-all route (404) */}
+                <Route path="*" element={<NotFoundView />} />
             </Routes>
+
         </BrowserRouter>
     );
 };
