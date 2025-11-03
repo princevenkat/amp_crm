@@ -123,72 +123,43 @@ router.delete('/:id', protect, async (req, res) => {
 });
 
 
-// Get all contacts
-// router.get('/', protect, async (req, res) => {
-//     try {
-//         const [contacts] = await db.query('SELECT * FROM contacts ORDER BY name ASC');
-//         res.json(contacts);
-//     } catch (error) {
-//         console.error("Failed to get contacts:", error);
-//         res.status(500).json({ message: "Server error" });
-//     }
-// });
+// ✅ Add optional ?type=Solicitor query support
+router.get('/', protect, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const userRole = req.user.role;
+        const { type } = req.query;
 
-// Create a new contact
-// router.post('/', protect, async (req, res) => {
-//     const { name, type, email, phone, company } = req.body;
-//     const newContact = {
-//         id: `con-${uuidv4()}`,
-//         name, type, email, phone, company
-//     };
+        let query = '';
+        let params = [];
 
-//     try {
-//         await db.query(
-//             'INSERT INTO contacts (id, name, type, email, phone, company) VALUES (?, ?, ?, ?, ?, ?)',
-//             [newContact.id, newContact.name, newContact.type, newContact.email, newContact.phone, newContact.company]
-//         );
-//         res.status(201).json(newContact);
-//     } catch (error) {
-//         console.error("Failed to create contact:", error);
-//         res.status(500).json({ message: "Server error" });
-//     }
-// });
+        if (userRole === 'Admin' || userRole === 'Super Admin') {
+            query = 'SELECT * FROM contacts';
+            if (type) {
+                query += ' WHERE type = ?';
+                params.push(type);
+            }
+            query += ' ORDER BY name ASC';
+        } else if (userRole === 'Adviser') {
+            query = 'SELECT * FROM contacts WHERE createdBy = ?';
+            params.push(userId);
+            if (type) {
+                query += ' AND type = ?';
+                params.push(type);
+            }
+            query += ' ORDER BY name ASC';
+        } else {
+            return res.status(403).json({ message: 'Unauthorized role' });
+        }
 
-// // Update a contact
-// router.put('/:id', protect, async (req, res) => {
-//     const { id } = req.params;
-//     const { name, type, email, phone, company } = req.body;
-//     try {
-//         const [result] = await db.query(
-//             'UPDATE contacts SET name = ?, type = ?, email = ?, phone = ?, company = ? WHERE id = ?',
-//             [name, type, email, phone, company, id]
-//         );
-//         if (result.affectedRows === 0) {
-//             return res.status(404).json({ message: 'Contact not found' });
-//         }
-//         const [updatedContactRows] = await db.query('SELECT * FROM contacts WHERE id = ?', [id]);
-//         res.json(updatedContactRows[0]);
-//     } catch (error) {
-//         console.error("Failed to update contact:", error);
-//         res.status(500).json({ message: "Server error" });
-//     }
-// });
+        const [contacts] = await db.query(query, params);
+        res.json(contacts);
+    } catch (error) {
+        console.error("Failed to get contacts:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
 
-
-// // Delete a contact
-// router.delete('/:id', protect, async (req, res) => {
-//     const { id } = req.params;
-//     try {
-//         const [result] = await db.query('DELETE FROM contacts WHERE id = ?', [id]);
-//         if (result.affectedRows === 0) {
-//             return res.status(404).json({ message: 'Contact not found' });
-//         }
-//         res.status(204).send();
-//     } catch (error) {
-//         console.error("Failed to delete contact:", error);
-//         res.status(500).json({ message: "Server error" });
-//     }
-// });
 
 
 

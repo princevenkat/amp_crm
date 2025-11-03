@@ -13,6 +13,14 @@ export const ContactsView: React.FC = () => {
   const [contactToEdit, setContactToEdit] = useState<Contact | null>(null);
 
 
+  const lenders = contacts.filter(c => c.type === 'Lender');
+  const solicitors = contacts.filter(c => c.type === 'Solicitor');
+  const accountants = contacts.filter(c => c.type === 'Accountant');
+  const surveyors = contacts.filter(c => c.type === 'Surveyor');
+  const estateAgents = contacts.filter(c => c.type === 'EstateAgent');
+
+
+
   const filteredContacts = useMemo(() => {
     return contacts.filter(contact =>
       contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -32,8 +40,8 @@ export const ContactsView: React.FC = () => {
   };
 
   const handleCloseModal = () => {
-      setContactToEdit(null);
-      setIsModalOpen(false);
+    setContactToEdit(null);
+    setIsModalOpen(false);
   };
 
   const handleSaveContact = async (contactData: Omit<Contact, 'id'>) => {
@@ -48,8 +56,8 @@ export const ContactsView: React.FC = () => {
   return (
     <div className="p-4 sm:p-8">
       <Modal title={contactToEdit ? "Edit Contact" : "Create New Contact"} isOpen={isModalOpen} onClose={handleCloseModal}>
-        <NewContactForm 
-          onSubmit={handleSaveContact} 
+        <NewContactForm
+          onSubmit={handleSaveContact}
           onCancel={handleCloseModal}
           initialData={contactToEdit}
         />
@@ -67,7 +75,7 @@ export const ContactsView: React.FC = () => {
               className="w-full bg-surface border border-gray-200 rounded-lg py-2 pl-10 pr-4 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
           </div>
-          <button 
+          <button
             onClick={handleOpenCreateModal}
             className="flex items-center justify-center gap-2 bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-md transition-colors"
           >
@@ -100,10 +108,10 @@ export const ContactsView: React.FC = () => {
                 <td className="px-6 py-4">{contact.email}</td>
                 <td className="px-6 py-4">{contact.phone}</td>
                 <td className="px-6 py-4">
-                    <div className="flex items-center gap-4">
-                        <button onClick={() => handleOpenEditModal(contact)} className="text-text-secondary hover:text-secondary">{EditIcon}</button>
-                        <button onClick={() => deleteContact(contact.id)} className="text-text-secondary hover:text-danger">{MinusIcon}</button>
-                    </div>
+                  <div className="flex items-center gap-4">
+                    <button onClick={() => handleOpenEditModal(contact)} className="text-text-secondary hover:text-secondary">{EditIcon}</button>
+                    <button onClick={() => deleteContact(contact.id)} className="text-text-secondary hover:text-danger">{MinusIcon}</button>
+                  </div>
                 </td>
               </tr>
             ))}

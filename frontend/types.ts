@@ -29,7 +29,7 @@ export enum ContactType {
   Solicitor = "Solicitor",
   Accountant = "Accountant",
   Surveyor = "Surveyor",
-  Other = "Other",
+  EstateAgent = "Estate Agent",
 }
 
 export interface Applicant {
@@ -330,6 +330,7 @@ export interface DataContextType {
     updatedData: Partial<Contact>
   ) => Promise<void>;
   deleteContact: (contactId: string) => Promise<boolean>;
+  getContactsByType: (type: ContactType) => Contact[];
   proposals: Proposal[];
   addProposal: (proposal: Omit<Proposal, "id">) => Promise<void>;
   emailTemplates: EmailTemplate[];

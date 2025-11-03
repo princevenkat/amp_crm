@@ -9,6 +9,7 @@ import { NewTaskForm } from '../components/forms/NewTaskForm';
 import { PlusIcon, SearchIcon, MinusIcon, EditIcon } from '../components/ui/Icons';
 import { ContactType, TaskStatus, UserRole } from '../types';
 
+
 import { toast, Toaster, ToastBar } from 'react-hot-toast';
 
 const emptyApplicant: Applicant = {
@@ -187,6 +188,13 @@ const FormSection: React.FC<{ title: string; children: React.ReactNode }> = ({ t
     </div>
 );
 
+const FormSectionNew: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+    <div className="mt-6">
+        <h4 className="text-md font-semibold text-text-primary border-b pb-2 mb-4">{title}</h4>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-x-8 gap-y-4 text-sm">{children}</div>
+    </div>
+);
+
 const ProductView: React.FC<{
     productDetails: ProductDetails;
     propertyValue: number;
@@ -195,6 +203,15 @@ const ProductView: React.FC<{
     onSubFieldChange: (section: Exclude<keyof ProductDetails, 'businessWritten'>, field: string, value: any) => void;
     advisors: string[];
 }> = ({ productDetails, propertyValue, isEditing, onChange, onSubFieldChange, advisors }) => {
+
+    const { getContactsByType } = useContext(DataContext)
+
+    const lenders = getContactsByType(ContactType.Lender);
+    const solicitors = getContactsByType(ContactType.Solicitor);
+    const accountants = getContactsByType(ContactType.Accountant);
+    const surveyors = getContactsByType(ContactType.Surveyor);
+    const estateAgents = getContactsByType(ContactType.EstateAgent);
+
 
     const [directors, setDirectors] = useState<string[]>(productDetails.limitedCompany?.directors || ['']);
 
@@ -279,9 +296,34 @@ const ProductView: React.FC<{
                         <label className="font-semibold text-text-secondary">Date Offered</label>
                         <input disabled={!isEditing} type="date" value={productDetails.mortgage?.dateOffered || ''} onChange={(e) => onSubFieldChange('mortgage', 'dateOffered', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
                     </div>
-                    <div>
+                    {/* <div>
                         <label className="font-semibold text-text-secondary">Lender</label>
                         <input disabled={!isEditing} type="text" value={productDetails.mortgage?.lender || ''} onChange={(e) => onSubFieldChange('mortgage', 'lender', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                    </div> */}
+                    <div>
+                        <label className="font-semibold text-text-secondary">Lender</label>
+                        {isEditing ? (
+                            <select
+                                disabled={!isEditing}
+                                value={productDetails.mortgage?.lender || ''}
+                                onChange={(e) => {
+                                    const selected = lenders.find(l => l.id === e.target.value);
+                                    if (selected) {
+                                        onSubFieldChange('mortgage', 'lender', selected.id);
+                                        onSubFieldChange('mortgage', 'lenderName', selected.name); // optional extra field if you want display name
+                                        onSubFieldChange('mortgage', 'lenderReference', selected.company || '');
+                                    }
+                                }}
+                                className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100"
+                            >
+                                <option value="">Select Lender...</option>
+                                {lenders.map(l => (
+                                    <option key={l.id} value={l.id}>{l.name} ({l.company})</option>
+                                ))}
+                            </select>
+                        ) : (
+                            <p className="mt-1 p-2">{lenders.find(l => l.id === productDetails.mortgage?.lender)?.name || 'Not Assigned'}</p>
+                        )}
                     </div>
                     <div>
                         <label className="font-semibold text-text-secondary">Lender Reference</label>
@@ -457,7 +499,159 @@ const ProductView: React.FC<{
                 </FormSection>
             )}
 
-            <FormSection title="Professional Contacts">
+            <FormSectionNew title="Professional Contacts">
+
+
+                {/* SOLICITOR */}
+                <div className="border p-4 rounded-md">
+                    <h5 className="font-bold mb-2">Solicitor</h5>
+                    {isEditing ? (
+                        <select
+                            value={productDetails.solicitor?.id || ''}
+                            onChange={(e) => {
+                                const selected = solicitors.find(s => s.id === e.target.value);
+                                if (selected) {
+                                    onSubFieldChange('solicitor', 'id', selected.id);
+                                    onSubFieldChange('solicitor', 'name', selected.name);
+                                    onSubFieldChange('solicitor', 'company', selected.company || '');
+                                    onSubFieldChange('solicitor', 'email', selected.email || '');
+                                    onSubFieldChange('solicitor', 'phone', selected.phone || '');
+                                }
+                            }}
+                            className="w-full p-2 border rounded-md bg-surface text-text-primary"
+                        >
+                            <option value="">Select Solicitor...</option>
+                            {solicitors.map(s => (
+                                <option key={s.id} value={s.id}>
+                                    {s.name} {s.company ? `(${s.company})` : ''}
+                                </option>
+                            ))}
+                        </select>
+                    ) : (
+                        <p className="p-2">
+                            {
+                                solicitors.find(s => s.id === productDetails.solicitor?.id)?.name ||
+                                productDetails.solicitor?.name ||
+                                'Not Assigned'
+                            }
+                        </p>
+                    )}
+                </div>
+
+                {/* ACCOUNTANT */}
+                <div className="border p-4 rounded-md">
+                    <h5 className="font-bold mb-2">Accountant</h5>
+                    {isEditing ? (
+                        <select
+                            value={productDetails.accountant?.id || ''}
+                            onChange={(e) => {
+                                const selected = accountants.find(a => a.id === e.target.value);
+                                if (selected) {
+                                    onSubFieldChange('accountant', 'id', selected.id);
+                                    onSubFieldChange('accountant', 'name', selected.name);
+                                    onSubFieldChange('accountant', 'company', selected.company || '');
+                                    onSubFieldChange('accountant', 'email', selected.email || '');
+                                    onSubFieldChange('accountant', 'phone', selected.phone || '');
+                                }
+                            }}
+                            className="w-full p-2 border rounded-md bg-surface text-text-primary"
+                        >
+                            <option value="">Select Accountant...</option>
+                            {accountants.map(a => (
+                                <option key={a.id} value={a.id}>
+                                    {a.name} {a.company ? `(${a.company})` : ''}
+                                </option>
+                            ))}
+                        </select>
+                    ) : (
+                        <p className="p-2">
+                            {
+                                accountants.find(a => a.id === productDetails.accountant?.id)?.name ||
+                                productDetails.accountant?.name ||
+                                'Not Assigned'
+                            }
+                        </p>
+                    )}
+                </div>
+
+                {/* SURVEYOR */}
+                <div className="border p-4 rounded-md">
+                    <h5 className="font-bold mb-2">Surveyor</h5>
+                    {isEditing ? (
+                        <select
+                            value={productDetails.surveyor?.id || ''}
+                            onChange={(e) => {
+                                const selected = surveyors.find(s => s.id === e.target.value);
+                                if (selected) {
+                                    onSubFieldChange('surveyor', 'id', selected.id);
+                                    onSubFieldChange('surveyor', 'name', selected.name);
+                                    onSubFieldChange('surveyor', 'company', selected.company || '');
+                                    onSubFieldChange('surveyor', 'email', selected.email || '');
+                                    onSubFieldChange('surveyor', 'phone', selected.phone || '');
+                                }
+                            }}
+                            className="w-full p-2 border rounded-md bg-surface text-text-primary"
+                        >
+                            <option value="">Select Surveyor...</option>
+                            {surveyors.map(s => (
+                                <option key={s.id} value={s.id}>
+                                    {s.name} {s.company ? `(${s.company})` : ''}
+                                </option>
+                            ))}
+                        </select>
+                    ) : (
+                        <p className="p-2">
+                            {
+                                surveyors.find(s => s.id === productDetails.surveyor?.id)?.name ||
+                                productDetails.surveyor?.name ||
+                                'Not Assigned'
+                            }
+                        </p>
+                    )}
+                </div>
+
+                {/* ESTATE AGENT */}
+                <div className="border p-4 rounded-md">
+                    <h5 className="font-bold mb-2">Estate Agent</h5>
+                    {isEditing ? (
+                        <select
+                            value={productDetails.estateAgent?.id || ''}
+                            onChange={(e) => {
+                                const selected = estateAgents.find(ea => ea.id === e.target.value);
+                                if (selected) {
+                                    onSubFieldChange('estateAgent', 'id', selected.id);
+                                    onSubFieldChange('estateAgent', 'companyName', selected.company || '');
+                                    onSubFieldChange('estateAgent', 'personDealingWith', selected.name || '');
+                                    onSubFieldChange('estateAgent', 'address', selected.address || '');
+                                    onSubFieldChange('estateAgent', 'phone', selected.phone || '');
+                                }
+                            }}
+                            className="w-full p-2 border rounded-md bg-surface text-text-primary"
+                        >
+                            <option value="">Select Estate Agent...</option>
+                            {estateAgents.map(ea => (
+                                <option key={ea.id} value={ea.id}>
+                                    {ea.company} ({ea.name})
+                                </option>
+                            ))}
+                        </select>
+                    ) : (
+                        <p className="p-2">
+                            {
+                                estateAgents.find(ea => ea.id === productDetails.estateAgent?.id)?.company ||
+                                productDetails.estateAgent?.companyName ||
+                                'Not Assigned'
+                            }
+                        </p>
+                    )}
+                </div>
+
+
+            </FormSectionNew>
+
+
+
+            {/* <FormSection title="Professional Contacts">
                 <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-4 gap-4 border p-4 rounded-md">
                     <h5 className="col-span-full font-bold">Solicitor</h5>
                     <input disabled={!isEditing} placeholder="Name" value={productDetails.solicitor?.name || ''} onChange={(e) => onSubFieldChange('solicitor', 'name', e.target.value)} className="w-full p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
@@ -486,7 +680,7 @@ const ProductView: React.FC<{
                     <input disabled={!isEditing} placeholder="Address" value={productDetails.estateAgent?.address || ''} onChange={(e) => onSubFieldChange('estateAgent', 'address', e.target.value)} className="w-full p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100 md:col-span-2" />
                     <input disabled={!isEditing} placeholder="Phone" value={productDetails.estateAgent?.phone || ''} onChange={(e) => onSubFieldChange('estateAgent', 'phone', e.target.value)} className="w-full p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
                 </div>
-            </FormSection>
+            </FormSection> */}
 
             <FormSection title="Limited Company Details">
                 <div>
@@ -957,6 +1151,9 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
     const [editedClient, setEditedClient] = useState<Client>(client);
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
     const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+
+
+
 
     // useEffect(() => {
     //     setEditedClient(client);

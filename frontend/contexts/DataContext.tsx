@@ -1,5 +1,5 @@
 import React, { createContext, useState, ReactNode, useEffect } from 'react';
-import type { DataContextType, Client, Task, Contact, Proposal, EmailTemplate, LedgerEntry, PasswordEntry, TeamMember } from '../types';
+import type { DataContextType, ContactType, Client, Task, Contact, Proposal, EmailTemplate, LedgerEntry, PasswordEntry, TeamMember } from '../types';
 import { View } from '../types';
 import * as api from '../services/apiService';
 
@@ -207,6 +207,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setContacts(prev => prev.map(contact => contact.id === contactId ? updatedContact : contact));
     };
 
+
+
+
+    // Add this helper to the value: DataContextType (or below your functions)
+
+    // const getContactsByType = (type: string) => {
+    //     return contacts.filter(c => c.type === type);
+    // };
+    const getContactsByType = (type: ContactType) => {
+        return contacts.filter((c) => c.type === type);
+    };
+
     const deleteContact = async (contactId: string): Promise<boolean> => {
         if (window.confirm('Are you sure you want to delete this contact?')) {
             await api.deleteContact(contactId);
@@ -301,6 +313,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addContact,
         updateContact,
         deleteContact,
+        getContactsByType,
         proposals,
         addProposal,
         emailTemplates,
