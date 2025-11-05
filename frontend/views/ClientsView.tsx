@@ -661,114 +661,7 @@ const ProductView: React.FC<{
     );
 };
 
-// const DocumentsView: React.FC<{ client: Client }> = ({ client }) => {
-//     const [documents, setDocuments] = useState<Document[]>(client.documents || []);
-//     const fileInputRef = useRef<HTMLInputElement>(null);
 
-//     // const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-//     //     const file = event.target.files?.[0];
-//     //     if (file) {
-//     //         const newDocument: Document = {
-//     //             id: `doc-${Date.now()}`,
-//     //             fileName: file.name,
-//     //             fileType: file.name.split('.').pop() || 'file',
-//     //             uploadDate: new Date().toISOString().split('T')[0],
-//     //             url: '#', // Placeholder URL
-//     //         };
-//     //         setDocuments(prev => [...prev, newDocument]);
-//     //         alert(`${file.name} uploaded successfully!`);
-//     //     }
-//     // };
-//     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-//         const file = event.target.files?.[0];
-//         if (!file) return;
-
-//         try {
-//             const formData = new FormData();
-//             formData.append('document', file);
-
-//             // Get the JWT from localStorage (or wherever you store it)
-//             const token = localStorage.getItem('token');
-//             if (!token) throw new Error('No token found');
-
-//             const response = await fetch(`/api/clients/${client.id}/documents`, {
-//                 method: 'POST',
-//                 body: formData,
-//                 headers: {
-//                     Authorization: `Bearer ${token}`, // <-- send token here
-//                 },
-//             });
-
-//             if (!response.ok) throw new Error('Upload failed');
-
-//             const savedDoc: Document = await response.json();
-//             setDocuments(prev => [...prev, savedDoc]);
-//             alert(`${file.name} uploaded successfully!`);
-//         } catch (err) {
-//             console.error(err);
-//             alert('Failed to upload document.');
-//         }
-//     };
-
-
-//     const handleDelete = (docId: string) => {
-//         if (window.confirm("Are you sure you want to delete this document?")) {
-//             setDocuments(prev => prev.filter(doc => doc.id !== docId));
-//         }
-//     };
-
-//     return (
-//         <div>
-//             <div className="flex justify-end mb-4">
-//                 <input
-//                     type="file"
-//                     ref={fileInputRef}
-//                     onChange={handleFileUpload}
-//                     className="hidden"
-//                 />
-//                 <button
-//                     onClick={() => fileInputRef.current?.click()}
-//                     className="flex items-center gap-2 bg-secondary hover:bg-primary text-white font-semibold py-2 px-4 rounded-md transition-colors text-sm"
-//                 >
-//                     {PlusIcon}
-//                     <span>Upload Document</span>
-//                 </button>
-//             </div>
-//             <div className="overflow-x-auto border rounded-lg">
-//                 <table className="min-w-full text-sm text-left">
-//                     <thead className="bg-gray-50">
-//                         <tr>
-//                             <th className="px-4 py-2 font-medium text-text-secondary">File Name</th>
-//                             <th className="px-4 py-2 font-medium text-text-secondary">Type</th>
-//                             <th className="px-4 py-2 font-medium text-text-secondary">Upload Date</th>
-//                             <th className="px-4 py-2 font-medium text-text-secondary">Actions</th>
-//                         </tr>
-//                     </thead>
-//                     <tbody>
-//                         {documents.map(doc => (
-//                             <tr key={doc.id} className="border-t">
-//                                 <td className="px-4 py-2 font-semibold text-text-primary">{doc.fileName}</td>
-//                                 <td className="px-4 py-2">
-//                                     <span className="bg-gray-500/10 text-gray-600 px-2 py-0.5 text-xs rounded-full uppercase">{doc.fileType}</span>
-//                                 </td>
-//                                 <td className="px-4 py-2 text-text-secondary">{doc.uploadDate}</td>
-//                                 <td className="px-4 py-2 space-x-2">
-//                                     <button onClick={() => alert("Viewing document...")} className="text-secondary hover:underline font-semibold">View</button>
-//                                     <button onClick={() => handleDelete(doc.id)} className="text-danger hover:underline font-semibold">Delete</button>
-//                                 </td>
-//                             </tr>
-//                         ))}
-//                         {documents.length === 0 && (
-//                             <tr className="border-t">
-//                                 <td colSpan={4} className="text-center py-8 text-text-secondary">No documents uploaded.</td>
-//                             </tr>
-//                         )}
-//                     </tbody>
-//                 </table>
-//             </div>
-//         </div>
-//     );
-// };
 
 
 const DocumentsView: React.FC<{ client: Client }> = ({ client }) => {
@@ -835,19 +728,47 @@ const DocumentsView: React.FC<{ client: Client }> = ({ client }) => {
         }
     };
 
-    const handleDelete = async (docId: string) => {
+    // const handleDelete = async (docId: string) => {
+    //     if (!window.confirm("Are you sure you want to delete this document?")) return;
+
+    //     try {
+    //         const token = localStorage.getItem('authToken'); // make sure to use the correct key
+    //         if (!token) throw new Error('No token found');
+
+    //         const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/clients/documents/${docId}`, {
+    //             method: 'DELETE',
+    //             headers: {
+    //                 'Authorization': `Bearer ${token}`,
+    //             },
+    //         });
+
+    //         if (!response.ok) throw new Error('Failed to delete document');
+
+    //         // Remove from local state
+    //         setDocuments(prev => prev.filter(doc => doc.id !== docId));
+    //         alert('Document deleted successfully!');
+    //     } catch (err) {
+    //         console.error(err);
+    //         alert('Failed to delete document.');
+    //     }
+    // };
+
+    const handleDelete = async (clientId: string, docId: string) => {
         if (!window.confirm("Are you sure you want to delete this document?")) return;
 
         try {
-            const token = localStorage.getItem('authToken'); // make sure to use the correct key
+            const token = localStorage.getItem('authToken');
             if (!token) throw new Error('No token found');
 
-            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/clients/documents/${docId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+            const response = await fetch(
+                `${import.meta.env.VITE_API_BASE_URL}/clients/${clientId}/documents/${docId}`,
+                {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                }
+            );
 
             if (!response.ok) throw new Error('Failed to delete document');
 
@@ -908,7 +829,12 @@ const DocumentsView: React.FC<{ client: Client }> = ({ client }) => {
                                     >
                                         View
                                     </a>
-                                    <button onClick={() => handleDelete(doc.id)} className="text-danger hover:underline font-semibold">Delete</button>
+                                    <button
+                                        onClick={() => handleDelete(client.id, doc.id)}
+                                        className="text-danger hover:underline font-semibold"
+                                    >
+                                        Delete
+                                    </button>
                                 </td>
                             </tr>
                         ))}
@@ -1551,13 +1477,13 @@ export const ClientsView: React.FC = () => {
                             className="bg-surface border border-gray-200 rounded-lg py-2 pl-10 pr-4 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 w-full"
                         />
                     </div>
-                    <button
+                    {/* <button
                         onClick={() => setIsCreatingClient(true)}
                         className="flex items-center justify-center gap-2 bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-md transition-colors"
                     >
                         {PlusIcon}
                         <span>Create Client</span>
-                    </button>
+                    </button> */}
                 </div>
             </div>
             <div className="bg-surface rounded-lg shadow-sm border border-gray-200 overflow-x-auto">

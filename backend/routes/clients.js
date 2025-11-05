@@ -3,13 +3,18 @@ import { v4 as uuidv4 } from 'uuid';
 import db from '../mysql-connector.js';
 import { protect } from '../middleware/authMiddleware.js';
 
+import { Client } from 'basic-ftp'; // Import the FTP client
 
 import multer from 'multer';
 import path from 'path';  // <-- needed for file extensions
 import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
 import { put, del } from '@vercel/blob';
 
+import dotenv from "dotenv";
+dotenv.config();
 
 const router = express.Router();
 
@@ -93,65 +98,195 @@ const syncLedgerFromFees = async (connection, client) => {
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-// ----------------- Upload document to Vercel Blob -----------------
+
+
+// Hostinger FTP Connection Details
+const ftpClient = new Client();
+const FTP_CONFIG = {
+    host: process.env.FTP_HOST,
+    user: process.env.FTP_USER,
+    password: process.env.FTP_PASSWORD,
+    secure: process.env.FTP_SECURE === 'true', // converts "true"/"false" to boolean
+};
+
+// Upload route for documents
 router.post('/:id/documents', protect, upload.single('document'), async (req, res) => {
     const { id } = req.params;
     if (!req.file) return res.status(400).json({ message: 'No file uploaded.' });
 
-    try {
-        // Upload file buffer to Vercel Blob
-        const file = req.file;
-        const blobKey = `clients/${id}/${Date.now()}-${file.originalname}`;
+    const file = req.file;
+    const fileName = `${Date.now()}-${file.originalname}`; // Create a unique file name
 
-        const blob = await put(blobKey, file.buffer, {
-            access: 'public', // or 'private' if you want signed URLs
-            contentType: file.mimetype,
+    // Compute __dirname in ES Module
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+
+    // Ensure the temp directory exists
+    const tempDir = path.join(__dirname, 'temp');
+    if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true }); // Create the temp directory if it doesn't exist
+    }
+
+    const tempFilePath = path.join(tempDir, fileName);
+
+    // Write the file to the temporary location on the server
+    fs.writeFileSync(tempFilePath, file.buffer);
+
+    // FTP client to handle the upload
+    // const ftpClient = new FTPClient();
+
+    try {
+        // Connect to the FTP server
+        await ftpClient.access({
+            host: FTP_CONFIG.host,
+            user: FTP_CONFIG.user,
+            password: FTP_CONFIG.password,
+            secure: FTP_CONFIG.secure, // Use FTP secure (FTPS) if required
         });
 
+        // Ensure the remote directory exists, then upload the file
+        const remoteDir = `/crm_uploads/clients/${id}`;
+        await ftpClient.ensureDir(remoteDir); // Ensure the directory exists on the FTP server
+
+        // Upload the file to the FTP server
+        await ftpClient.uploadFrom(tempFilePath, `${remoteDir}/${fileName}`);
+
+        // Clean up the temporary file after the upload
+        fs.unlinkSync(tempFilePath);
+
+        // Save the file information in the database
         const docId = uuidv4();
+        const fileUrl = `https://advancemortgages.co.uk/crm_uploads/clients/${id}/${fileName}`; // Adjust the URL according to your domain and folder structure
 
         await db.query(
             'INSERT INTO documents (id, clientId, filename, filetype, uploadDate, url) VALUES (?, ?, ?, ?, ?, ?)',
-            [docId, id, file.originalname, path.extname(file.originalname).slice(1), new Date(), blob.url]
+            [docId, id, file.originalname, path.extname(file.originalname).slice(1), new Date(), fileUrl]
         );
 
+        // Send the response with the document details
         res.status(201).json({
             id: docId,
             clientId: id,
             fileName: file.originalname,
             fileType: path.extname(file.originalname).slice(1),
             uploadDate: new Date().toISOString().split('T')[0],
-            url: blob.url,
+            url: fileUrl,
         });
+
     } catch (err) {
-        console.error('Upload error:', err);
+        console.error('Error uploading file to Hostinger FTP:', err);
         res.status(500).json({ message: 'Failed to upload document.' });
+    } finally {
+        // Always close the FTP connection
+        ftpClient.close();
     }
 });
 
-// ----------------- Delete document from Vercel Blob -----------------
-router.delete('/documents/:id', protect, async (req, res) => {
-    const { id } = req.params;
+// 🧹 DELETE document route (Fixed)
+router.delete("/:clientId/documents/:docId", protect, async (req, res) => {
+    const { clientId, docId } = req.params;
+    // const ftpClient = new FTPClient();
 
     try {
-        // Get file URL from DB
-        const [rows] = await db.query('SELECT url FROM documents WHERE id = ?', [id]);
-        if (!rows.length) return res.status(404).json({ message: 'Document not found' });
+        // 1️⃣ Get document details from DB
+        const [rows] = await db.query("SELECT * FROM documents WHERE id = ?", [docId]);
+        if (!rows.length) {
+            return res.status(404).json({ message: "Document not found" });
+        }
 
-        const fileUrl = rows[0].url;
+        const document = rows[0];
+        const fileName = document.url.split("/").pop(); // Extract file name
+        const remotePath = `/crm_uploads/clients/${clientId}/${fileName}`; // ✅ match upload path
 
-        // Delete file from Blob storage
-        await del(fileUrl);
+        // 2️⃣ Connect to FTP
+        await ftpClient.access({
+            host: FTP_CONFIG.host,
+            user: FTP_CONFIG.user,
+            password: FTP_CONFIG.password,
+            secure: FTP_CONFIG.secure || false,
+        });
 
-        // Delete from DB
-        await db.query('DELETE FROM documents WHERE id = ?', [id]);
+        // 3️⃣ Try to remove file
+        try {
+            await ftpClient.remove(remotePath);
+            console.log(`✅ Deleted from FTP: ${remotePath}`);
+        } catch (ftpErr) {
+            console.warn(`⚠️ File not found on FTP:`, ftpErr.message);
+        }
 
-        res.json({ message: 'Document deleted successfully' });
+        // 4️⃣ Delete DB record
+        await db.query("DELETE FROM documents WHERE id = ?", [docId]);
+
+        res.json({ message: "Document deleted successfully" });
     } catch (err) {
-        console.error('Delete error:', err);
-        res.status(500).json({ message: 'Failed to delete document.' });
+        console.error("❌ Error deleting document:", err.message);
+        res.status(500).json({ message: "Failed to delete document", error: err.message });
+    } finally {
+        ftpClient.close();
     }
 });
+
+
+
+// ----------------- Upload document to Vercel Blob -----------------
+// router.post('/:id/documents', protect, upload.single('document'), async (req, res) => {
+//     const { id } = req.params;
+//     if (!req.file) return res.status(400).json({ message: 'No file uploaded.' });
+
+//     try {
+//         // Upload file buffer to Vercel Blob
+//         const file = req.file;
+//         const blobKey = `clients/${id}/${Date.now()}-${file.originalname}`;
+
+//         const blob = await put(blobKey, file.buffer, {
+//             access: 'public', // or 'private' if you want signed URLs
+//             contentType: file.mimetype,
+//         });
+
+//         const docId = uuidv4();
+
+//         await db.query(
+//             'INSERT INTO documents (id, clientId, filename, filetype, uploadDate, url) VALUES (?, ?, ?, ?, ?, ?)',
+//             [docId, id, file.originalname, path.extname(file.originalname).slice(1), new Date(), blob.url]
+//         );
+
+//         res.status(201).json({
+//             id: docId,
+//             clientId: id,
+//             fileName: file.originalname,
+//             fileType: path.extname(file.originalname).slice(1),
+//             uploadDate: new Date().toISOString().split('T')[0],
+//             url: blob.url,
+//         });
+//     } catch (err) {
+//         console.error('Upload error:', err);
+//         res.status(500).json({ message: 'Failed to upload document.' });
+//     }
+// });
+
+// ----------------- Delete document from Vercel Blob -----------------
+// router.delete('/documents/:id', protect, async (req, res) => {
+//     const { id } = req.params;
+
+//     try {
+//         // Get file URL from DB
+//         const [rows] = await db.query('SELECT url FROM documents WHERE id = ?', [id]);
+//         if (!rows.length) return res.status(404).json({ message: 'Document not found' });
+
+//         const fileUrl = rows[0].url;
+
+//         // Delete file from Blob storage
+//         await del(fileUrl);
+
+//         // Delete from DB
+//         await db.query('DELETE FROM documents WHERE id = ?', [id]);
+
+//         res.json({ message: 'Document deleted successfully' });
+//     } catch (err) {
+//         console.error('Delete error:', err);
+//         res.status(500).json({ message: 'Failed to delete document.' });
+//     }
+// });
 
 
 // Helper to format MySQL dates safely to 'YYYY-MM-DD'
