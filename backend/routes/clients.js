@@ -10,6 +10,7 @@ import path from 'path';  // <-- needed for file extensions
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import os from 'os';
 
 import { put, del } from '@vercel/blob';
 
@@ -109,61 +110,52 @@ const FTP_CONFIG = {
     secure: process.env.FTP_SECURE === 'true', // converts "true"/"false" to boolean
 };
 
-// Upload route for documents
+// ✅ Upload route for documents
 router.post('/:id/documents', protect, upload.single('document'), async (req, res) => {
     const { id } = req.params;
     if (!req.file) return res.status(400).json({ message: 'No file uploaded.' });
 
     const file = req.file;
-    const fileName = `${Date.now()}-${file.originalname}`; // Create a unique file name
+    const fileName = `${Date.now()}-${file.originalname}`;
 
-    // Compute __dirname in ES Module
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = dirname(__filename);
-
-    // Ensure the temp directory exists
-    const tempDir = path.join(__dirname, 'temp');
-    if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true }); // Create the temp directory if it doesn't exist
-    }
-
+    // ✅ Use system temp directory (always writable)
+    const tempDir = os.tmpdir();
     const tempFilePath = path.join(tempDir, fileName);
 
-    // Write the file to the temporary location on the server
+    // ✅ Write the file temporarily
     fs.writeFileSync(tempFilePath, file.buffer);
 
-    // FTP client to handle the upload
+    // ✅ Create new FTP client instance
     // const ftpClient = new FTPClient();
 
     try {
-        // Connect to the FTP server
+        // Connect to FTP
         await ftpClient.access({
             host: FTP_CONFIG.host,
             user: FTP_CONFIG.user,
             password: FTP_CONFIG.password,
-            secure: FTP_CONFIG.secure, // Use FTP secure (FTPS) if required
+            secure: FTP_CONFIG.secure,
         });
 
-        // Ensure the remote directory exists, then upload the file
+        // ✅ Ensure remote directory exists
         const remoteDir = `/crm_uploads/clients/${id}`;
-        await ftpClient.ensureDir(remoteDir); // Ensure the directory exists on the FTP server
+        await ftpClient.ensureDir(remoteDir);
 
-        // Upload the file to the FTP server
+        // ✅ Upload file to FTP server
         await ftpClient.uploadFrom(tempFilePath, `${remoteDir}/${fileName}`);
 
-        // Clean up the temporary file after the upload
+        // ✅ Clean up temp file
         fs.unlinkSync(tempFilePath);
 
-        // Save the file information in the database
+        // ✅ Save record to DB
         const docId = uuidv4();
-        const fileUrl = `https://advancemortgages.co.uk/crm_uploads/clients/${id}/${fileName}`; // Adjust the URL according to your domain and folder structure
+        const fileUrl = `https://advancemortgages.co.uk/crm_uploads/clients/${id}/${fileName}`;
 
         await db.query(
             'INSERT INTO documents (id, clientId, filename, filetype, uploadDate, url) VALUES (?, ?, ?, ?, ?, ?)',
             [docId, id, file.originalname, path.extname(file.originalname).slice(1), new Date(), fileUrl]
         );
 
-        // Send the response with the document details
         res.status(201).json({
             id: docId,
             clientId: id,
@@ -174,10 +166,9 @@ router.post('/:id/documents', protect, upload.single('document'), async (req, re
         });
 
     } catch (err) {
-        console.error('Error uploading file to Hostinger FTP:', err);
+        console.error('❌ Error uploading file to Hostinger FTP:', err);
         res.status(500).json({ message: 'Failed to upload document.' });
     } finally {
-        // Always close the FTP connection
         ftpClient.close();
     }
 });
