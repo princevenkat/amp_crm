@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import toast from 'react-hot-toast';
 
 
+
+
 const NotesView: React.FC<{
     notes: Note[];
     onChange: (notes: Note[]) => void;
@@ -156,6 +158,8 @@ const ApplicantDetailsForm: React.FC<{ applicant: Applicant; onChange: (e: React
     );
 };
 
+
+
 const EditLeadView: React.FC<{ lead: Client; onSave: (updatedLead: Client) => void; onCancel: () => void; }> = ({ lead, onSave, onCancel }) => {
     const [applicants, setApplicants] = useState<Applicant[]>(lead.applicants);
     const [notes, setNotes] = useState<Note[]>(lead.notes || []);
@@ -247,8 +251,10 @@ const PipelineTableRow: React.FC<{
     client: Client;
     onEdit: (client: Client) => void;
     onConvert: (client: Client) => void;
-}> = ({ client, onEdit, onConvert }) => {
+    onDelete: (client: Client) => void;
+}> = ({ client, onEdit, onConvert, onDelete }) => {
     const applicant = client.applicants?.[0];
+
 
 
     return (
@@ -263,6 +269,12 @@ const PipelineTableRow: React.FC<{
                 <div className="flex gap-4">
                     <button onClick={() => onEdit(client)} className="text-sm font-semibold text-secondary hover:underline">Edit</button>
                     <button onClick={() => onConvert(client)} className="text-sm font-semibold text-primary hover:underline">Convert to Client</button>
+                    <button
+                        onClick={() => onDelete(client)}
+                        className="text-sm font-semibold text-danger hover:underline"
+                    >
+                        Delete
+                    </button>
                 </div>
             </td>
         </tr>
@@ -271,7 +283,7 @@ const PipelineTableRow: React.FC<{
 
 
 export const DealsView: React.FC = () => {
-    const { clients, addClient, updateClient } = useContext(DataContext);
+    const { clients, addClient, updateClient, deleteClient } = useContext(DataContext);
     const [searchTerm, setSearchTerm] = useState('');
     const [isCreatingEnquiry, setIsCreatingEnquiry] = useState(false);
     const [leadToEdit, setLeadToEdit] = useState<Client | null>(null);
@@ -317,78 +329,30 @@ export const DealsView: React.FC = () => {
         }
     };
 
-    // const handleConvertToClient = async (clientToConvert: Client) => {
-    //     if (!window.confirm(
-    //         `Are you sure you want to convert "${clientToConvert.name}" to a full client? This will move them from the pipeline to the main client list.`
-    //     )) return;
-
-    //     try {
-    //         const updatedData: Partial<Client> = { status: 'Active' };
-    //         if (clientToConvert.caseStatus === 'Initial Enquiry') {
-    //             updatedData.caseStatus = 'AIP';
+    // const handleDeleteLead = async (clientToDelete: Client) => {
+    //     if (window.confirm(`Are you sure you want to delete "${clientToDelete.name}"?`)) {
+    //         try {
+    //             await deleteClient(clientToDelete.id);
+    //             toast.success(`Client "${clientToDelete.name}" deleted successfully.`);
+    //         } catch (error) {
+    //             console.error(error);
+    //             toast.error('Failed to delete client.');
     //         }
-
-    //         // Call context update
-    //         const updatedClient = await updateClient(clientToConvert.id, updatedData);
-
-    //         // Update local clients state so pipeline removes the converted client
-    //         // Assuming `clients` is coming from DataContext
-    //         // You can filter out converted client from local leads
-    //         toast.success(`${updatedClient.name} converted to client successfully!`, {
-    //             position: 'bottom-center',
-    //         });
-    //     } catch (error) {
-    //         console.error(error);
-    //         toast.error(`Failed to convert ${clientToConvert.name}.`, {
-    //             position: 'bottom-center',
-    //         });
     //     }
     // };
+    const handleDeleteLead = async (clientToDelete: Client) => {
+        // Confirm deletion only once, not twice
+        if (window.confirm(`Are you sure you want to delete "${clientToDelete.name}"?`)) {
+            try {
+                await deleteClient(clientToDelete.id);  // Calling the function that triggers the backend request
+                toast.success(`Client "${clientToDelete.name}" deleted successfully.`);
+            } catch (error) {
+                console.error(error);
+                toast.error('Failed to delete client.');
+            }
+        }
+    };
 
-    // const handleConvertToClient = async (leadToConvert: Client) => {
-    //     if (!window.confirm(
-    //         `Are you sure you want to convert "${leadToConvert.name}" to a full client?`
-    //     )) return;
-
-    //     try {
-    //         // Construct a full client object from lead
-    //         const newClient: Client = {
-    //             ...leadToConvert,
-    //             status: 'Active',
-    //             caseStatus: leadToConvert.caseStatus === 'Initial Enquiry' ? 'AIP' : leadToConvert.caseStatus,
-    //             applicants: leadToConvert.applicants || [{
-    //                 firstName: leadToConvert.name.split(' ')[0] || '',
-    //                 surname: leadToConvert.name.split(' ')[1] || '',
-    //                 mobileNumber: leadToConvert.phone || '',
-    //                 email: leadToConvert.email || '',
-    //                 title: '',
-    //                 gender: '',
-    //                 dob: '',
-    //                 homeTelephone: '',
-    //                 currentAddress: '',
-    //                 noOfDependents: 0,
-    //                 nationality: '',
-    //                 middleName: '',
-    //             }],
-    //             notes: leadToConvert.notes || [],
-    //         };
-
-
-    //         // Add to client list
-    //         await addClient(newClient);
-
-    //         // Optionally remove from leads array
-    //         // Depends on whether leads are stored separately
-    //         toast.success(`${newClient.name} converted to client successfully!`, {
-    //             position: 'bottom-center',
-    //         });
-    //     } catch (error) {
-    //         console.error(error);
-    //         toast.error(`Failed to convert ${leadToConvert.name}.`, {
-    //             position: 'bottom-center',
-    //         });
-    //     }
-    // };
 
     if (leadToEdit) {
         return (
@@ -452,6 +416,7 @@ export const DealsView: React.FC = () => {
                                 client={client}
                                 onEdit={setLeadToEdit}
                                 onConvert={handleConvertToClient}
+                                onDelete={handleDeleteLead}
                             />
                         ))}
                     </tbody>

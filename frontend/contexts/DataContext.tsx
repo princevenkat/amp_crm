@@ -166,13 +166,21 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         );
     };
 
+    // const deleteClient = async (clientId: string): Promise<boolean> => {
+    //     if (window.confirm('Are you sure you want to delete this client?')) {
+    //         await api.deleteClient(clientId);
+    //         setClients(prev => prev.filter(client => client.id !== clientId));
+    //         return true;
+    //     }
+    //     return false;
+    // };
+
+
     const deleteClient = async (clientId: string): Promise<boolean> => {
-        if (window.confirm('Are you sure you want to delete this client?')) {
-            await api.deleteClient(clientId);
-            setClients(prev => prev.filter(client => client.id !== clientId));
-            return true;
-        }
-        return false;
+        // Remove the window.confirm here, as the parent component already handles the confirmation.
+        await api.deleteClient(clientId);
+        setClients(prev => prev.filter(client => client.id !== clientId));
+        return true;
     };
 
 

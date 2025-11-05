@@ -610,39 +610,6 @@ const ProductView: React.FC<{
 
             </FormSectionNew>
 
-
-
-            {/* <FormSection title="Professional Contacts">
-                <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-4 gap-4 border p-4 rounded-md">
-                    <h5 className="col-span-full font-bold">Solicitor</h5>
-                    <input disabled={!isEditing} placeholder="Name" value={productDetails.solicitor?.name || ''} onChange={(e) => onSubFieldChange('solicitor', 'name', e.target.value)} className="w-full p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
-                    <input disabled={!isEditing} placeholder="Company" value={productDetails.solicitor?.company || ''} onChange={(e) => onSubFieldChange('solicitor', 'company', e.target.value)} className="w-full p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
-                    <input disabled={!isEditing} placeholder="Email" value={productDetails.solicitor?.email || ''} onChange={(e) => onSubFieldChange('solicitor', 'email', e.target.value)} className="w-full p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
-                    <input disabled={!isEditing} placeholder="Phone" value={productDetails.solicitor?.phone || ''} onChange={(e) => onSubFieldChange('solicitor', 'phone', e.target.value)} className="w-full p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
-                </div>
-                <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-4 gap-4 border p-4 rounded-md">
-                    <h5 className="col-span-full font-bold">Accountant</h5>
-                    <input disabled={!isEditing} placeholder="Name" value={productDetails.accountant?.name || ''} onChange={(e) => onSubFieldChange('accountant', 'name', e.target.value)} className="w-full p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
-                    <input disabled={!isEditing} placeholder="Company" value={productDetails.accountant?.company || ''} onChange={(e) => onSubFieldChange('accountant', 'company', e.target.value)} className="w-full p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
-                    <input disabled={!isEditing} placeholder="Email" value={productDetails.accountant?.email || ''} onChange={(e) => onSubFieldChange('accountant', 'email', e.target.value)} className="w-full p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
-                    <input disabled={!isEditing} placeholder="Phone" value={productDetails.accountant?.phone || ''} onChange={(e) => onSubFieldChange('accountant', 'phone', e.target.value)} className="w-full p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
-                </div>
-                <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-4 gap-4 border p-4 rounded-md">
-                    <h5 className="col-span-full font-bold">Surveyor</h5>
-                    <input disabled={!isEditing} placeholder="Name" value={productDetails.surveyor?.name || ''} onChange={(e) => onSubFieldChange('surveyor', 'name', e.target.value)} className="w-full p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
-                    <input disabled={!isEditing} placeholder="Company" value={productDetails.surveyor?.company || ''} onChange={(e) => onSubFieldChange('surveyor', 'company', e.target.value)} className="w-full p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
-                    <input disabled={!isEditing} placeholder="Email" value={productDetails.surveyor?.email || ''} onChange={(e) => onSubFieldChange('surveyor', 'email', e.target.value)} className="w-full p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
-                    <input disabled={!isEditing} placeholder="Phone" value={productDetails.surveyor?.phone || ''} onChange={(e) => onSubFieldChange('surveyor', 'phone', e.target.value)} className="w-full p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
-                </div>
-                <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 border p-4 rounded-md">
-                    <h5 className="col-span-full font-bold">Estate Agent</h5>
-                    <input disabled={!isEditing} placeholder="Company Name" value={productDetails.estateAgent?.companyName || ''} onChange={(e) => onSubFieldChange('estateAgent', 'companyName', e.target.value)} className="w-full p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
-                    <input disabled={!isEditing} placeholder="Person Dealing With" value={productDetails.estateAgent?.personDealingWith || ''} onChange={(e) => onSubFieldChange('estateAgent', 'personDealingWith', e.target.value)} className="w-full p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
-                    <input disabled={!isEditing} placeholder="Address" value={productDetails.estateAgent?.address || ''} onChange={(e) => onSubFieldChange('estateAgent', 'address', e.target.value)} className="w-full p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100 md:col-span-2" />
-                    <input disabled={!isEditing} placeholder="Phone" value={productDetails.estateAgent?.phone || ''} onChange={(e) => onSubFieldChange('estateAgent', 'phone', e.target.value)} className="w-full p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
-                </div>
-            </FormSection> */}
-
             <FormSection title="Limited Company Details">
                 <div>
                     <label className="font-semibold text-text-secondary">Company Name</label>
@@ -1261,8 +1228,20 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
     };
 
     const handleDelete = async () => {
-        if (await deleteClient(client.id)) {
-            onBack();
+        // if (await deleteClient(client.id)) {
+        //     onBack();
+        // }
+
+        // Confirm deletion only once, not twice
+        if (window.confirm(`Are you sure you want to delete "${client.name}"?`)) {
+            try {
+                await deleteClient(client.id);  // Calling the function that triggers the backend request
+                toast.success(`Client "${client.name}" deleted successfully.`);
+                onBack();
+            } catch (error) {
+                console.error(error);
+                toast.error('Failed to delete client.');
+            }
         }
     };
 
