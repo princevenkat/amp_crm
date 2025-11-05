@@ -186,14 +186,45 @@ const hydrateClient = async (clientRow) => {
         [mortgageRows],
         [protectionRows],
         [documents],
-        [notes]
+        [notes],
+        [contactsData]
     ] = await Promise.all([
         db.query('SELECT * FROM applicants WHERE clientId = ?', [clientRow.id]),
         db.query('SELECT * FROM mortgage_details WHERE clientId = ?', [clientRow.id]),
         db.query('SELECT * FROM protection_details WHERE clientId = ?', [clientRow.id]),
         db.query('SELECT * FROM documents WHERE clientId = ?', [clientRow.id]),
-        db.query('SELECT * FROM notes WHERE clientId = ? ORDER BY date DESC', [clientRow.id])
+        db.query('SELECT * FROM notes WHERE clientId = ? ORDER BY date DESC', [clientRow.id]),
+        db.query(
+            `SELECT id, name, email, phone, company, type 
+       FROM contacts 
+       WHERE id IN (?, ?, ?, ?)`,
+            [
+                clientRow.solicitor_id,
+                clientRow.accountant_id,
+                clientRow.surveyor_id,
+                clientRow.estate_agent_id
+            ]
+        ),
     ]);
+
+
+    // Helper function to get contact by ID from the already fetched data
+    function getContact(id) {
+        if (!id) return null;
+        return contactsData.find(c => c.id === id) || null;
+    }
+
+    // Find each contact by ID
+    const solicitor = getContact(clientRow.solicitor_id);
+    const accountant = getContact(clientRow.accountant_id);
+    const surveyor = getContact(clientRow.surveyor_id);
+    const estateAgent = getContact(clientRow.estate_agent_id);
+
+    // ✅ Format applicant DOB
+    applicants.forEach(app => {
+        app.dob = formatDateForInput(app.dob);
+    });
+
 
     // ✅ Keep DOB as string from DB to avoid timezone shift
     applicants.forEach(app => {
@@ -217,11 +248,9 @@ const hydrateClient = async (clientRow) => {
         avatar: clientRow.avatar,
         value: clientRow.value,
         product: { type: clientRow.productType },
-
         applicants,
         documents,
         notes,
-
         property: {
             address: clientRow.propertyAddress,
             propertyValue: clientRow.propertyValue,
@@ -262,31 +291,34 @@ const hydrateClient = async (clientRow) => {
                     return Array.isArray(f) ? f : [];
                 })(),
             },
-            protection: protectionRows[0] || null,
-            solicitor: {
-                name: clientRow.solicitorName,
-                company: clientRow.solicitorCompany,
-                email: clientRow.solicitorEmail,
-                phone: clientRow.solicitorPhone,
-            },
-            accountant: {
-                name: clientRow.accountantName,
-                company: clientRow.accountantCompany,
-                email: clientRow.accountantEmail,
-                phone: clientRow.accountantPhone,
-            },
-            surveyor: {
-                name: clientRow.surveyorName,
-                company: clientRow.surveyorCompany,
-                email: clientRow.surveyorEmail,
-                phone: clientRow.surveyorPhone,
-            },
-            estateAgent: {
-                companyName: clientRow.estateAgentCompanyName,
-                personDealingWith: clientRow.estateAgentPerson,
-                address: clientRow.estateAgentAddress,
-                phone: clientRow.estateAgentPhone,
-            },
+            solicitor,
+            accountant,
+            surveyor,
+            estateAgent,
+            // solicitor: {
+            //     name: clientRow.solicitorName,
+            //     company: clientRow.solicitorCompany,
+            //     email: clientRow.solicitorEmail,
+            //     phone: clientRow.solicitorPhone,
+            // },
+            // accountant: {
+            //     name: clientRow.accountantName,
+            //     company: clientRow.accountantCompany,
+            //     email: clientRow.accountantEmail,
+            //     phone: clientRow.accountantPhone,
+            // },
+            // surveyor: {
+            //     name: clientRow.surveyorName,
+            //     company: clientRow.surveyorCompany,
+            //     email: clientRow.surveyorEmail,
+            //     phone: clientRow.surveyorPhone,
+            // },
+            // estateAgent: {
+            //     companyName: clientRow.estateAgentCompanyName,
+            //     personDealingWith: clientRow.estateAgentPerson,
+            //     address: clientRow.estateAgentAddress,
+            //     phone: clientRow.estateAgentPhone,
+            // },
         }
     };
 
@@ -297,17 +329,27 @@ const hydrateClient = async (clientRow) => {
 
 };
 
+// const ALL_CLIENT_FIELDS_FOR_UPDATE = `
+//     name = ?, email = ?, phone = ?, caseReference = ?, primaryAdvisor = ?, admin = ?,
+//     applicationType = ?, status = ?, caseStatus = ?, lastContacted = ?, value = ?, productType = ?,
+//     propertyAddress = ?, propertyValue = ?, purchasePrice = ?, dateOfPurchase = ?, yearBuilt = ?, propertyTypeProp = ?,
+//     isExLocal = ?, bedrooms = ?, livingRooms = ?, kitchens = ?, bathrooms = ?, separateToilets = ?,
+//     hasGarageOrParking = ?, flatsInBlock = ?, storeysInBlock = ?, floorOfFlat = ?, leaseRemaining = ?,
+//     groundRent = ?, serviceCharge = ?, businessWritten = ?, mortgageFees = ?,
+//     solicitorName = ?, solicitorCompany = ?, solicitorEmail = ?, solicitorPhone = ?,
+//     accountantName = ?, accountantCompany = ?, accountantEmail = ?, accountantPhone = ?,
+//     surveyorName = ?, surveyorCompany = ?, surveyorEmail = ?, surveyorPhone = ?,
+//     estateAgentCompanyName = ?, estateAgentPerson = ?, estateAgentAddress = ?, estateAgentPhone = ?
+// `;
+
 const ALL_CLIENT_FIELDS_FOR_UPDATE = `
-    name = ?, email = ?, phone = ?, caseReference = ?, primaryAdvisor = ?, admin = ?,
-    applicationType = ?, status = ?, caseStatus = ?, lastContacted = ?, value = ?, productType = ?,
-    propertyAddress = ?, propertyValue = ?, purchasePrice = ?, dateOfPurchase = ?, yearBuilt = ?, propertyTypeProp = ?,
-    isExLocal = ?, bedrooms = ?, livingRooms = ?, kitchens = ?, bathrooms = ?, separateToilets = ?,
-    hasGarageOrParking = ?, flatsInBlock = ?, storeysInBlock = ?, floorOfFlat = ?, leaseRemaining = ?,
-    groundRent = ?, serviceCharge = ?, businessWritten = ?, mortgageFees = ?,
-    solicitorName = ?, solicitorCompany = ?, solicitorEmail = ?, solicitorPhone = ?,
-    accountantName = ?, accountantCompany = ?, accountantEmail = ?, accountantPhone = ?,
-    surveyorName = ?, surveyorCompany = ?, surveyorEmail = ?, surveyorPhone = ?,
-    estateAgentCompanyName = ?, estateAgentPerson = ?, estateAgentAddress = ?, estateAgentPhone = ?
+  name = ?, email = ?, phone = ?, caseReference = ?, primaryAdvisor = ?, admin = ?,
+  applicationType = ?, status = ?, caseStatus = ?, lastContacted = ?, value = ?, productType = ?,
+  propertyAddress = ?, propertyValue = ?, purchasePrice = ?, dateOfPurchase = ?, yearBuilt = ?, propertyTypeProp = ?,
+  isExLocal = ?, bedrooms = ?, livingRooms = ?, kitchens = ?, bathrooms = ?, separateToilets = ?,
+  hasGarageOrParking = ?, flatsInBlock = ?, storeysInBlock = ?, floorOfFlat = ?, leaseRemaining = ?,
+  groundRent = ?, serviceCharge = ?, businessWritten = ?, mortgageFees = ?,
+  solicitor_id = ?, accountant_id = ?, surveyor_id = ?, estate_agent_id = ?
 `;
 
 const toMySQLDateTime = (isoDate) => {
@@ -322,22 +364,62 @@ const toMySQLDate = (dateStr) => {
     if (isNaN(d)) return null;
     return d.toISOString().slice(0, 10); // "YYYY-MM-DD"
 };
-const getClientDataAsArray = (clientData) => [
-    clientData.name, clientData.email, clientData.phone, clientData.caseReference, clientData.primaryAdvisor, clientData.admin,
-    clientData.applicationType, clientData.status, clientData.caseStatus, toMySQLDateTime(clientData.lastContacted), clientData.value, clientData.product?.type,
-    clientData.property?.address, clientData.property?.propertyValue, clientData.property?.purchasePrice,
-    toMySQLDate(clientData.property?.dateOfPurchase), // ✅ fixed
-    clientData.property?.yearBuilt, clientData.property?.propertyType,
-    clientData.property?.isExLocal, clientData.property?.bedrooms, clientData.property?.livingRooms, clientData.property?.kitchens, clientData.property?.bathrooms, clientData.property?.separateToilets,
-    clientData.property?.hasGarageOrParking, clientData.property?.flatsInBlock, clientData.property?.storeysInBlock, clientData.property?.floorOfFlat, clientData.property?.leaseRemaining,
-    clientData.property?.groundRent, clientData.property?.serviceCharge, clientData.productDetails?.businessWritten,
-    JSON.stringify(clientData.productDetails?.mortgage?.fees || []),
-    clientData.productDetails?.solicitor?.name, clientData.productDetails?.solicitor?.company, clientData.productDetails?.solicitor?.email, clientData.productDetails?.solicitor?.phone,
-    clientData.productDetails?.accountant?.name, clientData.productDetails?.accountant?.company, clientData.productDetails?.accountant?.email, clientData.productDetails?.accountant?.phone,
-    clientData.productDetails?.surveyor?.name, clientData.productDetails?.surveyor?.company, clientData.productDetails?.surveyor?.email, clientData.productDetails?.surveyor?.phone,
-    clientData.productDetails?.estateAgent?.companyName, clientData.productDetails?.estateAgent?.personDealingWith, clientData.productDetails?.estateAgent?.address, clientData.productDetails?.estateAgent?.phone
-];
+// const getClientDataAsArray = (clientData) => [
+//     clientData.name, clientData.email, clientData.phone, clientData.caseReference, clientData.primaryAdvisor, clientData.admin,
+//     clientData.applicationType, clientData.status, clientData.caseStatus, toMySQLDateTime(clientData.lastContacted), clientData.value, clientData.product?.type,
+//     clientData.property?.address, clientData.property?.propertyValue, clientData.property?.purchasePrice,
+//     toMySQLDate(clientData.property?.dateOfPurchase), // ✅ fixed
+//     clientData.property?.yearBuilt, clientData.property?.propertyType,
+//     clientData.property?.isExLocal, clientData.property?.bedrooms, clientData.property?.livingRooms, clientData.property?.kitchens, clientData.property?.bathrooms, clientData.property?.separateToilets,
+//     clientData.property?.hasGarageOrParking, clientData.property?.flatsInBlock, clientData.property?.storeysInBlock, clientData.property?.floorOfFlat, clientData.property?.leaseRemaining,
+//     clientData.property?.groundRent, clientData.property?.serviceCharge, clientData.productDetails?.businessWritten,
+//     JSON.stringify(clientData.productDetails?.mortgage?.fees || []),
+//     clientData.productDetails?.solicitor?.name, clientData.productDetails?.solicitor?.company, clientData.productDetails?.solicitor?.email, clientData.productDetails?.solicitor?.phone,
+//     clientData.productDetails?.accountant?.name, clientData.productDetails?.accountant?.company, clientData.productDetails?.accountant?.email, clientData.productDetails?.accountant?.phone,
+//     clientData.productDetails?.surveyor?.name, clientData.productDetails?.surveyor?.company, clientData.productDetails?.surveyor?.email, clientData.productDetails?.surveyor?.phone,
+//     clientData.productDetails?.estateAgent?.companyName, clientData.productDetails?.estateAgent?.personDealingWith, clientData.productDetails?.estateAgent?.address, clientData.productDetails?.estateAgent?.phone
+// ];
 
+
+const getClientDataAsArray = (clientData) => [
+    clientData.name,
+    clientData.email,
+    clientData.phone,
+    clientData.caseReference,
+    clientData.primaryAdvisor,
+    clientData.admin,
+    clientData.applicationType,
+    clientData.status,
+    clientData.caseStatus,
+    toMySQLDateTime(clientData.lastContacted),
+    clientData.value,
+    clientData.product?.type,
+    clientData.property?.address,
+    clientData.property?.propertyValue,
+    clientData.property?.purchasePrice,
+    toMySQLDate(clientData.property?.dateOfPurchase),
+    clientData.property?.yearBuilt,
+    clientData.property?.propertyType,
+    clientData.property?.isExLocal,
+    clientData.property?.bedrooms,
+    clientData.property?.livingRooms,
+    clientData.property?.kitchens,
+    clientData.property?.bathrooms,
+    clientData.property?.separateToilets,
+    clientData.property?.hasGarageOrParking,
+    clientData.property?.flatsInBlock,
+    clientData.property?.storeysInBlock,
+    clientData.property?.floorOfFlat,
+    clientData.property?.leaseRemaining,
+    clientData.property?.groundRent,
+    clientData.property?.serviceCharge,
+    clientData.productDetails?.businessWritten,
+    JSON.stringify(clientData.productDetails?.mortgage?.fees || []),
+    clientData.productDetails?.solicitor?.id || null,
+    clientData.productDetails?.accountant?.id || null,
+    clientData.productDetails?.surveyor?.id || null,
+    clientData.productDetails?.estateAgent?.id || null,
+];
 
 // Get all clients
 // router.get('/', protect, async (req, res) => {
@@ -433,14 +515,18 @@ router.post('/', protect, async (req, res) => {
             hasGarageOrParking: clientData.property?.hasGarageOrParking,
             businessWritten: clientData.productDetails?.businessWritten,
             mortgageFees: JSON.stringify(clientData.productDetails?.mortgage?.fees || []), // 🟢 add this line
-            solicitorName: clientData.productDetails?.solicitor?.name,
-            solicitorCompany: clientData.productDetails?.solicitor?.company,
-            solicitorEmail: clientData.productDetails?.solicitor?.email,
-            solicitorPhone: clientData.productDetails?.solicitor?.phone,
-            estateAgentCompanyName: clientData.productDetails?.estateAgent?.companyName,
-            estateAgentPerson: clientData.productDetails?.estateAgent?.personDealingWith,
-            estateAgentAddress: clientData.productDetails?.estateAgent?.address,
-            estateAgentPhone: clientData.productDetails?.estateAgent?.phone,
+            // solicitorName: clientData.productDetails?.solicitor?.name,
+            // solicitorCompany: clientData.productDetails?.solicitor?.company,
+            // solicitorEmail: clientData.productDetails?.solicitor?.email,
+            // solicitorPhone: clientData.productDetails?.solicitor?.phone,
+            // estateAgentCompanyName: clientData.productDetails?.estateAgent?.companyName,
+            // estateAgentPerson: clientData.productDetails?.estateAgent?.personDealingWith,
+            // estateAgentAddress: clientData.productDetails?.estateAgent?.address,
+            // estateAgentPhone: clientData.productDetails?.estateAgent?.phone,
+            solicitor_id: clientData.productDetails?.solicitor?.id || null,
+            accountant_id: clientData.productDetails?.accountant?.id || null,
+            surveyor_id: clientData.productDetails?.surveyor?.id || null,
+            estate_agent_id: clientData.productDetails?.estateAgent?.id || null,
         };
 
         const columns = Object.keys(clientInsertData).join(', ');

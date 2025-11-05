@@ -510,13 +510,7 @@ const ProductView: React.FC<{
                             value={productDetails.solicitor?.id || ''}
                             onChange={(e) => {
                                 const selected = solicitors.find(s => s.id === e.target.value);
-                                if (selected) {
-                                    onSubFieldChange('solicitor', 'id', selected.id);
-                                    onSubFieldChange('solicitor', 'name', selected.name);
-                                    onSubFieldChange('solicitor', 'company', selected.company || '');
-                                    onSubFieldChange('solicitor', 'email', selected.email || '');
-                                    onSubFieldChange('solicitor', 'phone', selected.phone || '');
-                                }
+                                onSubFieldChange('solicitor', 'id', selected?.id || '');
                             }}
                             className="w-full p-2 border rounded-md bg-surface text-text-primary"
                         >
@@ -529,11 +523,7 @@ const ProductView: React.FC<{
                         </select>
                     ) : (
                         <p className="p-2">
-                            {
-                                solicitors.find(s => s.id === productDetails.solicitor?.id)?.name ||
-                                productDetails.solicitor?.name ||
-                                'Not Assigned'
-                            }
+                            {solicitors.find(s => s.id === productDetails.solicitor?.id)?.name || 'Not Assigned'}
                         </p>
                     )}
                 </div>
@@ -546,13 +536,7 @@ const ProductView: React.FC<{
                             value={productDetails.accountant?.id || ''}
                             onChange={(e) => {
                                 const selected = accountants.find(a => a.id === e.target.value);
-                                if (selected) {
-                                    onSubFieldChange('accountant', 'id', selected.id);
-                                    onSubFieldChange('accountant', 'name', selected.name);
-                                    onSubFieldChange('accountant', 'company', selected.company || '');
-                                    onSubFieldChange('accountant', 'email', selected.email || '');
-                                    onSubFieldChange('accountant', 'phone', selected.phone || '');
-                                }
+                                onSubFieldChange('accountant', 'id', selected?.id || '');
                             }}
                             className="w-full p-2 border rounded-md bg-surface text-text-primary"
                         >
@@ -565,11 +549,7 @@ const ProductView: React.FC<{
                         </select>
                     ) : (
                         <p className="p-2">
-                            {
-                                accountants.find(a => a.id === productDetails.accountant?.id)?.name ||
-                                productDetails.accountant?.name ||
-                                'Not Assigned'
-                            }
+                            {accountants.find(a => a.id === productDetails.accountant?.id)?.name || 'Not Assigned'}
                         </p>
                     )}
                 </div>
@@ -582,13 +562,7 @@ const ProductView: React.FC<{
                             value={productDetails.surveyor?.id || ''}
                             onChange={(e) => {
                                 const selected = surveyors.find(s => s.id === e.target.value);
-                                if (selected) {
-                                    onSubFieldChange('surveyor', 'id', selected.id);
-                                    onSubFieldChange('surveyor', 'name', selected.name);
-                                    onSubFieldChange('surveyor', 'company', selected.company || '');
-                                    onSubFieldChange('surveyor', 'email', selected.email || '');
-                                    onSubFieldChange('surveyor', 'phone', selected.phone || '');
-                                }
+                                onSubFieldChange('surveyor', 'id', selected?.id || '');
                             }}
                             className="w-full p-2 border rounded-md bg-surface text-text-primary"
                         >
@@ -601,11 +575,7 @@ const ProductView: React.FC<{
                         </select>
                     ) : (
                         <p className="p-2">
-                            {
-                                surveyors.find(s => s.id === productDetails.surveyor?.id)?.name ||
-                                productDetails.surveyor?.name ||
-                                'Not Assigned'
-                            }
+                            {surveyors.find(s => s.id === productDetails.surveyor?.id)?.name || 'Not Assigned'}
                         </p>
                     )}
                 </div>
@@ -618,33 +588,24 @@ const ProductView: React.FC<{
                             value={productDetails.estateAgent?.id || ''}
                             onChange={(e) => {
                                 const selected = estateAgents.find(ea => ea.id === e.target.value);
-                                if (selected) {
-                                    onSubFieldChange('estateAgent', 'id', selected.id);
-                                    onSubFieldChange('estateAgent', 'companyName', selected.company || '');
-                                    onSubFieldChange('estateAgent', 'personDealingWith', selected.name || '');
-                                    onSubFieldChange('estateAgent', 'address', selected.address || '');
-                                    onSubFieldChange('estateAgent', 'phone', selected.phone || '');
-                                }
+                                onSubFieldChange('estateAgent', 'id', selected?.id || '');
                             }}
                             className="w-full p-2 border rounded-md bg-surface text-text-primary"
                         >
                             <option value="">Select Estate Agent...</option>
                             {estateAgents.map(ea => (
                                 <option key={ea.id} value={ea.id}>
-                                    {ea.company} ({ea.name})
+                                    {ea.company} {ea.name ? `(${ea.name})` : ''}
                                 </option>
                             ))}
                         </select>
                     ) : (
                         <p className="p-2">
-                            {
-                                estateAgents.find(ea => ea.id === productDetails.estateAgent?.id)?.company ||
-                                productDetails.estateAgent?.companyName ||
-                                'Not Assigned'
-                            }
+                            {estateAgents.find(ea => ea.id === productDetails.estateAgent?.id)?.company || 'Not Assigned'}
                         </p>
                     )}
                 </div>
+
 
 
             </FormSectionNew>
