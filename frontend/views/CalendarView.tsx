@@ -138,17 +138,45 @@ export const CalendarView: React.FC = () => {
     };
 
 
+    // const searchResults = useMemo(() => {
+    //     if (!searchTerm.trim()) {
+    //         return [];
+    //     }
+    //     const lowercasedFilter = searchTerm.toLowerCase();
+    //     const results = tasks.filter(task => {
+    //         const client = task.clientId ? clients.find(c => c.id === task.clientId) : null;
+    //         return client ? client.name.toLowerCase().includes(lowercasedFilter) : false;
+    //     });
+    //     return results.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+    // }, [searchTerm, tasks, clients]);
+
     const searchResults = useMemo(() => {
         if (!searchTerm.trim()) {
             return [];
         }
+
         const lowercasedFilter = searchTerm.toLowerCase();
+
         const results = tasks.filter(task => {
-            const client = task.clientId ? clients.find(c => c.id === task.clientId) : null;
-            return client ? client.name.toLowerCase().includes(lowercasedFilter) : false;
+            const client = task.clientId
+                ? clients.find(c => c.id === task.clientId)
+                : null;
+
+            if (!client) return false;
+
+            const clientNameMatch = client.name.toLowerCase().includes(lowercasedFilter);
+            const caseRefMatch = client.caseReference
+                ? client.caseReference.toLowerCase().includes(lowercasedFilter)
+                : false;
+
+            return clientNameMatch || caseRefMatch;
         });
-        return results.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+
+        return results.sort(
+            (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+        );
     }, [searchTerm, tasks, clients]);
+
 
     const handleTaskClick = (task: Task) => {
         setSelectedTask(task);
@@ -290,8 +318,12 @@ export const CalendarView: React.FC = () => {
                     ) : (
                         <div className="space-y-4">
                             <div className="flex items-start justify-between">
-                                <h3 className="text-xl font-bold text-text-primary pr-4">{selectedTask?.title}</h3>
-                                <span className={`px-2 py-1 text-xs rounded-full font-semibold whitespace-nowrap ${getStatusBadgeColorClass(selectedTask!.status)}`}>
+                                {/* <h3 className="text-xl font-bold text-text-primary pr-4">{selectedTask?.title} </h3> */}
+                                <h3 className="text-xl font-bold text-text-primary pr-4">
+                                    {selectedTask?.title}
+
+                                </h3>
+                                <span className={`px-2 py-1 text-xs rounded-full font-semibold whitespace-nowrap me-auto ${getStatusBadgeColorClass(selectedTask!.status)}`}>
                                     {selectedTask!.status}
                                 </span>
                                 {/* 🗑️ Delete Task Button (top-right corner) */}
@@ -310,7 +342,12 @@ export const CalendarView: React.FC = () => {
                             </div>
 
                             {clientForSelectedTask && (
-                                <p className="text-sm font-semibold text-secondary">Client: {clientForSelectedTask.name}</p>
+                                <p className="text-sm font-semibold text-black">Client: {clientForSelectedTask.name} -
+                                    {clientForSelectedTask?.caseReference && (
+                                        <span className="text-primary text-xs">
+                                            {" "}({clientForSelectedTask.caseReference})
+                                        </span>
+                                    )}</p>
                             )}
                             <p className="text-text-secondary whitespace-pre-wrap">
                                 {selectedTask?.description || 'No description provided.'}
@@ -353,7 +390,130 @@ export const CalendarView: React.FC = () => {
                             className="w-full bg-surface border border-gray-200 rounded-lg py-2 pl-10 pr-4 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
                         />
                     </div>
-                    {searchTerm.trim() && (
+
+                    <div className="mt-4 space-y-2 max-h-[70vh] overflow-y-auto  
+                    [&::-webkit-scrollbar]:w-1.5
+  [&::-webkit-scrollbar]:h-1.5
+  [&::-webkit-scrollbar-track]:bg-transparent
+  [&::-webkit-scrollbar-thumb]:bg-black/20
+  [&::-webkit-scrollbar-thumb]:rounded-full
+  hover:[&::-webkit-scrollbar-thumb]:bg-black/30
+  scrollbar-thin
+  scrollbar-thumb-rounded-full
+  scrollbar-track-transparent                    
+                    ">
+                        {searchTerm.trim() ? (
+                            <>
+                                <h3 className="font-semibold text-text-primary mb-2">
+                                    Search Results ({searchResults.length})
+                                </h3>
+                                {searchResults.length > 0 ? (
+                                    searchResults.map(task => {
+                                        const client = clients.find(c => c.id === task.clientId);
+                                        const taskDate = new Date(task.dueDate);
+                                        return (
+                                            <div
+                                                key={task.id}
+                                                onClick={() => handleSearchResultClick(task)}
+                                                className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 cursor-pointer border"
+                                            >
+                                                <div className="text-center flex-shrink-0 w-12">
+                                                    <p className="text-xs text-text-secondary">
+                                                        {taskDate.toLocaleString('default', { month: 'short' })}
+                                                    </p>
+                                                    <p className="text-lg font-bold text-text-primary">
+                                                        {taskDate.getDate()}
+                                                    </p>
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className="font-semibold text-sm text-text-primary leading-tight">
+                                                        {task.title}
+                                                    </p>
+                                                    {client && (
+                                                        <p className="text-xs text-secondary mt-0.5">
+                                                            {client.name}
+                                                        </p>
+                                                    )}
+                                                    <p
+                                                        className={`text-xs mt-1 font-semibold ${getStatusBadgeColorClass(
+                                                            task.status
+                                                        )} px-1.5 py-0.5 rounded-full inline-block`}
+                                                    >
+                                                        {task.status}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    <p className="text-sm text-text-secondary text-center p-4">
+                                        No tasks found for "{searchTerm}".
+                                    </p>
+                                )}
+                            </>
+                        ) : (
+                            <>
+                                <h3 className="font-semibold text-text-primary mb-2">
+                                    All Client Tasks
+                                </h3>
+
+                                {clients
+                                    .filter(c => tasks.some(t => t.clientId === c.id)) // ✅ Only clients with tasks
+                                    .map(client => (
+                                        <div key={client.id}>
+                                            <p className="font-semibold text-sm text-text-primary mb-1 mt-3">
+                                                {client.name}
+                                                {client.caseReference && (
+                                                    <span className="text-xs text-secondary ml-1">
+                                                        ({client.caseReference})
+                                                    </span>
+                                                )}
+                                            </p>
+
+                                            {tasks
+                                                .filter(t => t.clientId === client.id)
+                                                .sort(
+                                                    (a, b) =>
+                                                        new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+                                                )
+                                                .map(task => {
+                                                    const taskDate = new Date(task.dueDate);
+                                                    return (
+                                                        <div
+                                                            key={task.id}
+                                                            onClick={() => handleSearchResultClick(task)}
+                                                            className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 cursor-pointer border mb-2"
+                                                        >
+                                                            <div className="text-center flex-shrink-0 w-12">
+                                                                <p className="text-xs text-text-secondary">
+                                                                    {taskDate.toLocaleString('default', { month: 'short' })}
+                                                                </p>
+                                                                <p className="text-lg font-bold text-text-primary">
+                                                                    {taskDate.getDate()}
+                                                                </p>
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <p className="font-semibold text-sm text-text-primary leading-tight">
+                                                                    {task.title}
+                                                                </p>
+                                                                <p
+                                                                    className={`text-xs mt-1 font-semibold ${getStatusBadgeColorClass(
+                                                                        task.status
+                                                                    )} px-1.5 py-0.5 rounded-full inline-block`}
+                                                                >
+                                                                    {task.status}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                        </div>
+                                    ))}
+                            </>
+                        )}
+                    </div>
+
+                    {/* {searchTerm.trim() && (
                         <div className="mt-4 space-y-2 max-h-[60vh] overflow-y-auto">
                             <h3 className="font-semibold text-text-primary mb-2">Search Results ({searchResults.length})</h3>
                             {searchResults.length > 0 ? (
@@ -382,7 +542,7 @@ export const CalendarView: React.FC = () => {
                                 <p className="text-sm text-text-secondary text-center p-4">No tasks found for "{searchTerm}".</p>
                             )}
                         </div>
-                    )}
+                    )} */}
                 </div>
 
                 {/* Right Column for Calendar */}
@@ -439,7 +599,10 @@ export const CalendarView: React.FC = () => {
                         // Prefill the dueDate from the clicked date
                         const dataWithDate = {
                             ...taskData,
-                            dueDate: newTaskDate ? newTaskDate.toISOString().split('T')[0] : '',
+                            // dueDate: newTaskDate ? newTaskDate.toISOString().split('T')[0] : '',
+                            dueDate: newTaskDate
+                                ? newTaskDate.toLocaleDateString('en-CA') // produces YYYY-MM-DD in local time
+                                : '',
                         };
                         addTask(dataWithDate);
                         setIsAddTaskModalOpen(false);
