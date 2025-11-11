@@ -16,6 +16,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [passwords, setPasswords] = useState<PasswordEntry[]>([]);
     const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
 
+
+
+
     // Auth and loading state
     const [currentUser, setCurrentUser] = useState<TeamMember | null>(null);
     const [loading, setLoading] = useState(true);
@@ -157,14 +160,35 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setClients(prev => [newClient, ...prev]);
     };
 
+    // const updateClient = async (clientId: string, updatedData: Partial<Client>) => {
+    //     const updatedClient = await api.updateClient(clientId, updatedData);
+    //     setClients(prev =>
+    //         prev.map(client =>
+    //             client.id === clientId ? updatedClient : client
+    //         )
+    //     );
+    // };
+
     const updateClient = async (clientId: string, updatedData: Partial<Client>) => {
-        const updatedClient = await api.updateClient(clientId, updatedData);
+        // 🧹 Remove undefined, null, and empty objects/arrays
+        const cleanedPayload = Object.fromEntries(
+            Object.entries(updatedData).filter(([_, v]) => {
+                if (v === undefined || v === null) return false;
+                if (Array.isArray(v) && v.length === 0) return false;
+                if (typeof v === "object" && Object.keys(v).length === 0) return false;
+                return true;
+            })
+        );
+
+        console.log("🧼 Cleaned payload being sent:", cleanedPayload);
+
+        const updatedClient = await api.updateClient(clientId, cleanedPayload);
+
         setClients(prev =>
-            prev.map(client =>
-                client.id === clientId ? updatedClient : client
-            )
+            prev.map(client => (client.id === clientId ? updatedClient : client))
         );
     };
+
 
     // const deleteClient = async (clientId: string): Promise<boolean> => {
     //     if (window.confirm('Are you sure you want to delete this client?')) {
@@ -237,9 +261,27 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
 
+    // const addProposal = async (proposal: Omit<Proposal, 'id'>) => {
+    //     const newProposal = await api.createProposal(proposal);
+    //     setProposals(prev => [newProposal, ...prev]);
+    // };
+
+    // Proposals CRUD
     const addProposal = async (proposal: Omit<Proposal, 'id'>) => {
         const newProposal = await api.createProposal(proposal);
         setProposals(prev => [newProposal, ...prev]);
+    };
+
+    const updateProposal = async (proposal: Proposal) => {
+        const updated = await api.updateProposal(proposal);
+        setProposals(prev => prev.map(p => (p.id === updated.id ? updated : p)));
+    };
+
+    const deleteProposal = async (proposalId: string) => {
+        if (window.confirm('Are you sure you want to delete this proposal?')) {
+            await api.deleteProposal(proposalId);
+            setProposals(prev => prev.filter(p => p.id !== proposalId));
+        }
     };
 
     const addEmailTemplate = async (template: Omit<EmailTemplate, 'id'>) => {
@@ -324,6 +366,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         getContactsByType,
         proposals,
         addProposal,
+        updateProposal,
+        deleteProposal,
         emailTemplates,
         addEmailTemplate,
         ledger,

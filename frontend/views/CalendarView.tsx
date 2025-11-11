@@ -4,6 +4,9 @@ import { ChevronLeftIcon, ChevronRightIcon, SearchIcon } from '../components/ui/
 import type { Task } from '../types';
 import { Modal } from '../components/ui/Modal';
 import { View, TaskStatus } from '../types';
+import { NewTaskForm } from '../components/forms/NewTaskForm';
+import { TrashIcon } from '@heroicons/react/16/solid';
+
 
 // Helper to get color classes for task status badges
 const getStatusBadgeColorClass = (status: TaskStatus) => {
@@ -49,19 +52,62 @@ const getStatusEventColorClass = (status: TaskStatus) => {
     }
 }
 
-const CalendarDay: React.FC<{ day: number; date: Date; isCurrentMonth: boolean; isToday: boolean; tasks: Task[]; onTaskClick: (task: Task) => void; }> = ({ day, isCurrentMonth, isToday, tasks, onTaskClick }) => {
+// const CalendarDay: React.FC<{ day: number; date: Date; isCurrentMonth: boolean; isToday: boolean; tasks: Task[]; onTaskClick: (task: Task) => void; }> = ({ day, isCurrentMonth, isToday, tasks, onTaskClick }) => {
+//     const dayClasses = `border-t border-r border-gray-200 p-2 h-24 md:h-28 relative flex flex-col ${isCurrentMonth ? 'bg-surface' : 'bg-gray-50'}`;
+//     const dayNumberClasses = `text-sm ${isToday ? 'bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center font-bold' : (isCurrentMonth ? 'text-text-primary' : 'text-text-secondary/50')}`;
+
+//     return (
+//         <div className={dayClasses}>
+//             <div className={dayNumberClasses}>
+//                 {day}
+//             </div>
+//             <div className="flex-grow overflow-y-auto text-xs mt-1 space-y-1">
+//                 {tasks.map(task => (
+//                     <div
+//                         key={task.id}
+//                         className={`p-1 rounded-md truncate cursor-pointer transition-colors ${getStatusEventColorClass(task.status)}`}
+//                         title={task.title}
+//                         onClick={() => onTaskClick(task)}
+//                     >
+//                         {task.title}
+//                     </div>
+//                 ))}
+//             </div>
+//         </div>
+//     );
+// }
+
+const CalendarDay: React.FC<{
+    day: number;
+    date: Date;
+    isCurrentMonth: boolean;
+    isToday: boolean;
+    tasks: Task[];
+    onTaskClick: (task: Task) => void;
+    onAddTask: (date: Date) => void;   // 👈 New prop
+}> = ({ day, date, isCurrentMonth, isToday, tasks, onTaskClick, onAddTask }) => {
     const dayClasses = `border-t border-r border-gray-200 p-2 h-24 md:h-28 relative flex flex-col ${isCurrentMonth ? 'bg-surface' : 'bg-gray-50'}`;
     const dayNumberClasses = `text-sm ${isToday ? 'bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center font-bold' : (isCurrentMonth ? 'text-text-primary' : 'text-text-secondary/50')}`;
 
     return (
-        <div className={dayClasses}>
-            <div className={dayNumberClasses}>
-                {day}
+        <div className={`group ${dayClasses}`}>
+            <div className="flex justify-between items-start relative">
+                <div className={dayNumberClasses}>{day}</div>
+                {/* 🟩 Small + button (hidden until hover) */}
+                <button
+                    onClick={() => onAddTask(date)}
+                    // className="text-lg text-primary hover:text-secondary opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute end-0 opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded-full bg-[#d28302] text-white hover:bg-primary transition-all duration-200"
+                    title="Add task"
+                >
+                    +
+                </button>
             </div>
-            <div className="flex-grow overflow-y-auto text-xs mt-1 space-y-1">
-                 {tasks.map(task => (
-                    <div 
-                        key={task.id} 
+
+            <div className="flex-grow overflow-y-auto text-xs mt-1 space-y-1 group">
+                {tasks.map(task => (
+                    <div
+                        key={task.id}
                         className={`p-1 rounded-md truncate cursor-pointer transition-colors ${getStatusEventColorClass(task.status)}`}
                         title={task.title}
                         onClick={() => onTaskClick(task)}
@@ -72,13 +118,25 @@ const CalendarDay: React.FC<{ day: number; date: Date; isCurrentMonth: boolean; 
             </div>
         </div>
     );
-}
-
+};
 export const CalendarView: React.FC = () => {
-    const { tasks, clients, setCurrentView, setSelectedClientIdForNav, setSelectedTaskIdForNav } = useContext(DataContext);
+    const { tasks, addTask, updateTask, deleteTask, clients, setCurrentView, setSelectedClientIdForNav, setSelectedTaskIdForNav } = useContext(DataContext);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+
+
+    const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
+    const [newTaskDate, setNewTaskDate] = useState<Date | null>(null);
+    const [isEditingTask, setIsEditingTask] = useState(false);
+
+
+
+    const handleAddTaskForDate = (date: Date) => {
+        setNewTaskDate(date);
+        setIsAddTaskModalOpen(true);
+    };
+
 
     const searchResults = useMemo(() => {
         if (!searchTerm.trim()) {
@@ -99,7 +157,7 @@ export const CalendarView: React.FC = () => {
     const handleCloseModal = () => {
         setSelectedTask(null);
     };
-    
+
     const handleSearchResultClick = (task: Task) => {
         setCurrentDate(new Date(task.dueDate));
         handleTaskClick(task);
@@ -128,15 +186,15 @@ export const CalendarView: React.FC = () => {
             return newDate;
         });
     };
-    
+
     const getCalendarGrid = (year: number, month: number) => {
         const startDate = new Date(year, month, 1);
         const endDate = new Date(year, month + 1, 0);
         const daysInMonth = endDate.getDate();
         const startDayOfWeek = startDate.getDay();
-        
+
         const grid: Date[] = [];
-        
+
         const prevMonthEndDate = new Date(year, month, 0);
         const daysInPrevMonth = prevMonthEndDate.getDate();
         for (let i = startDayOfWeek - 1; i >= 0; i--) {
@@ -151,10 +209,10 @@ export const CalendarView: React.FC = () => {
         for (let i = 1; i < 7 - endDayOfWeek; i++) {
             grid.push(new Date(year, month + 1, i));
         }
-        
+
         return grid;
     }
-    
+
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const calendarGrid = getCalendarGrid(year, month);
@@ -162,54 +220,128 @@ export const CalendarView: React.FC = () => {
 
     const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-    const clientForSelectedTask = selectedTask?.clientId 
+    const clientForSelectedTask = selectedTask?.clientId
         ? clients.find(c => c.id === selectedTask.clientId)
         : null;
+
 
     return (
         <div className="p-4 sm:p-8">
             {selectedTask && (
-                <Modal 
-                    isOpen={!!selectedTask} 
-                    onClose={handleCloseModal}
-                    title="Task Overview"
+                // <Modal
+                //     isOpen={!!selectedTask}
+                //     onClose={handleCloseModal}
+                //     title="Task Overview"
+                // >
+                //     <div className="space-y-4">
+                //         <div className="flex items-start justify-between">
+                //             <h3 className="text-xl font-bold text-text-primary pr-4">{selectedTask.title}</h3>
+                //             <span className={`px-2 py-1 text-xs rounded-full font-semibold whitespace-nowrap ${getStatusBadgeColorClass(selectedTask.status)}`}>
+                //                 {selectedTask.status}
+                //             </span>
+                //         </div>
+                //         {clientForSelectedTask && (
+                //             <p className="text-sm font-semibold text-secondary">Client: {clientForSelectedTask.name}</p>
+                //         )}
+                //         <p className="text-text-secondary whitespace-pre-wrap">{selectedTask.description || 'No description provided.'}</p>
+                //         <div className="flex justify-end gap-4 pt-4 border-t">
+                //             <button
+                //                 onClick={() => handleNavigateToTask(selectedTask.id)}
+                //                 className="bg-gray-200 hover:bg-gray-300 text-text-primary font-semibold py-2 px-4 rounded-md"
+                //             >
+                //                 Task Details
+                //             </button>
+                //             <button
+                //                 onClick={() => setIsEditingTask(true)}
+                //                 className="bg-gray-200 hover:bg-gray-300 text-text-primary font-semibold py-2 px-4 rounded-md"
+                //             >
+                //                 Edit Task
+                //             </button>
+                //             {clientForSelectedTask && (
+                //                 <button
+                //                     onClick={() => handleNavigateToClient(clientForSelectedTask.id)}
+                //                     className="bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-md"
+                //                 >
+                //                     Client Details
+                //                 </button>
+                //             )}
+                //         </div>
+                //     </div>
+                // </Modal>
+
+                <Modal
+                    isOpen={!!selectedTask}
+                    onClose={() => {
+                        setIsEditingTask(false);
+                        handleCloseModal();
+                    }}
+                    title={isEditingTask ? "Edit Task" : "Task Overview"}
                 >
-                     <div className="space-y-4">
-                        <div className="flex items-start justify-between">
-                            <h3 className="text-xl font-bold text-text-primary pr-4">{selectedTask.title}</h3>
-                            <span className={`px-2 py-1 text-xs rounded-full font-semibold whitespace-nowrap ${getStatusBadgeColorClass(selectedTask.status)}`}>
-                                {selectedTask.status}
-                            </span>
-                        </div>
-                        {clientForSelectedTask && (
-                             <p className="text-sm font-semibold text-secondary">Client: {clientForSelectedTask.name}</p>
-                        )}
-                        <p className="text-text-secondary whitespace-pre-wrap">{selectedTask.description || 'No description provided.'}</p>
-                        <div className="flex justify-end gap-4 pt-4 border-t">
-                            <button 
-                                onClick={() => handleNavigateToTask(selectedTask.id)}
-                                className="bg-gray-200 hover:bg-gray-300 text-text-primary font-semibold py-2 px-4 rounded-md"
-                            >
-                                Task Details
-                            </button>
-                            {clientForSelectedTask && (
-                                <button 
-                                    onClick={() => handleNavigateToClient(clientForSelectedTask.id)}
-                                    className="bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-md"
+                    {isEditingTask && selectedTask ? (
+                        <NewTaskForm
+                            initialData={selectedTask}
+                            onSubmit={(updatedTaskData) => {
+                                updateTask(selectedTask.id, updatedTaskData);
+                                setIsEditingTask(false);
+                                handleCloseModal();
+                            }}
+                            onCancel={() => setIsEditingTask(false)}
+                        />
+                    ) : (
+                        <div className="space-y-4">
+                            <div className="flex items-start justify-between">
+                                <h3 className="text-xl font-bold text-text-primary pr-4">{selectedTask?.title}</h3>
+                                <span className={`px-2 py-1 text-xs rounded-full font-semibold whitespace-nowrap ${getStatusBadgeColorClass(selectedTask!.status)}`}>
+                                    {selectedTask!.status}
+                                </span>
+                                {/* 🗑️ Delete Task Button (top-right corner) */}
+                                <button
+                                    onClick={() => {
+                                        if (window.confirm("Are you sure you want to delete this task?")) {
+                                            deleteTask(selectedTask!.id);
+                                            handleCloseModal();
+                                        }
+                                    }}
+                                    className="px-2  transition-colors"
+                                    title="Delete Task"
                                 >
-                                    Client Details
+                                    <TrashIcon className="size-4 text-red-500" />
                                 </button>
+                            </div>
+
+                            {clientForSelectedTask && (
+                                <p className="text-sm font-semibold text-secondary">Client: {clientForSelectedTask.name}</p>
                             )}
+                            <p className="text-text-secondary whitespace-pre-wrap">
+                                {selectedTask?.description || 'No description provided.'}
+                            </p>
+
+                            <div className="flex justify-end gap-4 pt-4 border-t">
+                                <button
+                                    onClick={() => setIsEditingTask(true)}
+                                    className="bg-gray-200 hover:bg-gray-300 text-text-primary font-semibold py-2 px-4 rounded-md"
+                                >
+                                    Edit Task
+                                </button>
+                                {clientForSelectedTask && (
+                                    <button
+                                        onClick={() => handleNavigateToClient(clientForSelectedTask.id)}
+                                        className="bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-md"
+                                    >
+                                        Client Details
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </Modal>
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 {/* Left Column for Search and Results */}
                 <div className="lg:col-span-1">
-                     <h1 className="text-3xl font-bold mb-8">Calendar</h1>
-                     <div className="relative mb-4">
+                    <h1 className="text-3xl font-bold mb-8">Calendar</h1>
+                    <div className="relative mb-4">
                         <span className="absolute inset-y-0 left-0 flex items-center pl-3">
                             {SearchIcon}
                         </span>
@@ -229,8 +361,8 @@ export const CalendarView: React.FC = () => {
                                     const client = clients.find(c => c.id === task.clientId);
                                     const taskDate = new Date(task.dueDate);
                                     return (
-                                        <div 
-                                            key={task.id} 
+                                        <div
+                                            key={task.id}
                                             onClick={() => handleSearchResultClick(task)}
                                             className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 cursor-pointer border"
                                         >
@@ -279,15 +411,16 @@ export const CalendarView: React.FC = () => {
                                             taskDate.getDate() === date.getDate();
                                     });
                                     return (
-                                    <CalendarDay 
-                                        key={index} 
-                                        date={date}
-                                        day={date.getDate()} 
-                                        isCurrentMonth={date.getMonth() === month}
-                                        isToday={date.toDateString() === today.toDateString()}
-                                        tasks={tasksForDay}
-                                        onTaskClick={handleTaskClick}
-                                    />
+                                        <CalendarDay
+                                            key={index}
+                                            date={date}
+                                            day={date.getDate()}
+                                            isCurrentMonth={date.getMonth() === month}
+                                            isToday={date.toDateString() === today.toDateString()}
+                                            tasks={tasksForDay}
+                                            onTaskClick={handleTaskClick}
+                                            onAddTask={handleAddTaskForDate}
+                                        />
                                     );
                                 })}
                             </div>
@@ -295,6 +428,35 @@ export const CalendarView: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            <Modal
+                isOpen={isAddTaskModalOpen}
+                onClose={() => setIsAddTaskModalOpen(false)}
+                title="Create New Task"
+            >
+                <NewTaskForm
+                    onSubmit={(taskData) => {
+                        // Prefill the dueDate from the clicked date
+                        const dataWithDate = {
+                            ...taskData,
+                            dueDate: newTaskDate ? newTaskDate.toISOString().split('T')[0] : '',
+                        };
+                        addTask(dataWithDate);
+                        setIsAddTaskModalOpen(false);
+                        setNewTaskDate(null);
+                    }}
+                    onCancel={() => setIsAddTaskModalOpen(false)}
+                    initialData={{
+                        dueDate: newTaskDate
+                            ? newTaskDate.toLocaleDateString('en-CA') // produces YYYY-MM-DD in local time
+                            : '',
+                    }}
+
+                />
+            </Modal>
         </div>
+
     );
+
 };
+

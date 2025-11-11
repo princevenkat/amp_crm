@@ -127,10 +127,19 @@ export const updatePasswordEntry = (id: string, data: Partial<PasswordEntry>) =>
 export const deletePasswordEntry = (id: string) =>
   apiRequest<void>(`/passwords/${id}`, "DELETE");
 
+// // Proposals
+// export const getProposals = () => apiRequest<Proposal[]>("/proposals");
+// export const createProposal = (data: Omit<Proposal, "id">) =>
+//   apiRequest<Proposal>("/proposals", "POST", data);
+
 // Proposals
 export const getProposals = () => apiRequest<Proposal[]>("/proposals");
 export const createProposal = (data: Omit<Proposal, "id">) =>
   apiRequest<Proposal>("/proposals", "POST", data);
+export const updateProposal = (proposal: Proposal) =>
+  apiRequest<Proposal>(`/proposals/${proposal.id}`, "PUT", proposal);
+export const deleteProposal = (id: string) =>
+  apiRequest<void>(`/proposals/${id}`, "DELETE");
 
 // Email Templates
 export const getEmailTemplates = () =>

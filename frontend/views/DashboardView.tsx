@@ -59,6 +59,23 @@ export const DashboardView: React.FC = () => {
             }
         });
 
+
+
+
+        // ledger.forEach(entry => {
+        //     if (entry.type !== 'Expense' && entry.pay_status === 'Paid') {
+        //         const date = new Date(entry.date);
+        //         const month = date.getMonth();
+        //         const year = date.getFullYear();
+        //         const key = `${year}-${String(month).padStart(2, '0')}`;
+
+        //         if (!monthlyRevenue[key]) monthlyRevenue[key] = 0;
+        //         monthlyRevenue[key] += Number(entry.amount); // ensure number
+        //     }
+        // });
+        // console.log("Monthly Revenue (Paid Only):", monthlyRevenue);
+
+
         return Object.entries(monthlyRevenue)
             .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
             .map(([key, revenue]) => {
@@ -109,8 +126,12 @@ export const DashboardView: React.FC = () => {
 
     // const totalRevenue = ledger.filter(e => e.type !== 'Expense').reduce((acc, curr) => acc + curr.amount, 0);
 
+    // const totalRevenue = ledger
+    //     .filter(e => e.type !== 'Expense')
+    //     .reduce((acc, curr) => acc + Number(curr.amount), 0);
+
     const totalRevenue = ledger
-        .filter(e => e.type !== 'Expense')
+        .filter(e => e.type !== 'Expense' && e.pay_status === 'Paid')
         .reduce((acc, curr) => acc + Number(curr.amount), 0);
 
     const clientsWonCount = clients.filter(c => c.caseStatus === 'Completed').length;

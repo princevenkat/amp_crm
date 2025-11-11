@@ -256,6 +256,11 @@ const PipelineTableRow: React.FC<{
     const applicant = client.applicants?.[0];
 
 
+    const handleConvert = () => {
+        onConvert(client);
+        toast.success(`${client.name} successfully converted to client!`);
+    };
+
 
     return (
         <tr className="border-b border-gray-200 hover:bg-gray-50">
@@ -268,7 +273,7 @@ const PipelineTableRow: React.FC<{
             <td className="px-6 py-4">
                 <div className="flex gap-4">
                     <button onClick={() => onEdit(client)} className="text-sm font-semibold text-secondary hover:underline">Edit</button>
-                    <button onClick={() => onConvert(client)} className="text-sm font-semibold text-primary hover:underline">Convert to Client</button>
+                    <button onClick={handleConvert} className="text-sm font-semibold text-primary hover:underline">Convert to Client</button>
                     <button
                         onClick={() => onDelete(client)}
                         className="text-sm font-semibold text-danger hover:underline"

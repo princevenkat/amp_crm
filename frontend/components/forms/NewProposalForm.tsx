@@ -3,19 +3,42 @@ import type { Proposal } from '../../types';
 import { DataContext } from '../../contexts/DataContext';
 
 interface NewProposalFormProps {
+  initialData?: Omit<Proposal, 'id'>; // new prop
   onSubmit: (proposal: Omit<Proposal, 'id'>) => void;
   onCancel: () => void;
 }
 
-export const NewProposalForm: React.FC<NewProposalFormProps> = ({ onSubmit, onCancel }) => {
+export const NewProposalForm: React.FC<NewProposalFormProps> = ({ initialData, onSubmit, onCancel }) => {
   const { clients } = useContext(DataContext);
+
   const [formData, setFormData] = useState<Omit<Proposal, 'id'>>({
-    clientName: clients[0]?.name || '',
-    product: '',
-    value: 0,
-    status: 'Draft',
-    sentDate: '-',
+    clientName: initialData?.clientName || clients[0]?.name || '',
+    product: initialData?.product || '',
+    value: initialData?.value || 0,
+    status: initialData?.status || 'Draft',
+    sentDate: initialData?.sentDate || '-',
   });
+
+  // Update state when initialData changes (important for editing)
+  React.useEffect(() => {
+    if (initialData) {
+      setFormData({
+        clientName: initialData.clientName,
+        product: initialData.product,
+        value: initialData.value,
+        status: initialData.status,
+        sentDate: initialData.sentDate,
+      });
+    } else {
+      setFormData({
+        clientName: clients[0]?.name || '',
+        product: '',
+        value: 0,
+        status: 'Draft',
+        sentDate: '-',
+      });
+    }
+  }, [initialData, clients]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -29,24 +52,24 @@ export const NewProposalForm: React.FC<NewProposalFormProps> = ({ onSubmit, onCa
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 text-sm">
-       <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <div>
-            <label className="block font-medium text-text-secondary mb-1">Client</label>
-            <select name="clientName" onChange={handleChange} value={formData.clientName} className="w-full bg-surface border border-gray-300 rounded-md p-2">
-                {clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-            </select>
+          <label className="block font-medium text-text-secondary mb-1">Client</label>
+          <select name="clientName" value={formData.clientName} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2">
+            {clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+          </select>
         </div>
         <div>
           <label className="block font-medium text-text-secondary mb-1">Product</label>
-          <input type="text" name="product" onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" required />
+          <input type="text" name="product" value={formData.product} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" required />
         </div>
         <div>
-          <label className="block font-medium text-text-secondary mb-1">Value ($)</label>
-          <input type="number" name="value" onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" required />
+          <label className="block font-medium text-text-secondary mb-1">Value (£)</label>
+          <input type="number" name="value" value={formData.value} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" required />
         </div>
-         <div>
+        <div>
           <label className="block font-medium text-text-secondary mb-1">Status</label>
-          <select name="status" onChange={handleChange} value={formData.status} className="w-full bg-surface border border-gray-300 rounded-md p-2">
+          <select name="status" value={formData.status} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2">
             <option>Draft</option>
             <option>Sent</option>
             <option>Accepted</option>

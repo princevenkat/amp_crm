@@ -20,6 +20,8 @@ const getTaskBorderColorClass = (dueDate: string, status: Task['status']): strin
     return 'border-secondary';
 };
 
+
+
 // 🟩 Relative due date display
 const getRelativeDueDate = (dueDate: string): string => {
     const today = new Date();
@@ -154,10 +156,60 @@ export const TasksView: React.FC = () => {
         setIsModalOpen(false);
     };
 
+    // const groupedTasks = useMemo(() => {
+    //     const groups: Record<string, Task[]> = {};
+
+    //     tasks.forEach(task => {
+    //         let key: string;
+    //         switch (groupBy) {
+    //             case 'client': {
+    //                 const client = task.clientId ? clients.find(c => c.id === task.clientId) : null;
+    //                 key = client ? client.name : 'No Client';
+    //                 break;
+    //             }
+    //             case 'assignee':
+    //                 key = task.assignedTo || 'Unassigned';
+    //                 break;
+    //             case 'status':
+    //             default:
+    //                 key = task.status;
+    //                 break;
+    //         }
+
+    //         if (!groups[key]) groups[key] = [];
+    //         groups[key].push(task);
+    //     });
+
+    //     Object.keys(groups).forEach(key => {
+    //         groups[key].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+    //     });
+
+    //     return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
+    // }, [tasks, groupBy, clients]);
+
     const groupedTasks = useMemo(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // 🟦 Filter: only overdue or due in next 7 days
+        const filteredTasks = tasks.filter(task => {
+            const dueDate = new Date(task.dueDate);
+            dueDate.setHours(0, 0, 0, 0);
+            const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            return diffDays <= 7; // includes overdue
+        });
+
+        // 🟦 Sort: overdue first, then soonest due
+        filteredTasks.sort((a, b) => {
+            const aDate = new Date(a.dueDate).getTime();
+            const bDate = new Date(b.dueDate).getTime();
+            return aDate - bDate;
+        });
+
+        // 🟦 Group by selected mode
         const groups: Record<string, Task[]> = {};
 
-        tasks.forEach(task => {
+        filteredTasks.forEach(task => {
             let key: string;
             switch (groupBy) {
                 case 'client': {
@@ -178,12 +230,15 @@ export const TasksView: React.FC = () => {
             groups[key].push(task);
         });
 
+        // Sort tasks inside each group
         Object.keys(groups).forEach(key => {
             groups[key].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
         });
 
+        // Sort group titles alphabetically
         return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
     }, [tasks, groupBy, clients]);
+
 
     return (
         <div className="p-4 sm:p-8">

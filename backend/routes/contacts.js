@@ -96,31 +96,97 @@ router.put('/:id', protect, async (req, res) => {
     }
 });
 
+// // 🟥 Delete a contact (only if user owns it or is admin)
+// router.delete('/:id', protect, async (req, res) => {
+//     const { id } = req.params;
+//     const userId = req.user.id;
+//     const userRole = req.user.role;
+
+//     try {
+//         if (userRole !== 'Admin' || userRole !== 'Super Admin') {
+//             const [rows] = await db.query('SELECT createdBy FROM contacts WHERE id = ?', [id]);
+//             if (rows.length === 0) return res.status(404).json({ message: 'Contact not found' });
+//             if (rows[0].createdBy !== userId) {
+//                 return res.status(403).json({ message: 'Not authorized to delete this contact' });
+//             }
+//         }
+
+//         const [result] = await db.query('DELETE FROM contacts WHERE id = ?', [id]);
+//         if (result.affectedRows === 0) {
+//             return res.status(404).json({ message: 'Contact not found' });
+//         }
+//         res.status(204).send();
+//     } catch (error) {
+//         console.error("Failed to delete contact:", error);
+//         res.status(500).json({ message: "Server error" });
+//     }
+// });
+
+
 // 🟥 Delete a contact (only if user owns it or is admin)
+// router.delete('/:id', protect, async (req, res) => {
+//     const { id } = req.params;
+//     const userId = req.user.id;
+//     const userRole = req.user.role;
+
+//     try {
+//         // ✅ Only non-admin users need ownership check
+//         if (userRole !== 'Admin' && userRole !== 'Super Admin') {
+//             const [rows] = await db.query('SELECT createdBy FROM contacts WHERE id = ?', [id]);
+//             if (rows.length === 0) {
+//                 return res.status(404).json({ message: 'Contact not found' });
+//             }
+//             if (rows[0].createdBy !== userId) {
+//                 return res.status(403).json({ message: 'Not authorized to delete this contact' });
+//             }
+//         }
+
+//         // ✅ Delete contact
+//         const [result] = await db.query('DELETE FROM contacts WHERE id = ?', [id]);
+//         if (result.affectedRows === 0) {
+//             return res.status(404).json({ message: 'Contact not found' });
+//         }
+
+//         res.status(204).send(); // No content on success
+//     } catch (error) {
+//         console.error("Failed to delete contact:", error);
+//         res.status(500).json({ message: "Server error" });
+//     }
+// });
+
+// 🟥 Delete a contact (only if user owns it or is admin/super admin)
 router.delete('/:id', protect, async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
     const userRole = req.user.role;
 
     try {
-        if (userRole !== 'Admin' || userRole !== 'Super Admin') {
+        // 🟨 Only non-admin users need to own the contact
+        if (userRole !== 'Admin' && userRole !== 'Super Admin') {
             const [rows] = await db.query('SELECT createdBy FROM contacts WHERE id = ?', [id]);
-            if (rows.length === 0) return res.status(404).json({ message: 'Contact not found' });
+            if (rows.length === 0) {
+                return res.status(404).json({ message: 'Contact not found' });
+            }
+
+            // 🟩 Advisor or other user can only delete their own
             if (rows[0].createdBy !== userId) {
                 return res.status(403).json({ message: 'Not authorized to delete this contact' });
             }
         }
 
+        // 🟥 Perform the deletion
         const [result] = await db.query('DELETE FROM contacts WHERE id = ?', [id]);
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Contact not found' });
         }
-        res.status(204).send();
+
+        res.status(204).send(); // No content response on success
     } catch (error) {
         console.error("Failed to delete contact:", error);
         res.status(500).json({ message: "Server error" });
     }
 });
+
 
 
 // ✅ Add optional ?type=Solicitor query support

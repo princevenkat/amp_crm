@@ -53,7 +53,7 @@ export interface PropertyDetails {
   purchasePrice: number;
   dateOfPurchase: string;
   yearBuilt: number | string;
-  propertyType: "Detached" | "Semi-detached" | "Terraced" | "Flat" | "";
+  propertyType: string;
   isExLocal: boolean;
   bedrooms: number | string;
   livingRooms: number | string;
@@ -91,7 +91,7 @@ export interface MortgageDetails {
     | "Product switch"
     | "Further Advance"
     | "";
-  dateOfFMA: string;
+  dateOfFma: string;
   dateOffered: string;
   lender: string;
   lenderReference: string;
@@ -160,7 +160,7 @@ export interface ProductDetails {
   accountant?: ProfessionalContact;
   surveyor?: ProfessionalContact;
   estateAgent?: EstateAgentContact;
-  limitedCompany?: LimitedCompanyDetails;
+  limitedCompany: LimitedCompanyDetails;
 }
 
 // --- NEW Document Interface ---
@@ -212,7 +212,8 @@ export interface Client {
   notes?: Note[];
 
   // Existing fields
-  status: "Active" | "Lead" | "Archived";
+  status: "Active" | "Lead" | "Archived" | "Pipeline";
+
   caseStatus?: CaseStatus;
   lastContacted: string;
   avatar: string;
@@ -273,11 +274,21 @@ export interface PasswordEntry {
 
 export interface LedgerEntry {
   id: string;
+  clientId?: string;
   date: string;
   clientName: string;
   description: string;
   amount: number;
-  type: "Commission" | "Fee" | "Expense";
+  // type: "Commission" | "Fee" | "Expense";
+  type:
+    | "Fee"
+    | "Commission"
+    | "Expense"
+    | "Broker Fee"
+    | "Procuration Fee"
+    | "Referral Fee"
+    | "Other";
+  pay_status: "Paid" | "Due";
 }
 
 export interface Proposal {
@@ -333,6 +344,8 @@ export interface DataContextType {
   getContactsByType: (type: ContactType) => Contact[];
   proposals: Proposal[];
   addProposal: (proposal: Omit<Proposal, "id">) => Promise<void>;
+  updateProposal: (proposal: Proposal) => Promise<void>; // ✅ Add this
+  deleteProposal: (proposalId: string) => Promise<void>; // ✅ Add this
   emailTemplates: EmailTemplate[];
   addEmailTemplate: (template: Omit<EmailTemplate, "id">) => Promise<void>;
   ledger: LedgerEntry[];

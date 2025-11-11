@@ -9,6 +9,7 @@ import { NewTaskForm } from '../components/forms/NewTaskForm';
 import { PlusIcon, SearchIcon, MinusIcon, EditIcon } from '../components/ui/Icons';
 import { ContactType, TaskStatus, UserRole } from '../types';
 
+import { formatCurrency } from "@/utils/formatCurrency";
 
 import { toast, Toaster, ToastBar } from 'react-hot-toast';
 
@@ -17,7 +18,16 @@ const emptyApplicant: Applicant = {
     homeTelephone: '', mobileNumber: '', email: '', currentAddress: '', noOfDependents: 0, nationality: ''
 };
 
-const ApplicantDetails: React.FC<{ applicant: Applicant; index: number; isEditing: boolean; onChange: (index: number, field: keyof Applicant, value: any) => void; }> = ({ applicant, index, isEditing, onChange }) => {
+
+interface ApplicantDetailsProps {
+    applicant: Applicant;
+    index: number;
+    isEditing: boolean;
+    onChange: (index: number, field: keyof Applicant, value: any) => void;
+    copyAddressFrom?: string; // optional address to copy from
+}
+
+const ApplicantDetails: React.FC<ApplicantDetailsProps> = ({ applicant, index, isEditing, onChange, copyAddressFrom }) => {
 
     if (!isEditing) {
         return (
@@ -26,7 +36,16 @@ const ApplicantDetails: React.FC<{ applicant: Applicant; index: number; isEditin
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
                     <p><strong className="text-text-secondary">Full Name:</strong> {applicant.title} {applicant.firstName} {applicant.middleName} {applicant.surname}</p>
                     <p><strong className="text-text-secondary">Gender:</strong> {applicant.gender}</p>
-                    <p><strong className="text-text-secondary">Date of Birth:</strong> {applicant.dob}</p>
+                    <p><strong className="text-text-secondary">Date of Birth:</strong>
+                        {applicant.dob
+                            ? new Date(applicant.dob).toLocaleDateString("en-GB", {
+                                day: "2-digit",
+                                month: "numeric",
+                                year: "numeric",
+                            })
+                            : "—"}
+
+                    </p>
                     <p><strong className="text-text-secondary">Nationality:</strong> {applicant.nationality}</p>
                     <p><strong className="text-text-secondary">Email:</strong> {applicant.email}</p>
                     <p><strong className="text-text-secondary">Mobile:</strong> {applicant.mobileNumber}</p>
@@ -41,6 +60,12 @@ const ApplicantDetails: React.FC<{ applicant: Applicant; index: number; isEditin
         const { name, value } = e.target;
         const finalValue = e.target.type === 'number' ? parseInt(value, 10) || 0 : value;
         onChange(index, name as keyof Applicant, finalValue);
+    };
+
+    const handleCopyAddress = () => {
+        if (copyAddressFrom) {
+            onChange(index, 'currentAddress', copyAddressFrom);
+        }
     };
 
     const formFields: { name: keyof Applicant; label: string; type: string; required: boolean; fullWidth?: boolean; options?: string[] }[] = [
@@ -60,37 +85,128 @@ const ApplicantDetails: React.FC<{ applicant: Applicant; index: number; isEditin
 
     return (
         <div className="mb-6">
-            <h3 className="text-lg font-semibold text-text-primary border-b pb-2 mb-4">Applicant {index + 1}</h3>
+            <h3 className="text-lg font-semibold text-text-primary border-b pb-2 mb-4">
+                Applicant {index + 1}
+            </h3>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                {formFields.map(field => (
-                    <div key={field.name} className={field.fullWidth ? 'md:col-span-2' : ''}>
-                        <label className="block font-medium text-text-secondary mb-1">{field.label}</label>
-                        {field.type === 'select' ? (
-                            <select name={field.name} value={String(applicant[field.name])} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" required={field.required}>
-                                <option value="">Select...</option>
-                                {field.options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                            </select>
-                        ) : (
-                            <input type={field.type} name={field.name} value={String(applicant[field.name])} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" required={field.required} />
-                        )}
-                    </div>
-                ))}
+                {formFields.map((field) => {
+                    // Special handling for Current Address
+                    if (field.name === 'currentAddress') {
+                        return (
+                            <div key={field.name} className={field.fullWidth ? 'md:col-span-2' : ''}>
+                                <label className="block font-medium text-text-secondary mb-1 flex justify-between">
+                                    {field.label}
+                                    {copyAddressFrom && (
+                                        <button
+                                            type="button"
+                                            className="text-sm text-blue-600 hover:underline"
+                                            onClick={handleCopyAddress}
+                                        >
+                                            Copy Address
+                                        </button>
+                                    )}
+                                </label>
+                                <div className="flex gap-2 items-center">
+                                    <input
+                                        type="text"
+                                        name={field.name}
+                                        value={String(applicant[field.name])}
+                                        onChange={handleChange}
+                                        className="flex-1 bg-surface border border-gray-300 rounded-md p-2"
+                                        required={field.required}
+                                    />
+
+                                </div>
+                            </div>
+                        );
+                    }
+
+                    // Normal fields
+                    return (
+                        <div key={field.name} className={field.fullWidth ? 'md:col-span-2' : ''}>
+                            <label className="block font-medium text-text-secondary mb-1">{field.label}</label>
+                            {field.type === 'select' ? (
+                                <select
+                                    name={field.name}
+                                    value={String(applicant[field.name])}
+                                    onChange={handleChange}
+                                    className="w-full bg-surface border border-gray-300 rounded-md p-2"
+                                    required={field.required}
+                                >
+                                    <option value="">Select...</option>
+                                    {field.options?.map((opt) => (
+                                        <option key={opt} value={opt}>
+                                            {opt}
+                                        </option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <input
+                                    type={field.type}
+                                    name={field.name}
+                                    value={String(applicant[field.name])}
+                                    onChange={handleChange}
+                                    className="w-full bg-surface border border-gray-300 rounded-md p-2"
+                                    required={field.required}
+                                />
+                            )}
+                        </div>
+                    );
+                })}
             </div>
         </div>
+
+        // <div className="mb-6">
+        //     <h3 className="text-lg font-semibold text-text-primary border-b pb-2 mb-4">Applicant {index + 1}</h3>
+        //     {/* Copy address button */}
+        //     {copyAddressFrom && (
+        //         <button type="button" className="mb-2 text-sm text-blue-600 hover:underline" onClick={handleCopyAddress} >
+        //             Copy address from first applicant
+        //         </button>
+        //     )}
+        //     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        //         {formFields.map(field => (
+        //             <div key={field.name} className={field.fullWidth ? 'md:col-span-2' : ''}>
+        //                 <label className="block font-medium text-text-secondary mb-1">{field.label}</label>
+        //                 {field.type === 'select' ? (
+        //                     <select name={field.name} value={String(applicant[field.name])} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" required={field.required}>
+        //                         <option value="">Select...</option>
+        //                         {field.options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+        //                     </select>
+        //                 ) : (
+        //                     <input type={field.type} name={field.name} value={String(applicant[field.name])} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" required={field.required} />
+        //                 )}
+        //             </div>
+        //         ))}
+        //     </div>
+        // </div>
     );
 };
 
 const PropertyView: React.FC<{ property: PropertyDetails; isEditing: boolean; onChange: (field: keyof PropertyDetails, value: any) => void; }> = ({ property, isEditing, onChange }) => {
+    // console.log("property from backend:", property);
+    // console.log("propertyType from backend:", property?.propertyType);
+
 
     if (!isEditing) {
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
                 <p className="col-span-2"><strong className="text-text-secondary">Address:</strong> {property.address}</p>
-                <p><strong className="text-text-secondary">Property Value:</strong> ${Number(property.propertyValue).toLocaleString()}</p>
-                <p><strong className="text-text-secondary">Purchase Price:</strong> ${Number(property.purchasePrice).toLocaleString()}</p>
-                <p><strong className="text-text-secondary">Date of Purchase:</strong> {property.dateOfPurchase}</p>
+                <p><strong className="text-text-secondary">Property Value:</strong> {formatCurrency(property.propertyValue)}</p>
+                <p><strong className="text-text-secondary">Purchase Price:</strong> {formatCurrency(property.purchasePrice)}</p>
+                <p>
+                    <strong className="text-text-secondary">Date of Purchase:</strong>
+                    {property.dateOfPurchase
+                        ? new Date(property.dateOfPurchase).toLocaleDateString("en-GB", {
+                            day: "2-digit",
+                            month: "numeric",
+                            year: "numeric",
+                        })
+                        : "—"}
+                </p>
                 <p><strong className="text-text-secondary">Year Built:</strong> {property.yearBuilt}</p>
-                <p><strong className="text-text-secondary">Property Type:</strong> {property.propertyType}</p>
+                <p><strong className="text-text-secondary">Property Type:</strong> {property.propertyType || "—"}</p>
                 <p><strong className="text-text-secondary">Ex-Local Authority:</strong> {property.isExLocal ? 'Yes' : 'No'}</p>
                 <p><strong className="text-text-secondary">Bedrooms:</strong> {property.bedrooms}</p>
                 <p><strong className="text-text-secondary">Living Rooms:</strong> {property.livingRooms}</p>
@@ -161,7 +277,19 @@ const PropertyView: React.FC<{ property: PropertyDetails; isEditing: boolean; on
                     ) : f.type === 'checkbox' ? (
                         <input type="checkbox" name={f.name} checked={!!property[f.name]} onChange={handleChange} className="bg-surface border border-gray-300 rounded-md" />
                     ) : (
-                        <input type={f.type} name={f.name} value={String(property[f.name])} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" />
+                        // <input type={f.type} name={f.name} value={String(property[f.name])} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" />
+                        <input
+                            type={f.type}
+                            name={f.name}
+                            value={
+                                f.type === "date" && property[f.name]
+                                    ? new Date(property[f.name] as string).toISOString().split("T")[0]
+                                    : String(property[f.name] ?? "")
+                            }
+                            onChange={handleChange}
+                            className="w-full bg-surface border border-gray-300 rounded-md p-2"
+                        />
+
                     )}
                 </div>
             ))}
@@ -204,6 +332,9 @@ const ProductView: React.FC<{
     advisors: string[];
 }> = ({ productDetails, propertyValue, isEditing, onChange, onSubFieldChange, advisors }) => {
 
+    //console.log('Product Details Limited Company:', productDetails);
+    console.log('Product Details:', productDetails);
+
     const { getContactsByType } = useContext(DataContext)
 
     const lenders = getContactsByType(ContactType.Lender);
@@ -211,6 +342,8 @@ const ProductView: React.FC<{
     const accountants = getContactsByType(ContactType.Accountant);
     const surveyors = getContactsByType(ContactType.Surveyor);
     const estateAgents = getContactsByType(ContactType.EstateAgent);
+
+
 
 
     const [directors, setDirectors] = useState<string[]>(productDetails.limitedCompany?.directors || ['']);
@@ -243,23 +376,30 @@ const ProductView: React.FC<{
     const showMortgage = businessWritten === 'Mortgage Only' || businessWritten === 'Mortgage & Protection';
     const showProtection = businessWritten === 'Protection Only' || businessWritten === 'Mortgage & Protection' || businessWritten === 'Building & Content';
 
+
+
+
     return (
         <div className="text-sm">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <label className="font-semibold text-text-secondary">Business Written</label>
-                    <select
-                        value={productDetails.businessWritten}
-                        onChange={(e) => onChange('businessWritten', e.target.value as BusinessWrittenType)}
-                        className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100"
-                        disabled={!isEditing}
-                    >
-                        <option value="">Select...</option>
-                        <option>Mortgage Only</option>
-                        <option>Protection Only</option>
-                        <option>Building & Content</option>
-                        <option>Mortgage & Protection</option>
-                    </select>
+                    {isEditing ? (
+                        <select
+                            value={productDetails.businessWritten}
+                            onChange={(e) => onChange('businessWritten', e.target.value as BusinessWrittenType)}
+                            className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100"
+                            disabled={!isEditing}
+                        >
+                            <option value="">Select...</option>
+                            <option>Mortgage Only</option>
+                            <option>Protection Only</option>
+                            <option>Building & Content</option>
+                            <option>Mortgage & Protection</option>
+                        </select>
+                    ) : (
+                        <p className="py-2">{productDetails.businessWritten}</p>
+                    )}
                 </div>
             </div>
 
@@ -273,28 +413,71 @@ const ProductView: React.FC<{
                                 {advisors.map(name => <option key={name} value={name}>{name}</option>)}
                             </select>
                         ) : (
-                            <p className="mt-1 p-2">{productDetails.mortgage?.advisor || 'Not Assigned'}</p>
+                            <p className="py-2">{productDetails.mortgage?.advisor || 'Not Assigned'}</p>
                         )}
                     </div>
                     <div>
                         <label className="font-semibold text-text-secondary">Mortgage Type</label>
-                        <select disabled={!isEditing} value={productDetails.mortgage?.mortgageType || ''} onChange={(e) => onSubFieldChange('mortgage', 'mortgageType', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100">
-                            <option value="">Select...</option>
-                            <option>Purchase</option>
-                            <option>Remortgage with capital raising</option>
-                            <option>Remortgage without Capital raising</option>
-                            <option>Product switch</option>
-                            <option>Further Advance</option>
-                            <option>Limited Co BTL</option>
-                        </select>
+                        {isEditing ? (
+                            <select disabled={!isEditing} value={productDetails.mortgage?.mortgageType || ''} onChange={(e) => onSubFieldChange('mortgage', 'mortgageType', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100">
+                                <option value="">Select...</option>
+                                <option>Purchase</option>
+                                <option>Remortgage with capital raising</option>
+                                <option>Remortgage without Capital raising</option>
+                                <option>Product switch</option>
+                                <option>Further Advance</option>
+                                <option>Limited Co BTL</option>
+                            </select>
+                        ) : (
+                            <p className="py-2">{productDetails.mortgage?.mortgageType}</p>
+                        )}
                     </div>
                     <div>
                         <label className="font-semibold text-text-secondary">Date of FMA</label>
-                        <input disabled={!isEditing} type="date" value={productDetails.mortgage?.dateOfFMA || ''} onChange={(e) => onSubFieldChange('mortgage', 'dateOfFMA', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        {isEditing ? (
+                            <input
+                                disabled={!isEditing}
+                                type="date"
+                                value={productDetails.mortgage?.dateOfFma ? new Date(productDetails.mortgage.dateOfFma).toISOString().split('T')[0] : ''}
+                                onChange={(e) => onSubFieldChange('mortgage', 'dateOfFma', e.target.value)}
+                                className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100"
+                            />
+                        ) : (
+                            <p className="py-2">
+                                {productDetails.mortgage?.dateOfFma
+                                    ? new Date(productDetails.mortgage.dateOfFma).toLocaleDateString("en-GB", {
+                                        day: "2-digit",
+                                        month: "numeric",
+                                        year: "numeric",
+                                    })
+                                    : "—"}
+                            </p>
+                        )}
+                        {/* <input disabled={!isEditing} type="date" value={productDetails.mortgage?.dateOfFMA || ''} onChange={(e) => onSubFieldChange('mortgage', 'dateOfFMA', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" /> */}
                     </div>
                     <div>
                         <label className="font-semibold text-text-secondary">Date Offered</label>
-                        <input disabled={!isEditing} type="date" value={productDetails.mortgage?.dateOffered || ''} onChange={(e) => onSubFieldChange('mortgage', 'dateOffered', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        {isEditing ? (
+                            <input
+                                disabled={!isEditing}
+                                type="date"
+                                value={productDetails.mortgage?.dateOffered ? new Date(productDetails.mortgage.dateOffered).toISOString().split('T')[0] : ''}
+                                onChange={(e) => onSubFieldChange('mortgage', 'dateOffered', e.target.value)}
+                                className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100"
+                            />
+                        ) : (
+                            <p className="py-2">
+                                {productDetails.mortgage?.dateOffered
+                                    ? new Date(productDetails.mortgage?.dateOffered).toLocaleDateString("en-GB", {
+                                        day: "2-digit",
+                                        month: "numeric",
+                                        year: "numeric",
+                                    })
+                                    : "—"}
+                                {/* {productDetails.mortgage?.dateOffered} */}
+                            </p>
+                        )}
+                        {/* <input disabled={!isEditing} type="date" value={productDetails.mortgage?.dateOffered || ''} onChange={(e) => onSubFieldChange('mortgage', 'dateOffered', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" /> */}
                     </div>
                     {/* <div>
                         <label className="font-semibold text-text-secondary">Lender</label>
@@ -322,17 +505,34 @@ const ProductView: React.FC<{
                                 ))}
                             </select>
                         ) : (
-                            <p className="mt-1 p-2">{lenders.find(l => l.id === productDetails.mortgage?.lender)?.name || 'Not Assigned'}</p>
+                            <p className="py-2">{lenders.find(l => l.id === productDetails.mortgage?.lender)?.name || 'Not Assigned'}</p>
                         )}
                     </div>
                     <div>
                         <label className="font-semibold text-text-secondary">Lender Reference</label>
-                        <input disabled={!isEditing} type="text" value={productDetails.mortgage?.lenderReference || ''} onChange={(e) => onSubFieldChange('mortgage', 'lenderReference', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+
+                        {isEditing ? (
+                            <input disabled={!isEditing} type="text" value={productDetails.mortgage?.lenderReference || ''} onChange={(e) => onSubFieldChange('mortgage', 'lenderReference', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        ) : (
+                            <p className=" py-2">{productDetails.mortgage?.lenderReference}</p>
+                        )}
                     </div>
-                    <p><strong className="text-text-secondary">Property Value:</strong> ${Number(productDetails.mortgage?.propertyValue || propertyValue).toLocaleString()}</p>
+                    <p><strong className="text-text-secondary">Property Value:</strong>
+
+                        {formatCurrency(propertyValue)}
+                        {/* ${Number(productDetails.mortgage?.propertyValue || propertyValue).toLocaleString()} */}
+                    </p>
                     <div>
                         <label className="font-semibold text-text-secondary">Mortgage Loan Amount</label>
-                        <input disabled={!isEditing} type="number" value={productDetails.mortgage?.mortgageLoanAmount || ''} onChange={(e) => onSubFieldChange('mortgage', 'mortgageLoanAmount', Number(e.target.value))} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+
+                        {isEditing ? (
+                            <input disabled={!isEditing} type="number" value={productDetails.mortgage?.mortgageLoanAmount || ''} onChange={(e) => onSubFieldChange('mortgage', 'mortgageLoanAmount', Number(e.target.value))} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+
+                        ) : (
+                            <p className="py-2">{formatCurrency(productDetails.mortgage?.mortgageLoanAmount)}</p>  // uses your global formatter
+                        )}
+
+
                     </div>
 
 
@@ -348,36 +548,41 @@ const ProductView: React.FC<{
                         <label className="font-semibold text-text-secondary">Fees</label>
                         {productDetails.mortgage?.fees?.map((fee, index) => (
                             <div key={index} className="flex items-center gap-2 mt-2">
-                                <select
-                                    disabled={!isEditing}
-                                    value={fee.type}
-                                    onChange={(e) => {
-                                        const newFees = [...(productDetails.mortgage?.fees || [])];
-                                        newFees[index].type = e.target.value;
-                                        onSubFieldChange('mortgage', 'fees', newFees);
-                                    }}
-                                    className="p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100 w-1/2"
-                                >
-                                    <option value="">Select Fee Type...</option>
-                                    <option value="Broker Fee">Broker Fee</option>
-                                    <option value="Procuration Fee">Procuration Fee</option>
-                                    <option value="Referral Fee">Referral Fee</option>
-                                    <option value="Other">Other</option>
-                                </select>
-
-                                <input
-                                    disabled={!isEditing}
-                                    type="number"
-                                    placeholder="Amount"
-                                    value={fee.amount}
-                                    onChange={(e) => {
-                                        const newFees = [...(productDetails.mortgage?.fees || [])];
-                                        newFees[index].amount = Number(e.target.value);
-                                        onSubFieldChange('mortgage', 'fees', newFees);
-                                    }}
-                                    className="p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100 w-1/2"
-                                />
-
+                                {isEditing ? (
+                                    <select
+                                        disabled={!isEditing}
+                                        value={fee.type}
+                                        onChange={(e) => {
+                                            const newFees = [...(productDetails.mortgage?.fees || [])];
+                                            newFees[index].type = e.target.value;
+                                            onSubFieldChange('mortgage', 'fees', newFees);
+                                        }}
+                                        className="p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100 w-1/2"
+                                    >
+                                        <option value="">Select Fee Type...</option>
+                                        <option value="Broker Fee">Broker Fee</option>
+                                        <option value="Procuration Fee">Procuration Fee</option>
+                                        <option value="Referral Fee">Referral Fee</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                ) : (
+                                    <p>{fee.type} - </p>  // uses your global formatter
+                                )}
+                                {isEditing ? (
+                                    <input
+                                        type="number"
+                                        placeholder="Amount"
+                                        value={fee.amount}
+                                        onChange={(e) => {
+                                            const newFees = [...(productDetails.mortgage?.fees || [])];
+                                            newFees[index].amount = Number(e.target.value);
+                                            onSubFieldChange("mortgage", "fees", newFees);
+                                        }}
+                                        className="p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100 w-1/2"
+                                    />
+                                ) : (
+                                    <p >{formatCurrency(fee.amount)}</p>  // uses your global formatter
+                                )}
                                 {isEditing && (
                                     <button
                                         type="button"
@@ -411,34 +616,89 @@ const ProductView: React.FC<{
 
                     <div>
                         <label className="font-semibold text-text-secondary">Rate</label>
-                        <input disabled={!isEditing} type="text" value={productDetails.mortgage?.rate || ''} onChange={(e) => onSubFieldChange('mortgage', 'rate', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+
+                        {isEditing ? (
+                            <input disabled={!isEditing} type="text" value={productDetails.mortgage?.rate || ''} onChange={(e) => onSubFieldChange('mortgage', 'rate', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        ) : (
+                            <p className="py-2">{formatCurrency(productDetails.mortgage?.rate)}</p>  // uses your global formatter
+                        )}
                     </div>
                     <div>
                         <label className="font-semibold text-text-secondary">Product Type</label>
-                        <select disabled={!isEditing} value={productDetails.mortgage?.productType || ''} onChange={(e) => onSubFieldChange('mortgage', 'productType', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100">
-                            <option value="">Select...</option>
-                            <option>Fixed</option>
-                            <option>Variable</option>
-                            <option>Discount</option>
-                            <option>Capped</option>
-                        </select>
+                        {isEditing ? (
+                            <select disabled={!isEditing} value={productDetails.mortgage?.productType || ''} onChange={(e) => onSubFieldChange('mortgage', 'productType', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100">
+                                <option value="">Select...</option>
+                                <option>Fixed</option>
+                                <option>Variable</option>
+                                <option>Discount</option>
+                                <option>Capped</option>
+                            </select>
+                        ) : (
+                            <p className="py-2">{formatCurrency(productDetails.mortgage?.productType)}</p>  // uses your global formatter
+                        )}
                     </div>
 
                     <div>
                         <label className="font-semibold text-text-secondary">Product Term</label>
-                        <input disabled={!isEditing} type="text" value={productDetails.mortgage?.productTerm || ''} onChange={(e) => onSubFieldChange('mortgage', 'productTerm', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        {isEditing ? (
+                            <input disabled={!isEditing} type="text" value={productDetails.mortgage?.productTerm || ''} onChange={(e) => onSubFieldChange('mortgage', 'productTerm', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        ) : (
+                            <p className="py-2">{formatCurrency(productDetails.mortgage?.productTerm)}</p>  // uses your global formatter
+                        )}
                     </div>
                     <div>
                         <label className="font-semibold text-text-secondary">Mortgage Term</label>
-                        <input disabled={!isEditing} type="text" value={productDetails.mortgage?.mortgageTerm || ''} onChange={(e) => onSubFieldChange('mortgage', 'mortgageTerm', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        {isEditing ? (
+                            <input disabled={!isEditing} type="text" value={productDetails.mortgage?.mortgageTerm || ''} onChange={(e) => onSubFieldChange('mortgage', 'mortgageTerm', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        ) : (
+                            <p className="py-2">{formatCurrency(productDetails.mortgage?.mortgageTerm)}</p>  // uses your global formatter
+                        )}
                     </div>
                     <div>
                         <label className="font-semibold text-text-secondary">Rate Expiry</label>
-                        <input disabled={!isEditing} type="date" value={productDetails.mortgage?.rateExpiry || ''} onChange={(e) => onSubFieldChange('mortgage', 'rateExpiry', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        {isEditing ? (
+                            <input disabled={!isEditing} type="date" value={
+                                productDetails.mortgage?.rateExpiry
+                                    ? new Date(productDetails.mortgage.rateExpiry).toISOString().split("T")[0]
+                                    : ''
+                            } onChange={(e) => onSubFieldChange('mortgage', 'rateExpiry', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        ) : (
+                            <p className="py-2">
+                                {productDetails.mortgage?.rateExpiry
+                                    ? new Date(productDetails.mortgage.rateExpiry).toLocaleDateString("en-GB", {
+                                        day: "2-digit",
+                                        month: "numeric",
+                                        year: "numeric",
+                                    })
+                                    : "—"}
+
+                            </p>  // uses your global formatter
+                        )}
                     </div>
                     <div>
                         <label className="font-semibold text-text-secondary">Renewal Reminder Date</label>
-                        <input disabled={!isEditing} type="date" value={productDetails.mortgage?.renewalReminderDate || ''} onChange={(e) => onSubFieldChange('mortgage', 'renewalReminderDate', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        {isEditing ? (
+                            <input disabled={!isEditing} type="date"
+
+                                value={
+                                    productDetails.mortgage?.renewalReminderDate
+                                        ? new Date(productDetails.mortgage.renewalReminderDate).toISOString().split("T")[0]
+                                        : ''
+                                }
+
+
+                                onChange={(e) => onSubFieldChange('mortgage', 'renewalReminderDate', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        ) : (
+                            <p className="py-2">
+                                {productDetails.mortgage?.renewalReminderDate
+                                    ? new Date(productDetails.mortgage.renewalReminderDate).toLocaleDateString("en-GB", {
+                                        day: "2-digit",
+                                        month: "numeric",
+                                        year: "numeric",
+                                    })
+                                    : "—"}
+                            </p>  // uses your global formatter
+                        )}
                     </div>
                 </FormSection>
             )}
@@ -453,48 +713,81 @@ const ProductView: React.FC<{
                                 {advisors.map(name => <option key={name} value={name}>{name}</option>)}
                             </select>
                         ) : (
-                            <p className="mt-1 p-2">{productDetails.protection?.advisor || 'Not Assigned'}</p>
+                            <p className="py-2">{productDetails.protection?.advisor || 'Not Assigned'}</p>
                         )}
                     </div>
                     <div>
                         <label className="font-semibold text-text-secondary">Type of Insurance</label>
-                        <select disabled={!isEditing} value={productDetails.protection?.typeOfInsurance || ''} onChange={(e) => onSubFieldChange('protection', 'typeOfInsurance', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100">
-                            <option value="">Select...</option>
-                            <option>Level term</option>
-                            <option>Decreasing term</option>
-                            <option>Increasing term</option>
-                            <option>CIC</option>
-                            <option>Income protection</option>
-                            <option>FIB</option>
-                        </select>
+                        {isEditing ? (
+                            <select disabled={!isEditing} value={productDetails.protection?.typeOfInsurance || ''} onChange={(e) => onSubFieldChange('protection', 'typeOfInsurance', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100">
+                                <option value="">Select...</option>
+                                <option>Level term</option>
+                                <option>Decreasing term</option>
+                                <option>Increasing term</option>
+                                <option>CIC</option>
+                                <option>Income protection</option>
+                                <option>FIB</option>
+                            </select>
+                        ) : (
+                            <p className="py-2">{productDetails.protection?.typeOfInsurance}</p>
+                        )}
                     </div>
                     <div>
                         <label className="font-semibold text-text-secondary">Provider</label>
-                        <input disabled={!isEditing} type="text" value={productDetails.protection?.provider || ''} onChange={(e) => onSubFieldChange('protection', 'provider', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        {isEditing ? (
+                            <input disabled={!isEditing} type="text" value={productDetails.protection?.provider || ''} onChange={(e) => onSubFieldChange('protection', 'provider', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        ) : (
+                            <p className="py-2">{productDetails.protection?.provider}</p>
+                        )}
                     </div>
                     <div>
                         <label className="font-semibold text-text-secondary">Provider Reference</label>
-                        <input disabled={!isEditing} type="text" value={productDetails.protection?.providerReference || ''} onChange={(e) => onSubFieldChange('protection', 'providerReference', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        {isEditing ? (
+                            <input disabled={!isEditing} type="text" value={productDetails.protection?.providerReference || ''} onChange={(e) => onSubFieldChange('protection', 'providerReference', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        ) : (
+                            <p className="py-2">{productDetails.protection?.providerReference}</p>
+                        )}
                     </div>
                     <div>
                         <label className="font-semibold text-text-secondary">Amount Assured</label>
-                        <input disabled={!isEditing} type="number" value={productDetails.protection?.amountAssured || ''} onChange={(e) => onSubFieldChange('protection', 'amountAssured', Number(e.target.value))} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        {isEditing ? (
+                            <input disabled={!isEditing} type="number" value={productDetails.protection?.amountAssured || ''} onChange={(e) => onSubFieldChange('protection', 'amountAssured', Number(e.target.value))} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        ) : (
+                            <p className="py-2">{productDetails.protection?.amountAssured}</p>
+                        )}
                     </div>
                     <div>
                         <label className="font-semibold text-text-secondary">Term</label>
-                        <input disabled={!isEditing} type="text" value={productDetails.protection?.term || ''} onChange={(e) => onSubFieldChange('protection', 'term', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        {isEditing ? (
+                            <input disabled={!isEditing} type="text" value={productDetails.protection?.term || ''} onChange={(e) => onSubFieldChange('protection', 'term', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        ) : (
+                            <p className="py-2">{productDetails.protection?.term}</p>
+                        )}
                     </div>
                     <div>
                         <label className="font-semibold text-text-secondary">Premium</label>
-                        <input disabled={!isEditing} type="number" value={productDetails.protection?.premium || ''} onChange={(e) => onSubFieldChange('protection', 'premium', Number(e.target.value))} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        {isEditing ? (
+                            <input disabled={!isEditing} type="number" value={productDetails.protection?.premium || ''} onChange={(e) => onSubFieldChange('protection', 'premium', Number(e.target.value))} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        ) : (
+                            <p className="py-2">{productDetails.protection?.premium}</p>
+                        )}
                     </div>
                     <div>
                         <label className="font-semibold text-text-secondary">Date on Risk</label>
-                        <input disabled={!isEditing} type="date" value={productDetails.protection?.dateOnRisk || ''} onChange={(e) => onSubFieldChange('protection', 'dateOnRisk', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        {isEditing ? (
+
+                            <input disabled={!isEditing} type="date" value={productDetails.protection?.dateOnRisk || ''} onChange={(e) => onSubFieldChange('protection', 'dateOnRisk', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        ) : (
+                            <p className="py-2">{productDetails.protection?.dateOnRisk}</p>
+                        )}
                     </div>
                     <div>
                         <label className="font-semibold text-text-secondary">Commission</label>
-                        <input disabled={!isEditing} type="number" value={productDetails.protection?.commission || ''} onChange={(e) => onSubFieldChange('protection', 'commission', Number(e.target.value))} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        {isEditing ? (
+                            <input disabled={!isEditing} type="number" value={productDetails.protection?.commission || ''} onChange={(e) => onSubFieldChange('protection', 'commission', Number(e.target.value))} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        ) : (
+                            <p className="py-2">{productDetails.protection?.commission}</p>
+                        )}
                     </div>
                 </FormSection>
             )}
@@ -613,48 +906,92 @@ const ProductView: React.FC<{
             <FormSection title="Limited Company Details">
                 <div>
                     <label className="font-semibold text-text-secondary">Company Name</label>
-                    <input disabled={!isEditing} type="text" value={productDetails.limitedCompany?.name || ''} onChange={(e) => onSubFieldChange('limitedCompany', 'name', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+
+                    {isEditing ? (
+                        <input disabled={!isEditing} type="text" value={productDetails.limitedCompany?.name || ''} onChange={(e) => onSubFieldChange('limitedCompany', 'name', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                    ) : (
+                        <p className="py-2">
+                            {productDetails.limitedCompany?.name || ''}
+                        </p>
+                    )}
                 </div>
                 <div>
                     <label className="font-semibold text-text-secondary">Registration Number</label>
-                    <input disabled={!isEditing} type="text" value={productDetails.limitedCompany?.registrationNumber || ''} onChange={(e) => onSubFieldChange('limitedCompany', 'registrationNumber', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                    {isEditing ? (
+                        <input disabled={!isEditing} type="text" value={productDetails.limitedCompany?.registrationNumber || ''} onChange={(e) => onSubFieldChange('limitedCompany', 'registrationNumber', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                    ) : (
+                        <p className="py-2">
+                            {productDetails.limitedCompany?.registrationNumber || ''}
+                        </p>
+                    )}
                 </div>
-                <div className="col-span-2">
+                <div>
                     <label className="font-semibold text-text-secondary">Company Address</label>
-                    <input disabled={!isEditing} type="text" value={productDetails.limitedCompany?.address || ''} onChange={(e) => onSubFieldChange('limitedCompany', 'address', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                    {isEditing ? (
+                        <input disabled={!isEditing} type="text" value={productDetails.limitedCompany?.address || ''} onChange={(e) => onSubFieldChange('limitedCompany', 'address', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                    ) : (
+                        <p className="py-2">
+                            {productDetails.limitedCompany?.address || ''}
+                        </p>
+                    )}
                 </div>
                 <div>
                     <label className="font-semibold text-text-secondary">Date Established</label>
-                    <input disabled={!isEditing} type="date" value={productDetails.limitedCompany?.dateEstablished || ''} onChange={(e) => onSubFieldChange('limitedCompany', 'dateEstablished', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                    {isEditing ? (
+                        <input disabled={!isEditing} type="date" value={productDetails.limitedCompany?.dateEstablished || ''} onChange={(e) => onSubFieldChange('limitedCompany', 'dateEstablished', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                    ) : (
+                        <p className="py-2">
+                            {productDetails.limitedCompany?.dateEstablished || ''}
+                        </p>
+                    )}
                 </div>
                 <div className="col-span-2 space-y-2">
                     <label className="font-semibold text-text-secondary">Directors</label>
                     {directors.map((director, index) => (
                         <div key={index} className="flex items-center gap-2">
-                            <input
-                                disabled={!isEditing}
-                                type="text"
-                                placeholder={`Director ${index + 1} Name`}
-                                value={director}
-                                onChange={(e) => handleDirectorChange(index, e.target.value)}
-                                className="w-full p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100"
-                            />
+                            {isEditing ? (
+                                <input
+                                    disabled={!isEditing}
+                                    type="text"
+                                    placeholder={`Director ${index + 1} Name`}
+                                    value={director}
+                                    onChange={(e) => handleDirectorChange(index, e.target.value)}
+                                    className="w-full p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100"
+                                />
+                            ) : (
+                                <p>
+                                    {director}
+                                </p>
+                            )}
                             {isEditing && directors.length > 1 && (
                                 <button type="button" onClick={() => removeDirector(index)} className="text-danger p-1 rounded-full hover:bg-danger/10">
                                     {MinusIcon}
                                 </button>
                             )}
+
                         </div>
                     ))}
                     {isEditing && <button type="button" onClick={addDirector} className="text-sm text-secondary mt-2 flex items-center gap-1">{PlusIcon} Add director</button>}
                 </div>
                 <div>
                     <label className="font-semibold text-text-secondary">Phone</label>
-                    <input disabled={!isEditing} type="tel" value={productDetails.limitedCompany?.phone || ''} onChange={(e) => onSubFieldChange('limitedCompany', 'phone', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                    {isEditing ? (
+                        <input disabled={!isEditing} type="tel" value={productDetails.limitedCompany?.phone || ''} onChange={(e) => onSubFieldChange('limitedCompany', 'phone', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                    ) : (
+                        <p className="py-2">
+                            {productDetails.limitedCompany?.phone || ''}
+                        </p>
+                    )}
                 </div>
                 <div>
                     <label className="font-semibold text-text-secondary">Email</label>
-                    <input disabled={!isEditing} type="email" value={productDetails.limitedCompany?.email || ''} onChange={(e) => onSubFieldChange('limitedCompany', 'email', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                    {isEditing ? (
+                        <input disabled={!isEditing} type="email" value={productDetails.limitedCompany?.email || ''} onChange={(e) => onSubFieldChange('limitedCompany', 'email', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                    ) : (
+                        <p className="py-2">
+                            {productDetails.limitedCompany?.email || ''}
+                        </p>
+                    )}
                 </div>
             </FormSection>
         </div>
@@ -854,13 +1191,41 @@ const DocumentsView: React.FC<{ client: Client }> = ({ client }) => {
 const AssociatedContactsEditor: React.FC<{
     productDetails?: ProductDetails;
     isEditing: boolean;
-    onChange: (contactType: 'solicitor' | 'accountant' | 'surveyor', field: keyof ProfessionalContact, value: string) => void;
+    onChange: (contactType: 'lender' | 'solicitor' | 'accountant' | 'surveyor' | 'estateagent', field: keyof ProfessionalContact, value: string) => void;
 }> = ({ productDetails, isEditing, onChange }) => {
-    const contacts: { type: 'solicitor' | 'accountant' | 'surveyor'; label: string; data?: ProfessionalContact }[] = [
+    const contacts: { type: 'lender' | 'solicitor' | 'accountant' | 'surveyor' | 'estateagent'; label: string; data?: ProfessionalContact }[] = [
+        { type: 'lender', label: 'Lender', data: productDetails?.solicitor },
         { type: 'solicitor', label: 'Solicitor', data: productDetails?.solicitor },
         { type: 'accountant', label: 'Accountant', data: productDetails?.accountant },
         { type: 'surveyor', label: 'Surveyor', data: productDetails?.surveyor },
+        { type: 'estateagent', label: 'Estate Agent', data: productDetails?.surveyor },
     ];
+
+    // const isProtectionOnly: boolean =
+    //     !!productDetails?.protection && !productDetails?.mortgage?.lender;
+
+    // // ✅ Define contact list with correct typing
+    // const contacts: {
+    //     type: 'lender' | 'solicitor' | 'accountant' | 'surveyor' | 'estateagent';
+    //     label: string;
+    //     data?: ProfessionalContact;
+    // }[] = [];
+
+    // // Add contacts conditionally (to preserve type safety)
+    // if (!isProtectionOnly) {
+    //     contacts.push({
+    //         type: 'lender',
+    //         label: 'Lender',
+    //         data: productDetails?.mortgage?.lender as unknown as ProfessionalContact
+    //     });
+    // }
+
+    // contacts.push(
+    //     { type: 'solicitor', label: 'Solicitor', data: productDetails?.solicitor },
+    //     { type: 'accountant', label: 'Accountant', data: productDetails?.accountant },
+    //     { type: 'surveyor', label: 'Surveyor', data: productDetails?.surveyor },
+    //     { type: 'estateagent', label: 'Estate Agent', data: productDetails?.estateAgent },
+    // );
 
     if (!isEditing) {
         const hasContacts = contacts.some(c => c.data?.name);
@@ -1233,6 +1598,7 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                                 index={index}
                                 isEditing={isEditing}
                                 onChange={handleApplicantChange}
+                                copyAddressFrom={index > 0 ? editedClient.applicants[0].currentAddress : undefined}
                             />
                         ))
                     ) : (

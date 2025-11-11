@@ -37,4 +37,50 @@ router.post('/', protect, async (req, res) => {
     }
 });
 
+
+
+
+// Update a proposal
+router.put('/:id', protect, async (req, res) => {
+    const { id } = req.params;
+    const { clientName, product, status, sentDate, value } = req.body;
+
+    try {
+        const [result] = await db.query(
+            'UPDATE proposals SET clientName = ?, product = ?, status = ?, sentDate = ?, value = ? WHERE id = ?',
+            [clientName, product, status, sentDate, value, id]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Proposal not found" });
+        }
+
+        res.json({ id, clientName, product, status, sentDate, value });
+    } catch (error) {
+        console.error("Failed to update proposal:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+// Delete a proposal
+router.delete('/:id', protect, async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const [result] = await db.query(
+            'DELETE FROM proposals WHERE id = ?',
+            [id]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Proposal not found" });
+        }
+
+        res.status(204).send();
+    } catch (error) {
+        console.error("Failed to delete proposal:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
 export default router;

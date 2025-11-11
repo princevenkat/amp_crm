@@ -39,13 +39,29 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
   const [clientId, setClientId] = useState(initialData?.clientId || '');
 
   // ✅ Set defaults for assignedBy / assignedTo to current logged-in advisor
+  // useEffect(() => {
+  //   if (!initialData && currentUser) {
+  //     const userName = currentUser.name || currentUser.fullName || 'Unknown User';
+  //     setAssignedBy(userName);
+  //     setAssignedTo(userName);
+  //   }
+  // }, [initialData, currentUser]);
+
+
   useEffect(() => {
-    if (!initialData && currentUser) {
+    if (currentUser) {
       const userName = currentUser.name || currentUser.fullName || 'Unknown User';
-      setAssignedBy(userName);
-      setAssignedTo(userName);
+      // only set if not already filled (avoid overwriting when editing)
+      if (!initialData || !initialData.assignedBy) {
+        setAssignedBy(userName);
+      }
+      // for new tasks, also assign to current user
+      if (!initialData) {
+        setAssignedTo(userName);
+      }
     }
   }, [initialData, currentUser]);
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
