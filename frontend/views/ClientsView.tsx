@@ -12,6 +12,7 @@ import { ContactType, TaskStatus, UserRole } from '../types';
 import { formatCurrency } from "@/utils/formatCurrency";
 
 import { toast, Toaster, ToastBar } from 'react-hot-toast';
+import { TrashIcon } from '@heroicons/react/24/solid';
 
 const emptyApplicant: Applicant = {
     title: '', firstName: '', middleName: '', surname: '', gender: '', dob: '',
@@ -74,13 +75,13 @@ const ApplicantDetails: React.FC<ApplicantDetailsProps> = ({ applicant, index, i
         { name: 'middleName', label: 'Middle Name', type: 'text', required: false },
         { name: 'surname', label: 'Surname', type: 'text', required: true },
         { name: 'gender', label: 'Gender', type: 'select', required: true, options: ['Male', 'Female', 'Other', 'Prefer not to say'] },
-        { name: 'dob', label: 'Date of Birth', type: 'date', required: true },
+        { name: 'dob', label: 'Date of Birth', type: 'date', required: false },
         { name: 'homeTelephone', label: 'Home Telephone', type: 'tel', required: false },
         { name: 'mobileNumber', label: 'Mobile Number', type: 'tel', required: true },
-        { name: 'currentAddress', label: 'Current Address', type: 'text', required: true, fullWidth: true },
+        { name: 'currentAddress', label: 'Current Address', type: 'text', required: false, fullWidth: true },
         { name: 'email', label: 'Email Address', type: 'email', required: true },
-        { name: 'noOfDependents', label: 'No Of Dependents', type: 'number', required: true },
-        { name: 'nationality', label: 'Nationality', type: 'text', required: true },
+        { name: 'noOfDependents', label: 'No Of Dependents', type: 'number', required: false },
+        { name: 'nationality', label: 'Nationality', type: 'text', required: false },
     ];
 
     return (
@@ -1364,7 +1365,7 @@ const NotesView: React.FC<{
 };
 
 const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ client, onBack }) => {
-    const { tasks, contacts, addTask, addContact, updateClient, deleteClient, updateTask, currentUser, teamMembers } = useContext(DataContext);
+    const { tasks, contacts, addTask, addContact, updateClient, deleteClient, updateTask, deleteTask, currentUser, teamMembers } = useContext(DataContext);
 
     const [isEditing, setIsEditing] = useState(false);
     const [editedClient, setEditedClient] = useState<Client>(client);
@@ -1551,13 +1552,40 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
         setIsTaskModalOpen(false);
     };
 
+    // const handleSaveTask = async (taskData: Omit<Task, 'id'>) => {
+    //     if (taskToEdit) {
+    //         await updateTask(taskToEdit.id, taskData);
+    //     } else {
+    //         await addTask(taskData);
+    //     }
+    //     handleCloseTaskModal();
+    // };
     const handleSaveTask = async (taskData: Omit<Task, 'id'>) => {
+        const finalTaskData = {
+            ...taskData,
+            clientId: client.id, // ✅ always link to the current client
+        };
+
         if (taskToEdit) {
-            await updateTask(taskToEdit.id, taskData);
+            await updateTask(taskToEdit.id, finalTaskData);
         } else {
-            await addTask(taskData);
+            await addTask(finalTaskData);
         }
+
         handleCloseTaskModal();
+    };
+
+
+    const handleDeleteTask = async (taskId: string) => {
+        if (window.confirm('Are you sure you want to delete this task?')) {
+            try {
+                await deleteTask(taskId); // 🧩 make sure DataContext has this method
+                toast.success('Task deleted successfully.');
+            } catch (error) {
+                console.error('Error deleting task:', error);
+                toast.error('Failed to delete task.');
+            }
+        }
     };
 
     // const clientTasks = tasks.filter(task => task.clientId === client.id);
@@ -1653,6 +1681,7 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                     onCancel={handleCloseTaskModal}
                     clientId={client.id}
                     initialData={taskToEdit}
+                    hideClientSelector={true}
                 />
             </Modal>
             <button onClick={onBack} className="mb-6 text-sm text-secondary hover:underline">&larr; Back to Clients</button>
@@ -1714,6 +1743,7 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                         </CardContent>
                     </Card>
                 </div>
+
                 <div className="col-span-1">
                     <Card>
                         <CardHeader>
@@ -1742,10 +1772,29 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                                                 >
                                                     {EditIcon}
                                                 </button>
+                                                {/* 🗑️ Delete Button */}
+                                                <button
+                                                    onClick={() => handleDeleteTask(t.id)}
+                                                    className="text-gray-400 hover:text-danger p-1"
+                                                    aria-label="Delete task"
+                                                >
+                                                    <TrashIcon className="size-4 text-red-500" />
+                                                </button>
                                             </div>
                                             <p className="font-semibold text-text-primary pr-8">{t.title}</p>
                                             {t.description && <p className="text-xs text-text-secondary mt-1">{t.description}</p>}
-                                            <p className="text-xs text-text-secondary mt-2">Due: {t.dueDate}</p>
+                                            {/* <p className="text-xs text-text-secondary mt-2">Due: {t.dueDate}</p> */}
+                                            <p className="text-xs text-text-secondary mt-2">Date:
+                                                {t.dueDate
+                                                    ? new Date(t.dueDate).toLocaleDateString("en-GB", {
+                                                        day: "2-digit",
+                                                        month: "numeric",
+                                                        year: "numeric",
+                                                    })
+                                                    : "—"}
+                                            </p>
+
+
                                         </li>
                                     ))}
                                 </ul>

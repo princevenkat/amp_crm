@@ -1,14 +1,15 @@
 import React, { useState, useMemo, useContext } from 'react';
 import { DataContext } from '../contexts/DataContext';
-import type { Client, Applicant, Note } from '../types';
-import { PlusIcon, SearchIcon } from '../components/ui/Icons';
+import type { Client, Applicant, Note, Task } from '../types';
+import { EditIcon, PlusIcon, SearchIcon } from '../components/ui/Icons';
 import { NewEnquiryForm } from '../components/forms/NewEnquiryForm';
 import { Modal } from '../components/ui/Modal';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
 
 import toast from 'react-hot-toast';
 
-
+import { NewTaskForm } from '../components/forms/NewTaskForm';
+import { TrashIcon } from '@heroicons/react/24/solid';
 
 
 const NotesView: React.FC<{
@@ -125,13 +126,14 @@ const ApplicantDetailsForm: React.FC<{ applicant: Applicant; onChange: (e: React
         { name: 'middleName', label: 'Middle Name', type: 'text', required: false },
         { name: 'surname', label: 'Surname', type: 'text', required: true },
         { name: 'gender', label: 'Gender', type: 'select-gender', required: true },
-        { name: 'dob', label: 'Date of Birth', type: 'date', required: true },
+        { name: 'dob', label: 'Date of Birth', type: 'date', required: false },
         { name: 'homeTelephone', label: 'Home Telephone', type: 'tel', required: false },
         { name: 'mobileNumber', label: 'Mobile Number', type: 'tel', required: true },
-        { name: 'currentAddress', label: 'Current Address', type: 'text', required: true, fullWidth: true },
+        { name: 'currentAddress', label: 'Current Address', type: 'text', required: false, fullWidth: true },
         { name: 'email', label: 'Email Address', type: 'email', required: true },
-        { name: 'noOfDependents', label: 'No Of Dependents', type: 'number', required: true },
-        { name: 'nationality', label: 'Nationality', type: 'text', required: true },
+        { name: 'noOfDependents', label: 'No Of Dependents', type: 'number', required: false },
+        { name: 'nationality', label: 'Nationality', type: 'text', required: false },
+
     ];
 
     return (
@@ -201,8 +203,77 @@ const EditLeadView: React.FC<{ lead: Client; onSave: (updatedLead: Client) => vo
 
     };
 
+    // TASK
+    const { tasks, addTask, updateTask, deleteTask } = useContext(DataContext);
+
+    // Task modal state
+    const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+    const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+    // Filter tasks for this client/lead
+    const clientTasks = tasks.filter(task => String(task.clientId) === String(lead.id));
+    // Task modal handlers
+    const handleOpenCreateTaskModal = () => {
+        setTaskToEdit(null);
+        setIsTaskModalOpen(true);
+    };
+
+    const handleOpenEditTaskModal = (task: Task) => {
+        setTaskToEdit(task);
+        setIsTaskModalOpen(true);
+    };
+
+    const handleCloseTaskModal = () => {
+        setTaskToEdit(null);
+        setIsTaskModalOpen(false);
+    };
+
+    const handleSaveTask = async (taskData: Omit<Task, 'id'>) => {
+        try {
+            if (taskToEdit) {
+                await updateTask(taskToEdit.id, taskData);
+                toast.success('Task updated successfully!');
+            } else {
+                await addTask({ ...taskData, clientId: lead.id });
+                toast.success('Task created successfully!');
+            }
+            handleCloseTaskModal();
+        } catch (error) {
+            console.error(error);
+            toast.error('Failed to save task.');
+        }
+    };
+
+
+    const handleDeleteTask = async (taskId: string) => {
+        if (window.confirm('Are you sure you want to delete this task?')) {
+            try {
+                await deleteTask(taskId); // 🧩 make sure DataContext has this method
+                toast.success('Task deleted successfully.');
+            } catch (error) {
+                console.error('Error deleting task:', error);
+                toast.error('Failed to delete task.');
+            }
+        }
+    };
     return (
         <div className="p-4 sm:p-8">
+            {/* Task Modal */}
+            <Modal
+                title={taskToEdit ? "Edit Task" : "Create New Task"}
+                isOpen={isTaskModalOpen}
+                onClose={handleCloseTaskModal}
+            >
+                <NewTaskForm
+                    onSubmit={handleSaveTask}
+                    onCancel={handleCloseTaskModal}
+                    clientId={lead.id}
+                    initialData={taskToEdit}
+                    hideClientSelector={true}   // ✅ skip search field
+                    statusSelector={true}
+                />
+            </Modal>
+
+
             <button onClick={onCancel} className="mb-6 text-sm text-secondary hover:underline">&larr; Back to Pipeline</button>
             <h1 className="text-3xl font-bold mb-2">Edit Pipeline</h1>
             <p className="text-text-secondary mb-8">Editing information for {lead.name}.</p>
@@ -233,6 +304,72 @@ const EditLeadView: React.FC<{ lead: Client; onSave: (updatedLead: Client) => vo
                                     onChange={setNotes}
                                     currentAuthor="Admin User"
                                 />
+                            </CardContent>
+                        </Card>
+
+                        <div className="h-2"></div>
+
+                        {/* Recent Tasks */}
+                        <Card>
+                            <CardHeader>
+                                <div className="flex justify-between items-center">
+                                    <span>Recent Tasks</span>
+                                    <button
+                                        onClick={handleOpenCreateTaskModal}
+                                        type="button"
+                                        className="flex items-center gap-1 text-sm text-secondary font-semibold hover:text-primary transition-colors"
+                                    >
+                                        {PlusIcon}
+                                        <span>New Task</span>
+                                    </button>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                {clientTasks.length > 0 ? (
+                                    <ul className="space-y-3">
+                                        {clientTasks.map((task) => (
+                                            <li
+                                                key={task.id}
+                                                className="text-sm p-3 bg-gray-50 rounded border relative group"
+                                            >
+                                                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleOpenEditTaskModal(task)}
+                                                        className="text-gray-400 hover:text-secondary p-1"
+                                                    >
+                                                        {EditIcon}
+                                                    </button>
+                                                    {/* 🗑️ Delete Button */}
+                                                    <button
+                                                        onClick={() => handleDeleteTask(task.id)}
+                                                        className="text-gray-400 hover:text-danger p-1"
+                                                        aria-label="Delete task"
+                                                    >
+                                                        <TrashIcon className="size-4 text-red-500" />
+                                                    </button>
+                                                </div>
+                                                <p className="font-semibold text-text-primary pr-8">{task.title}</p>
+                                                {task.description && (
+                                                    <p className="text-xs text-text-secondary mt-1">{task.description}</p>
+                                                )}
+                                                {/* <p className="text-xs text-text-secondary mt-2">Due: {task.dueDate}</p> */}
+                                                <p className="text-xs text-text-secondary mt-2">Date:
+
+                                                    {task.dueDate
+                                                        ? new Date(task.dueDate).toLocaleDateString("en-GB", {
+                                                            day: "2-digit",
+                                                            month: "numeric",
+                                                            year: "numeric",
+                                                        })
+                                                        : "—"}
+                                                </p>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    <p className="text-sm text-text-secondary">No tasks for this lead.</p>
+                                )}
                             </CardContent>
                         </Card>
                     </div>

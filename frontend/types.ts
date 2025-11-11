@@ -224,6 +224,8 @@ export interface Client {
   product: {
     type: string;
   };
+
+  tasks?: Task[];
 }
 
 export interface Task {

@@ -4,13 +4,23 @@ import { DataContext } from '../../contexts/DataContext';
 import { MagnifyingGlassIcon } from "@heroicons/react/24/solid"; // ✅ Add at the top
 
 
+// interface NewTaskFormProps {
+//   onSubmit: (taskData: Omit<Task, 'id'>) => void;
+//   onCancel: () => void;
+//   initialData?: Task | null;
+// }
+
 interface NewTaskFormProps {
   onSubmit: (taskData: Omit<Task, 'id'>) => void;
   onCancel: () => void;
   initialData?: Task | null;
+  clientId?: string;              // ✅ optional — pre-linked client (like a lead)
+  hideClientSelector?: boolean;   // ✅ hide search for pipeline tasks
+  statusSelector?: boolean;   // ✅ hide search for pipeline tasks
 }
 
-export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, initialData }) => {
+export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, initialData, clientId: propClientId,
+  hideClientSelector = false, statusSelector = false }) => {
   const { clients, teamMembers, currentUser } = useContext(DataContext);
 
   const [title, setTitle] = useState(initialData?.title || '');
@@ -77,7 +87,11 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
     e.preventDefault();
 
     // 🟥 Prevent submission if no client selected
-    if (!clientId) {
+    // if (!clientId) {
+    //   setError('Please select a client before saving this task.');
+    //   return;
+    // }
+    if (!clientId && !hideClientSelector) {
       setError('Please select a client before saving this task.');
       return;
     }
@@ -97,73 +111,79 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
 
   return (
     <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4 relative">
+
+
+
+
       {/* 🔍 Search Client by Case Reference (Mandatory) */}
 
+      {!hideClientSelector && (
+        <div className="md:col-span-2 relative">
+          <label className="block text-sm font-medium mb-1">
+            Search Client by Case Reference <span className="text-red-500">*</span>
+          </label>
 
-      <div className="md:col-span-2 relative">
-        <label className="block text-sm font-medium mb-1">
-          Search Client by Case Reference <span className="text-red-500">*</span>
-        </label>
+          <div className="relative">
+            {/* 🔍 Show search icon only if field is editable */}
+            {!initialData?.id && (
+              <MagnifyingGlassIcon
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-6 h-6 pointer-events-none"
+              />
+            )}
 
-        <div className="relative">
-          {/* 🔍 Show search icon only if field is editable */}
-          {!initialData?.id && (
-            <MagnifyingGlassIcon
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-6 h-6 pointer-events-none"
-            />
-          )}
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={e => {
+                const value = e.target.value;
+                setSearchTerm(value);
 
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={e => {
-              const value = e.target.value;
-              setSearchTerm(value);
+                // ✅ Only show suggestions when creating new task
+                if (!initialData?.id) setShowSuggestions(true);
 
-              // ✅ Only show suggestions when creating new task
-              if (!initialData?.id) setShowSuggestions(true);
-
-              if (value.trim() === '') {
-                setClientId('');
-                setStatus('Enquiry'); // reset to default
-                setError('');
-              } else if (error) {
-                setError('');
-              }
-            }}
-            placeholder="Type case reference or client name..."
-            className={`w-full border rounded-md p-2 ${!initialData?.id ? 'pl-9' : ''} 
+                if (value.trim() === '') {
+                  setClientId('');
+                  setStatus('Enquiry'); // reset to default
+                  setError('');
+                } else if (error) {
+                  setError('');
+                }
+              }}
+              placeholder="Type case reference or client name..."
+              className={`w-full border rounded-md p-2 ${!initialData?.id ? 'pl-9' : ''} 
         ${error ? 'border-red-500' : 'border-gray-300'}
         ${initialData?.id ? 'bg-gray-100 cursor-not-allowed text-gray-600' : ''}`}
-            readOnly={!!initialData?.id} // ✅ read-only only when editing
-            required
-          />
+              readOnly={!!initialData?.id} // ✅ read-only only when editing
+              required
+            />
+          </div>
+
+          {/* ✅ Only show dropdown for new task */}
+          {!initialData?.id && showSuggestions && filteredClients.length > 0 && (
+            <ul className="absolute z-10 bg-white border border-gray-200 rounded-md shadow-md w-full mt-1 max-h-48 overflow-y-auto">
+              {filteredClients.map(client => (
+                <li
+                  key={client.id}
+                  onClick={() => handleClientSelect(client.id)}
+                  className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                >
+                  <span className="font-medium">{client.caseReference}</span> — {client.name} ({client.caseStatus})
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+
+          {clientId && (
+            <p className="text-xs text-gray-500 mt-1">
+              Selected Client: {clients.find(c => c.id === clientId)?.name} (
+              {clients.find(c => c.id === clientId)?.caseReference})
+            </p>
+          )}
         </div>
 
-        {/* ✅ Only show dropdown for new task */}
-        {!initialData?.id && showSuggestions && filteredClients.length > 0 && (
-          <ul className="absolute z-10 bg-white border border-gray-200 rounded-md shadow-md w-full mt-1 max-h-48 overflow-y-auto">
-            {filteredClients.map(client => (
-              <li
-                key={client.id}
-                onClick={() => handleClientSelect(client.id)}
-                className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-              >
-                <span className="font-medium">{client.caseReference}</span> — {client.name} ({client.caseStatus})
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
-
-        {clientId && (
-          <p className="text-xs text-gray-500 mt-1">
-            Selected Client: {clients.find(c => c.id === clientId)?.name} (
-            {clients.find(c => c.id === clientId)?.caseReference})
-          </p>
-        )}
-      </div>
+      )}
 
 
 
@@ -262,7 +282,29 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
       {/* 🟩 Status */}
       <div>
         <label className="block text-sm font-medium mb-1">Status</label>
-        <select
+        {statusSelector ? (
+          // 🔒 Pipeline clients — fixed "Enquiry"
+          <input
+            type="text"
+            value="Enquiry"
+            readOnly
+            className="w-full border border-gray-300 rounded-md p-2 bg-gray-100 text-gray-600 cursor-not-allowed"
+          />
+        ) : (
+          // ✅ Normal clients — can select any status
+          <select
+            value={status}
+            onChange={e => setStatus(e.target.value as Task['status'])}
+            className="w-full border border-gray-300 rounded-md p-2"
+          >
+            {statusOptions.map(option => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        )}
+        {/* <select
           value={status}
           onChange={e => setStatus(e.target.value as Task['status'])}
           className="w-full border border-gray-300 rounded-md p-2"
@@ -272,7 +314,7 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
               {option}
             </option>
           ))}
-        </select>
+        </select> */}
       </div>
 
       {/* 🟩 Assigned To */}
@@ -320,7 +362,7 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
           {initialData ? 'Update Task' : 'Create Task'}
         </button>
       </div>
-    </form>
+    </form >
   );
 };
 
