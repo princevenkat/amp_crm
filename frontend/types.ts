@@ -30,6 +30,7 @@ export enum ContactType {
   Accountant = "Accountant",
   Surveyor = "Surveyor",
   EstateAgent = "Estate Agent",
+  Others = "Others",
 }
 
 export interface Applicant {
@@ -101,7 +102,15 @@ export interface MortgageDetails {
   procurationFees: number;
   fees: MortgageFee[];
   rate: string;
-  productType: "Fixed" | "Variable" | "Discount" | "Capped" | "";
+  productType:
+    | "Detached"
+    | "Semi-detached"
+    | "Bungalow"
+    | "Mid-terraced"
+    | "End of terrace"
+    | "Purpose-built Flat"
+    | "Converted flat"
+    | "";
   productTerm: string; // e.g., "2 years"
   rateExpiry: string;
   renewalReminderDate: string;
@@ -241,11 +250,12 @@ export interface Task {
 
 export interface Contact {
   id: string;
-  name: string;
+  name?: string;
   type: ContactType;
-  email: string;
+  email?: string;
   phone: string;
   company: string;
+  address: string;
 }
 
 // FIX: Added the 'Deal' interface to resolve an import error in NewDealForm.tsx.

@@ -37,7 +37,7 @@ router.get('/', protect, async (req, res) => {
 
 // 🟦 Create a new contact
 router.post('/', protect, async (req, res) => {
-    const { name, type, email, phone, company } = req.body;
+    const { name, type, email, phone, company, address } = req.body;
     const userId = req.user.id;
 
     const newContact = {
@@ -47,13 +47,14 @@ router.post('/', protect, async (req, res) => {
         email,
         phone,
         company,
+        address,
         createdBy: userId
     };
 
     try {
         await db.query(
-            'INSERT INTO contacts (id, name, type, email, phone, company, createdBy) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [newContact.id, newContact.name, newContact.type, newContact.email, newContact.phone, newContact.company, newContact.createdBy]
+            'INSERT INTO contacts (id, name, type, email, phone, company, address, createdBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [newContact.id, newContact.name, newContact.type, newContact.email, newContact.phone, newContact.company, newContact.address, newContact.createdBy]
         );
         res.status(201).json(newContact);
     } catch (error) {
@@ -65,7 +66,7 @@ router.post('/', protect, async (req, res) => {
 // 🟨 Update a contact (only if user owns it or is admin)
 router.put('/:id', protect, async (req, res) => {
     const { id } = req.params;
-    const { name, type, email, phone, company } = req.body;
+    const { name, type, email, phone, company, address } = req.body;
     const userId = req.user.id;
     const userRole = req.user.role;
 
@@ -80,8 +81,8 @@ router.put('/:id', protect, async (req, res) => {
         }
 
         const [result] = await db.query(
-            'UPDATE contacts SET name = ?, type = ?, email = ?, phone = ?, company = ? WHERE id = ?',
-            [name, type, email, phone, company, id]
+            'UPDATE contacts SET name = ?, type = ?, email = ?, phone = ?, company = ?, address = ? WHERE id = ?',
+            [name, type, email, phone, company, address, id]
         );
 
         if (result.affectedRows === 0) {

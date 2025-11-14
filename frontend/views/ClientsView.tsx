@@ -26,9 +26,10 @@ interface ApplicantDetailsProps {
     isEditing: boolean;
     onChange: (index: number, field: keyof Applicant, value: any) => void;
     copyAddressFrom?: string; // optional address to copy from
+    allApplicants?: Applicant[]; // add this
 }
 
-const ApplicantDetails: React.FC<ApplicantDetailsProps> = ({ applicant, index, isEditing, onChange, copyAddressFrom }) => {
+const ApplicantDetails: React.FC<ApplicantDetailsProps> = ({ applicant, index, isEditing, onChange, copyAddressFrom, allApplicants }) => {
 
     if (!isEditing) {
         return (
@@ -96,9 +97,9 @@ const ApplicantDetails: React.FC<ApplicantDetailsProps> = ({ applicant, index, i
                     if (field.name === 'currentAddress') {
                         return (
                             <div key={field.name} className={field.fullWidth ? 'md:col-span-2' : ''}>
-                                <label className="block font-medium text-text-secondary mb-1 flex justify-between">
+                                <label className="block font-medium text-text-secondary mb-1 flex justify-between items-center">
                                     {field.label}
-                                    {copyAddressFrom && (
+                                    {/* {copyAddressFrom && (
                                         <button
                                             type="button"
                                             className="text-sm text-blue-600 hover:underline"
@@ -106,6 +107,26 @@ const ApplicantDetails: React.FC<ApplicantDetailsProps> = ({ applicant, index, i
                                         >
                                             Copy Address
                                         </button>
+                                    )} */}
+                                    {allApplicants && allApplicants.length > 1 && (
+                                        <select
+                                            className="text-sm text-black text-sm bg-surface border border-gray-300 rounded-md py-2 px-3 cursor-pointer flex-fill"
+                                            onChange={(e) => {
+                                                const selectedIndex = parseInt(e.target.value, 10);
+                                                if (!isNaN(selectedIndex)) {
+                                                    onChange(index, 'currentAddress', allApplicants[selectedIndex].currentAddress);
+                                                }
+                                            }}
+                                        >
+                                            <option value="">Copy Address From...</option>
+                                            {allApplicants.map((a, i) => (
+                                                i !== index && ( // don't include the current applicant
+                                                    <option key={i} value={i}>
+                                                        Applicant {i + 1} - {a.firstName} {a.surname}
+                                                    </option>
+                                                )
+                                            ))}
+                                        </select>
                                     )}
                                 </label>
                                 <div className="flex gap-2 items-center">
@@ -629,10 +650,20 @@ const ProductView: React.FC<{
                         {isEditing ? (
                             <select disabled={!isEditing} value={productDetails.mortgage?.productType || ''} onChange={(e) => onSubFieldChange('mortgage', 'productType', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100">
                                 <option value="">Select...</option>
-                                <option>Fixed</option>
+                                {/* <option>Fixed</option>
                                 <option>Variable</option>
                                 <option>Discount</option>
-                                <option>Capped</option>
+                                <option>Capped</option> */}
+
+
+                                <option>Detached</option>
+                                <option>Semi-detached</option>
+                                <option>Bungalow</option>
+                                <option>Mid- terraced</option>
+                                <option>End of terrace</option>
+                                <option>Purpose-built Flat </option>
+                                <option>Converted flat</option>
+
                             </select>
                         ) : (
                             <p className="py-2">{formatCurrency(productDetails.mortgage?.productType)}</p>  // uses your global formatter
@@ -816,9 +847,24 @@ const ProductView: React.FC<{
                             ))}
                         </select>
                     ) : (
-                        <p className="p-2">
-                            {solicitors.find(s => s.id === productDetails.solicitor?.id)?.name || 'Not Assigned'}
-                        </p>
+                        // <p className="p-2">
+                        //     {solicitors.find(s => s.id === productDetails.solicitor?.id)?.name || 'Not Assigned'}
+                        // </p>
+                        <div className="py-2 space-y-1 text-xs">
+                            {(() => {
+                                const selected = solicitors.find(s => s.id === productDetails.solicitor?.id);
+                                if (!selected) return <p>Not Assigned</p>;
+                                return (
+                                    <>
+                                        <p><strong>Name:</strong> {selected.name}</p>
+                                        {selected.company && <p><strong>Company:</strong> {selected.company}</p>}
+                                        {selected.address && <p><strong>Address:</strong> {selected.address}</p>}
+                                        {selected.email && <p><strong>Email:</strong> {selected.email}</p>}
+                                        {selected.phone && <p><strong>Phone:</strong> {selected.phone}</p>}
+                                    </>
+                                );
+                            })()}
+                        </div>
                     )}
                 </div>
 
@@ -842,9 +888,24 @@ const ProductView: React.FC<{
                             ))}
                         </select>
                     ) : (
-                        <p className="p-2">
-                            {accountants.find(a => a.id === productDetails.accountant?.id)?.name || 'Not Assigned'}
-                        </p>
+                        // <p className="p-2">
+                        //     {accountants.find(a => a.id === productDetails.accountant?.id)?.name || 'Not Assigned'}
+                        // </p>
+                        <div className="py-2 space-y-1 text-xs">
+                            {(() => {
+                                const selected = accountants.find(s => s.id === productDetails.accountant?.id);
+                                if (!selected) return <p>Not Assigned</p>;
+                                return (
+                                    <>
+                                        <p><strong>Name:</strong> {selected.name}</p>
+                                        {selected.company && <p><strong>Company:</strong> {selected.company}</p>}
+                                        {selected.address && <p><strong>Address:</strong> {selected.address}</p>}
+                                        {selected.email && <p><strong>Email:</strong> {selected.email}</p>}
+                                        {selected.phone && <p><strong>Phone:</strong> {selected.phone}</p>}
+                                    </>
+                                );
+                            })()}
+                        </div>
                     )}
                 </div>
 
@@ -868,9 +929,24 @@ const ProductView: React.FC<{
                             ))}
                         </select>
                     ) : (
-                        <p className="p-2">
-                            {surveyors.find(s => s.id === productDetails.surveyor?.id)?.name || 'Not Assigned'}
-                        </p>
+                        // <p className="p-2">
+                        //     {surveyors.find(s => s.id === productDetails.surveyor?.id)?.name || 'Not Assigned'}
+                        // </p>
+                        <div className="py-2 space-y-1 text-xs">
+                            {(() => {
+                                const selected = surveyors.find(s => s.id === productDetails.surveyor?.id);
+                                if (!selected) return <p>Not Assigned</p>;
+                                return (
+                                    <>
+                                        <p><strong>Name:</strong> {selected.name}</p>
+                                        {selected.company && <p><strong>Company:</strong> {selected.company}</p>}
+                                        {selected.address && <p><strong>Address:</strong> {selected.address}</p>}
+                                        {selected.email && <p><strong>Email:</strong> {selected.email}</p>}
+                                        {selected.phone && <p><strong>Phone:</strong> {selected.phone}</p>}
+                                    </>
+                                );
+                            })()}
+                        </div>
                     )}
                 </div>
 
@@ -894,9 +970,24 @@ const ProductView: React.FC<{
                             ))}
                         </select>
                     ) : (
-                        <p className="p-2">
-                            {estateAgents.find(ea => ea.id === productDetails.estateAgent?.id)?.company || 'Not Assigned'}
-                        </p>
+                        // <p className="p-2">
+                        //     {estateAgents.find(ea => ea.id === productDetails.estateAgent?.id)?.company || 'Not Assigned'}
+                        // </p>
+                        <div className="py-2 space-y-1 text-xs">
+                            {(() => {
+                                const selected = estateAgents.find(s => s.id === productDetails.estateAgent?.id);
+                                if (!selected) return <p>Not Assigned</p>;
+                                return (
+                                    <>
+                                        <p><strong>Name:</strong> {selected.name}</p>
+                                        {selected.company && <p><strong>Company:</strong> {selected.company}</p>}
+                                        {selected.address && <p><strong>Address:</strong> {selected.address}</p>}
+                                        {selected.email && <p><strong>Email:</strong> {selected.email}</p>}
+                                        {selected.phone && <p><strong>Phone:</strong> {selected.phone}</p>}
+                                    </>
+                                );
+                            })()}
+                        </div>
                     )}
                 </div>
 
@@ -1627,6 +1718,8 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                                 isEditing={isEditing}
                                 onChange={handleApplicantChange}
                                 copyAddressFrom={index > 0 ? editedClient.applicants[0].currentAddress : undefined}
+                                allApplicants={editedClient.applicants}
+
                             />
                         ))
                     ) : (
@@ -1930,7 +2023,7 @@ export const ClientsView: React.FC = () => {
                                 <td className="px-6 py-4">{client.productDetails?.businessWritten || 'N/A'}</td>
                                 <td className="px-6 py-4">{client.lastContacted}</td>
                                 <td className="px-6 py-4">
-                                    <button onClick={() => setSelectedClient(client)} className="text-secondary hover:underline font-semibold">View</button>
+                                    <button onClick={() => setSelectedClient(client)} className="text-green-600 hover:underline font-semibold">View</button>
                                     {/* {client.status === 'Archived' && (
                                         <button
                                             onClick={() => handleRetrieveClient(client)}
@@ -1956,7 +2049,7 @@ export const ClientsView: React.FC = () => {
                                     {client.status !== 'Pipeline' && (
                                         <button
                                             onClick={() => handleMoveToPipeline(client)}
-                                            className="ml-4 text-green-600 hover:underline font-semibold"
+                                            className="ml-4 text-secondary hover:underline font-semibold"
                                         >
                                             Move to Pipeline
                                         </button>

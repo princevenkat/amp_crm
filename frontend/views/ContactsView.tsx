@@ -92,6 +92,7 @@ export const ContactsView: React.FC = () => {
               <th className="px-6 py-3 font-medium text-text-secondary">Name</th>
               <th className="px-6 py-3 font-medium text-text-secondary">Type</th>
               <th className="px-6 py-3 font-medium text-text-secondary">Company</th>
+              <th className="px-6 py-3 font-medium text-text-secondary">Address</th>
               <th className="px-6 py-3 font-medium text-text-secondary">Email</th>
               <th className="px-6 py-3 font-medium text-text-secondary">Phone</th>
               <th className="px-6 py-3 font-medium text-text-secondary">Actions</th>
@@ -105,6 +106,7 @@ export const ContactsView: React.FC = () => {
                   <span className="bg-primary/10 text-primary px-2 py-1 text-xs rounded-full">{contact.type}</span>
                 </td>
                 <td className="px-6 py-4">{contact.company}</td>
+                <td className="px-6 py-4">{contact.address}</td>
                 <td className="px-6 py-4">{contact.email}</td>
                 <td className="px-6 py-4">{contact.phone}</td>
                 <td className="px-6 py-4">

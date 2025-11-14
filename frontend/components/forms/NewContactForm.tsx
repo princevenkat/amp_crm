@@ -13,7 +13,8 @@ const emptyFormState: Omit<Contact, 'id'> = {
   email: '',
   phone: '',
   company: '',
-  type: ContactType.Other,
+  address: '',
+  type: ContactType.Others,
 };
 
 export const NewContactForm: React.FC<NewContactFormProps> = ({ onSubmit, onCancel, initialData }) => {
@@ -24,7 +25,7 @@ export const NewContactForm: React.FC<NewContactFormProps> = ({ onSubmit, onCanc
   }, [initialData]);
 
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -37,17 +38,27 @@ export const NewContactForm: React.FC<NewContactFormProps> = ({ onSubmit, onCanc
   return (
     <form onSubmit={handleSubmit} className="space-y-4 text-sm">
       <div className="grid grid-cols-2 gap-4">
-        <div>
+        <div >
           <label className="block font-medium text-text-secondary mb-1">Full Name</label>
-          <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" required />
+          <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" />
         </div>
         <div>
           <label className="block font-medium text-text-secondary mb-1">Company</label>
           <input type="text" name="company" value={formData.company} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" />
         </div>
+        <div className="col-span-2">
+          <label className="block font-medium text-text-secondary mb-1">Company Address</label>
+          <textarea
+            name="address"
+            value={formData.address}
+            onChange={handleChange}
+            className="w-full bg-surface border border-gray-300 rounded-md p-2"
+            rows={2} // adjust number of visible lines as needed
+          ></textarea>
+        </div>
         <div>
           <label className="block font-medium text-text-secondary mb-1">Email</label>
-          <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" required />
+          <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" />
         </div>
         <div>
           <label className="block font-medium text-text-secondary mb-1">Phone</label>
@@ -57,7 +68,7 @@ export const NewContactForm: React.FC<NewContactFormProps> = ({ onSubmit, onCanc
           <label className="block font-medium text-text-secondary mb-1">Contact Type</label>
           <select name="type" onChange={handleChange} value={formData.type} className="w-full bg-surface border border-gray-300 rounded-md p-2">
             {Object.values(ContactType).map(type => (
-                <option key={type} value={type}>{type}</option>
+              <option key={type} value={type}>{type}</option>
             ))}
           </select>
         </div>
