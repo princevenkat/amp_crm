@@ -140,6 +140,7 @@ export interface ProtectionDetails {
 export interface ProfessionalContact {
   name: string;
   company: string;
+  address: string;
   email: string;
   phone: string;
 }
@@ -168,7 +169,7 @@ export interface ProductDetails {
   solicitor?: ProfessionalContact;
   accountant?: ProfessionalContact;
   surveyor?: ProfessionalContact;
-  estateAgent?: EstateAgentContact;
+  estateAgent?: ProfessionalContact;
   limitedCompany: LimitedCompanyDetails;
 }
 

@@ -464,7 +464,7 @@ const hydrateClient = async (clientRow) => {
         db.query('SELECT * FROM documents WHERE clientId = ?', [clientRow.id]),
         db.query('SELECT * FROM notes WHERE clientId = ? ORDER BY date DESC', [clientRow.id]),
         db.query(
-            `SELECT id, name, email, phone, company, type 
+            `SELECT id, name, email, phone, company, address, type 
        FROM contacts 
        WHERE id IN (?, ?, ?, ?)`,
             [

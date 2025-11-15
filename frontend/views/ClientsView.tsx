@@ -1284,14 +1284,31 @@ const AssociatedContactsEditor: React.FC<{
     productDetails?: ProductDetails;
     isEditing: boolean;
     onChange: (contactType: 'lender' | 'solicitor' | 'accountant' | 'surveyor' | 'estateagent', field: keyof ProfessionalContact, value: string) => void;
-}> = ({ productDetails, isEditing, onChange }) => {
-    const contacts: { type: 'lender' | 'solicitor' | 'accountant' | 'surveyor' | 'estateagent'; label: string; data?: ProfessionalContact }[] = [
-        { type: 'lender', label: 'Lender', data: productDetails?.solicitor },
-        { type: 'solicitor', label: 'Solicitor', data: productDetails?.solicitor },
-        { type: 'accountant', label: 'Accountant', data: productDetails?.accountant },
-        { type: 'surveyor', label: 'Surveyor', data: productDetails?.surveyor },
-        { type: 'estateagent', label: 'Estate Agent', data: productDetails?.surveyor },
-    ];
+    contactsDirectory: ProfessionalContact[];
+}> = ({ productDetails, isEditing, onChange, contactsDirectory }) => {
+    // const contacts: { type: 'lender' | 'solicitor' | 'accountant' | 'surveyor' | 'estateagent'; label: string; data?: ProfessionalContact }[] = [
+    //     { type: 'lender', label: 'Lender', data: productDetails?.lender },
+    //     { type: 'solicitor', label: 'Solicitor', data: productDetails?.solicitor },
+    //     { type: 'accountant', label: 'Accountant', data: productDetails?.accountant },
+    //     { type: 'surveyor', label: 'Surveyor', data: productDetails?.surveyor },
+    //     { type: 'estateagent', label: 'Estate Agent', data: productDetails?.estateagent },
+    // ];
+    const lenderContact =
+        typeof productDetails?.mortgage?.lender === "string"
+            ? contactsDirectory.find(c => c.id === productDetails.mortgage.lender)
+            : productDetails?.mortgage?.lender;
+
+    const contacts: {
+        type: 'lender' | 'solicitor' | 'accountant' | 'surveyor' | 'estateagent';
+        label: string;
+        data?: ProfessionalContact;
+    }[] = [
+            { type: 'lender', label: 'Lender', data: lenderContact },
+            { type: 'solicitor', label: 'Solicitor', data: productDetails?.solicitor },
+            { type: 'accountant', label: 'Accountant', data: productDetails?.accountant },
+            { type: 'surveyor', label: 'Surveyor', data: productDetails?.surveyor },
+            { type: 'estateagent', label: 'Estate Agent', data: productDetails?.estateAgent },
+        ];
 
     // const isProtectionOnly: boolean =
     //     !!productDetails?.protection && !productDetails?.mortgage?.lender;
@@ -1319,52 +1336,93 @@ const AssociatedContactsEditor: React.FC<{
     //     { type: 'estateagent', label: 'Estate Agent', data: productDetails?.estateAgent },
     // );
 
-    if (!isEditing) {
-        const hasContacts = contacts.some(c => c.data?.name);
-        return (
-            <ul className="space-y-4">
-                {hasContacts ? (
-                    contacts.filter(c => c.data?.name).map(({ type, label, data }) => (
-                        <li key={type} className="p-4 bg-gray-50 rounded-md text-sm border">
-                            <p className="font-semibold text-text-primary">{label}: {data!.name}</p>
-                            <p className="text-text-secondary">{data!.company}</p>
-                            <p className="text-text-secondary">{data!.email} | {data!.phone}</p>
-                        </li>
-                    ))
-                ) : (
-                    <p className="text-sm text-text-secondary">No associated contacts found.</p>
-                )}
-            </ul>
+    // if (!isEditing) {
+    //     const hasContacts = contacts.some(c => c.data?.name);
+    //     return (
+    //         <ul className="space-y-4">
+    //             {hasContacts ? (
+    //                 contacts.filter(c => c.data?.name).map(({ type, label, data }) => (
+    //                     <li key={type} className="p-4 bg-gray-50 rounded-md text-sm border">
+    //                         <p className="font-semibold text-text-primary">{label}: {data!.name}</p>
+    //                         <p className="text-text-secondary">{data!.company}</p>
+    //                         <p className="text-text-secondary">{data!.address}</p>
+    //                         <p className="text-text-secondary">{data!.email} | {data!.phone}</p>
+    //                     </li>
+    //                 ))
+    //             ) : (
+    //                 <p className="text-sm text-text-secondary">No associated contacts found.</p>
+    //             )}
+    //         </ul>
+    //     );
+    // }
+
+    console.log(productDetails);
+
+    const hasAnyField = (c?: ProfessionalContact) => {
+        return c && (
+            c.name ||
+            c.company ||
+            c.address ||
+            c.email ||
+            c.phone
         );
-    }
+    };
+    // if (!isEditing) {
+    const visibleContacts = contacts.filter(c => hasAnyField(c.data));
 
     return (
-        <div className="space-y-6">
-            {contacts.map(({ type, label, data }) => (
-                <div key={type} className="border p-4 rounded-md">
-                    <h5 className="col-span-full font-bold capitalize mb-2">{label}</h5>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div>
-                            <label className="block font-medium text-text-secondary mb-1">Name</label>
-                            <input type="text" placeholder="Name" value={data?.name || ''} onChange={(e) => onChange(type, 'name', e.target.value)} className="w-full bg-surface border border-gray-300 rounded-md p-2" />
-                        </div>
-                        <div>
-                            <label className="block font-medium text-text-secondary mb-1">Company</label>
-                            <input type="text" placeholder="Company" value={data?.company || ''} onChange={(e) => onChange(type, 'company', e.target.value)} className="w-full bg-surface border border-gray-300 rounded-md p-2" />
-                        </div>
-                        <div>
-                            <label className="block font-medium text-text-secondary mb-1">Email</label>
-                            <input type="email" placeholder="Email" value={data?.email || ''} onChange={(e) => onChange(type, 'email', e.target.value)} className="w-full bg-surface border border-gray-300 rounded-md p-2" />
-                        </div>
-                        <div>
-                            <label className="block font-medium text-text-secondary mb-1">Phone</label>
-                            <input type="tel" placeholder="Phone" value={data?.phone || ''} onChange={(e) => onChange(type, 'phone', e.target.value)} className="w-full bg-surface border border-gray-300 rounded-md p-2" />
-                        </div>
-                    </div>
-                </div>
-            ))}
-        </div>
+        <ul className="space-y-4">
+            {visibleContacts.length > 0 ? (
+                visibleContacts.map(({ type, label, data }) => (
+                    <li key={type} className="p-4 bg-gray-50 rounded-md text-sm border">
+                        <p className="font-semibold text-text-primary">
+                            {label}: {data?.name || '—'}
+                        </p>
+                        <p className="text-text-secondary">{data?.company || '— Company Empty'}</p>
+                        <p className="text-text-secondary">{data?.address || '— Address Empty'}</p>
+                        <p className="text-text-secondary">
+                            {(data?.email || '—')} | {(data?.phone || '—')}
+                        </p>
+                    </li>
+                ))
+            ) : (
+                <p className="text-sm text-text-secondary">No associated contacts found.</p>
+            )}
+        </ul>
     );
+    // }
+
+    // return (
+    //     <div className="space-y-6">
+    //         {contacts.map(({ type, label, data }) => (
+    //             <div key={type} className="border p-4 rounded-md">
+    //                 <h5 className="col-span-full font-bold capitalize mb-2">{label}</h5>
+    //                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+    //                     <div>
+    //                         <label className="block font-medium text-text-secondary mb-1">Name</label>
+    //                         <input type="text" placeholder="Name" value={data?.name || ''} onChange={(e) => onChange(type, 'name', e.target.value)} className="w-full bg-surface border border-gray-300 rounded-md p-2" />
+    //                     </div>
+    //                     <div>
+    //                         <label className="block font-medium text-text-secondary mb-1">Company</label>
+    //                         <input type="text" placeholder="Company" value={data?.company || ''} onChange={(e) => onChange(type, 'company', e.target.value)} className="w-full bg-surface border border-gray-300 rounded-md p-2" />
+    //                     </div>
+    //                     <div>
+    //                         <label className="block font-medium text-text-secondary mb-1">Address</label>
+    //                         <input type="text" placeholder="Address" value={data?.address || ''} onChange={(e) => onChange(type, 'address', e.target.value)} className="w-full bg-surface border border-gray-300 rounded-md p-2" />
+    //                     </div>
+    //                     <div>
+    //                         <label className="block font-medium text-text-secondary mb-1">Email</label>
+    //                         <input type="email" placeholder="Email" value={data?.email || ''} onChange={(e) => onChange(type, 'email', e.target.value)} className="w-full bg-surface border border-gray-300 rounded-md p-2" />
+    //                     </div>
+    //                     <div>
+    //                         <label className="block font-medium text-text-secondary mb-1">Phone</label>
+    //                         <input type="tel" placeholder="Phone" value={data?.phone || ''} onChange={(e) => onChange(type, 'phone', e.target.value)} className="w-full bg-surface border border-gray-300 rounded-md p-2" />
+    //                     </div>
+    //                 </div>
+    //             </div>
+    //         ))}
+    //     </div>
+    // );
 };
 
 const NotesView: React.FC<{
@@ -1753,6 +1811,7 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                 productDetails={editedClient.productDetails}
                 isEditing={isEditing}
                 onChange={(contactType, field, value) => handleProductSubFieldChange(contactType, field, value)}
+                contactsDirectory={contacts}
             />
         },
         {
