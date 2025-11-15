@@ -1610,58 +1610,72 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
     };
 
     const handleSave = async () => {
-        const applicant1 = editedClient.applicants[0];
-        const updatedCoreDetails = {
-            name: `${applicant1.firstName} ${applicant1.surname}`,
-            email: applicant1.email,
-            phone: applicant1.mobileNumber,
-        };
-        const finalClient = { ...editedClient, ...updatedCoreDetails };
+        try {
+            const applicant1 = editedClient.applicants[0];
+            const updatedCoreDetails = {
+                name: `${applicant1.firstName} ${applicant1.surname}`,
+                email: applicant1.email,
+                phone: applicant1.mobileNumber,
+            };
+            const finalClient = { ...editedClient, ...updatedCoreDetails };
 
-        // Handle automated task creation for renewal reminder
-        const originalMortgage = client.productDetails?.mortgage;
-        const editedMortgage = finalClient.productDetails?.mortgage;
-        if (editedMortgage?.renewalReminderDate && editedMortgage.renewalReminderDate !== originalMortgage?.renewalReminderDate) {
-            const taskExists = tasks.some(t => t.clientId === finalClient.id && t.title.includes('Renewal Due'));
-            if (!taskExists) {
-                await addTask({
-                    title: `Renewal Due: ${finalClient.name} - ${editedMortgage.lender}`,
-                    description: `Product term ending. Rate expires on ${editedMortgage.rateExpiry}.`,
-                    dueDate: editedMortgage.renewalReminderDate,
-                    status: TaskStatus.Enquiry,
-                    assignedTo: finalClient.primaryAdvisor,
-                    assignedBy: 'System',
-                    clientId: finalClient.id,
-                });
-            }
-        }
-
-        // Handle automated contact creation
-        const professionals: { data?: ProfessionalContact, type: ContactType }[] = [
-            { data: finalClient.productDetails?.solicitor, type: ContactType.Solicitor },
-            { data: finalClient.productDetails?.accountant, type: ContactType.Accountant },
-            { data: finalClient.productDetails?.surveyor, type: ContactType.Surveyor }
-        ];
-
-        for (const prof of professionals) {
-            if (prof.data?.name && prof.data?.email) {
-                const contactExists = contacts.some(c => c.email.toLowerCase() === prof.data!.email.toLowerCase());
-                if (!contactExists) {
-                    await addContact({
-                        name: prof.data.name,
-                        company: prof.data.company,
-                        email: prof.data.email,
-                        phone: prof.data.phone,
-                        type: prof.type,
+            // Handle automated task creation for renewal reminder
+            const originalMortgage = client.productDetails?.mortgage;
+            const editedMortgage = finalClient.productDetails?.mortgage;
+            if (editedMortgage?.renewalReminderDate && editedMortgage.renewalReminderDate !== originalMortgage?.renewalReminderDate) {
+                const taskExists = tasks.some(t => t.clientId === finalClient.id && t.title.includes('Renewal Due'));
+                if (!taskExists) {
+                    await addTask({
+                        title: `Renewal Due: ${finalClient.name} - ${editedMortgage.lender}`,
+                        description: `Product term ending. Rate expires on ${editedMortgage.rateExpiry}.`,
+                        dueDate: editedMortgage.renewalReminderDate,
+                        status: TaskStatus.Enquiry,
+                        assignedTo: finalClient.primaryAdvisor,
+                        assignedBy: 'System',
+                        clientId: finalClient.id,
                     });
                 }
             }
+
+            // Handle automated contact creation
+            const professionals: { data?: ProfessionalContact, type: ContactType }[] = [
+                { data: finalClient.productDetails?.solicitor, type: ContactType.Solicitor },
+                { data: finalClient.productDetails?.accountant, type: ContactType.Accountant },
+                { data: finalClient.productDetails?.surveyor, type: ContactType.Surveyor }
+            ];
+
+            for (const prof of professionals) {
+                if (prof.data?.name && prof.data?.email) {
+                    const contactExists = contacts.some(c => c.email.toLowerCase() === prof.data!.email.toLowerCase());
+                    if (!contactExists) {
+                        await addContact({
+                            name: prof.data.name,
+                            company: prof.data.company,
+                            email: prof.data.email,
+                            phone: prof.data.phone,
+                            type: prof.type,
+                        });
+                    }
+                }
+            }
+
+
+            await updateClient(client.id, finalClient);
+            setIsEditing(false);
+            setEditedClient(finalClient);
+
+            // ⭐ SUCCESS TOAST
+            toast.success(`Client "${finalClient.name}" (${finalClient.caseReference}) updated successfully!`);
+
+
+        } catch (error) {
+
+            // ❌ ERROR TOAST
+            toast.error("Failed to update client. Please try again.");
+            console.error(error);
         }
 
 
-        await updateClient(client.id, finalClient);
-        setIsEditing(false);
-        setEditedClient(finalClient);
     };
 
     const handleCancel = () => {

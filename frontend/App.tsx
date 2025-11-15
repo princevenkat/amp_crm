@@ -77,6 +77,14 @@ const Sidebar: React.FC<{
             <Toaster
                 position="top-center"
                 reverseOrder={false} // optional, new toasts appear below older ones
+                toastOptions={{
+                    style: {
+                        width: "fit-content",
+                        maxWidth: "90vw",
+                        padding: "12px 16px",
+                        wordWrap: "break-word"
+                    }
+                }}
             >
                 {(t) => (
                     <ToastBar toast={t}>
