@@ -267,7 +267,7 @@ const PropertyView: React.FC<{ property: PropertyDetails; isEditing: boolean; on
         { name: 'purchasePrice', label: 'Purchase Price', type: 'number' },
         { name: 'dateOfPurchase', label: 'Date of Purchase', type: 'date' },
         { name: 'yearBuilt', label: 'Year Built', type: 'number' },
-        { name: 'propertyType', label: 'Property Type', type: 'select', options: ['Detached', 'Semi-detached', 'Terraced', 'Flat'] },
+        { name: 'propertyType', label: 'Property Type', type: 'select', options: ['Detached', 'Semi-detached', 'Bungalow', 'Mid-terraced', 'End of terrace', 'Purpose-built Flat', 'Converted flat'] },
         { name: 'bedrooms', label: 'Bedrooms', type: 'number' },
         { name: 'livingRooms', label: 'Living Rooms', type: 'number' },
         { name: 'kitchens', label: 'Kitchens', type: 'number' },
@@ -650,19 +650,20 @@ const ProductView: React.FC<{
                         {isEditing ? (
                             <select disabled={!isEditing} value={productDetails.mortgage?.productType || ''} onChange={(e) => onSubFieldChange('mortgage', 'productType', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100">
                                 <option value="">Select...</option>
-                                {/* <option>Fixed</option>
+                                <option>Fixed</option>
                                 <option>Variable</option>
                                 <option>Discount</option>
-                                <option>Capped</option> */}
+                                <option>Capped</option>
 
+                                {/* 'Detached','Semi-detached','Bungalow','Mid-terraced','End of terrace','Purpose-built Flat','Converted flat','' */}
 
-                                <option>Detached</option>
+                                {/* <option>Detached</option>
                                 <option>Semi-detached</option>
                                 <option>Bungalow</option>
                                 <option>Mid- terraced</option>
                                 <option>End of terrace</option>
                                 <option>Purpose-built Flat </option>
-                                <option>Converted flat</option>
+                                <option>Converted flat</option> */}
 
                             </select>
                         ) : (
