@@ -1259,7 +1259,7 @@ const AssociatedContactsEditor: React.FC<{
     productDetails?: ProductDetails;
     isEditing: boolean;
     onChange: (
-        contactType: 'lender' | 'solicitor' | 'accountant' | 'surveyor' | 'estateagent',
+        contactType: 'lender' | 'provider' | 'solicitor' | 'accountant' | 'surveyor' | 'estateagent',
         field: keyof ProfessionalContact,
         value: string
     ) => void;
@@ -1276,6 +1276,7 @@ const AssociatedContactsEditor: React.FC<{
     } = useContext(DataContext);
 
     const solicitors = getContactsByType(ContactType.Solicitor);
+    const providers = getContactsByType(ContactType.Provider);
     const accountants = getContactsByType(ContactType.Accountant);
     const surveyors = getContactsByType(ContactType.Surveyor);
     const estateAgents = getContactsByType(ContactType.EstateAgent);
@@ -1310,6 +1311,14 @@ const AssociatedContactsEditor: React.FC<{
                 contacts={solicitors}
                 isEditing={isEditing}
                 onChange={(field, value) => onChange("solicitor", field, value)}
+            />
+
+            <ProfessionalContactField
+                label="Provider"
+                contact={productDetails.provider}
+                contacts={providers}
+                isEditing={isEditing}
+                onChange={(field, value) => onChange("provider", field, value)}
             />
 
             <ProfessionalContactField

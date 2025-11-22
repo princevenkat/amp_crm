@@ -26,6 +26,7 @@ export enum TaskStatus {
 
 export enum ContactType {
   Lender = "Lender",
+  Provider = "Provider",
   Solicitor = "Solicitor",
   Accountant = "Accountant",
   Surveyor = "Surveyor",
@@ -167,6 +168,7 @@ export interface ProductDetails {
   mortgage?: MortgageDetails;
   protection?: ProtectionDetails;
   solicitor?: ProfessionalContact;
+  provider?: ProfessionalContact;
   accountant?: ProfessionalContact;
   surveyor?: ProfessionalContact;
   estateAgent?: ProfessionalContact;
