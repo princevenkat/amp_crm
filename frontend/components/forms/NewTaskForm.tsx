@@ -121,7 +121,7 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
       {!hideClientSelector && (
         <div className="md:col-span-2 relative">
           <label className="block text-sm font-medium mb-1">
-            Search Client by Case Reference <span className="text-red-500">*</span>
+            Search Client by Case Reference
           </label>
 
           <div className="relative">
