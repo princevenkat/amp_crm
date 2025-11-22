@@ -626,7 +626,8 @@ const ProductView: React.FC<{
                             >
                                 <option value="">Select Lender...</option>
                                 {lenders.map(l => (
-                                    <option key={l.id} value={l.id}>{l.name} ({l.company})</option>
+                                    // <option key={l.id} value={l.id}>{l.name} ({l.company})</option>
+                                    <option key={l.id} value={l.id}>{l.company}</option>
                                 ))}
                             </select>
                         ) : (
