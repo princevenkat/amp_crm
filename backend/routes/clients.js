@@ -19,230 +19,164 @@ dotenv.config();
 
 const router = express.Router();
 
+
+// export const syncLedgerFromFees = async (connection, client) => {
+//     if (!client?.productDetails?.mortgage?.fees?.length) return;
+
+//     const fees = client.productDetails.mortgage.fees;
+//     const clientId = client.id;
+//     const clientName = client.name;
+
+//     const ownerId =
+//         client.primaryAdvisor?.id ||
+//         client.primaryAdvisor ||
+//         client.createdBy ||
+//         'usr-system';
+
+//     const allowedTypes = [
+//         'Broker Fee',
+//         'Procuration Fee',
+//         'Referral Fee',
+//         'Other',
+//         'Commission',
+//     ];
+
+//     for (const fee of fees) {
+//         if (!fee?.amount || !fee?.type) continue;
+
+//         const normalizedType = fee.type.trim();
+//         if (normalizedType === 'Expense') continue;
+//         if (!allowedTypes.includes(normalizedType)) continue;
+
+//         const date = fee.date ? fee.date.split('T')[0] : new Date().toISOString().split('T')[0];
+//         const amount = parseFloat(fee.amount) || 0;
+//         const description = fee.name?.trim() || normalizedType;
+
+//         const ledgerType = normalizedType;
+
+//         // ⚡ Use flexible duplicate check (by clientId, type, description only)
+//         const [existing] = await connection.query(
+//             `SELECT id, amount FROM ledger_entries 
+//              WHERE clientId = ? AND description = ? AND type = ?`,
+//             [clientId, description, ledgerType]
+//         );
+
+//         if (existing.length) {
+//             // Update amount if it changed
+//             const existingAmount = parseFloat(existing[0].amount) || 0;
+//             if (existingAmount !== amount) {
+//                 await connection.query(
+//                     `UPDATE ledger_entries 
+//                      SET date = ?, ownerId = ?, amount = ? 
+//                      WHERE id = ?`,
+//                     [date, ownerId, amount, existing[0].id]
+//                 );
+//                 console.log(`♻️ Updated existing ledger entry: ${description} for ${clientName}`);
+//             } else {
+//                 // Just update owner/date if needed
+//                 await connection.query(
+//                     `UPDATE ledger_entries 
+//                      SET date = ?, ownerId = ? 
+//                      WHERE id = ?`,
+//                     [date, ownerId, existing[0].id]
+//                 );
+//                 console.log(`ℹ️ Ledger entry already exists: ${description} for ${clientName}`);
+//             }
+//             continue;
+//         }
+
+//         // Insert new entry
+//         const id = `led-${uuidv4()}`;
+//         await connection.query(
+//             `INSERT INTO ledger_entries
+//              (id, clientId, date, clientName, description, amount, type, pay_status, ownerId)
+//              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+//             [id, clientId, date, clientName, description, amount, ledgerType, 'Due', ownerId]
+//         );
+//         console.log(`✅ Ledger entry added: ${description} ($${amount}) for ${clientName}`);
+//     }
+// };
+
+
 export const syncLedgerFromFees = async (connection, client) => {
-    if (!client?.productDetails?.mortgage?.fees?.length) return;
+    if (!client?.productDetails?.mortgage?.fees) return;
 
     const fees = client.productDetails.mortgage.fees;
     const clientId = client.id;
     const clientName = client.name;
 
-    // Determine ownerId (advisor)
     const ownerId =
         client.primaryAdvisor?.id ||
         client.primaryAdvisor ||
         client.createdBy ||
         'usr-system';
 
+    const allowedTypes = [
+        'Broker Fee',
+        'Procuration Fee',
+        'Referral Fee',
+        'Other',
+        'Commission',
+    ];
+
+    // 1️⃣ Get all existing ledger entries for this client (type in allowedTypes)
+    const [existingEntries] = await connection.query(
+        `SELECT id, description, type, amount FROM ledger_entries WHERE clientId = ? AND type IN (?)`,
+        [clientId, allowedTypes]
+    );
+
+    // 2️⃣ Mark entries that still exist
+    const matchedEntryIds = new Set();
+
     for (const fee of fees) {
         if (!fee?.amount || !fee?.type) continue;
 
         const normalizedType = fee.type.trim();
+        if (normalizedType === 'Expense' || !allowedTypes.includes(normalizedType)) continue;
 
-        // 🛑 Skip manual "Expense" entries
-        if (normalizedType === 'Expense') {
-            console.log(`⏭️ Skipped Expense fee for ${clientName}`);
-            continue;
-        }
-
-        // 🟢 Only process known fee types
-        const allowedTypes = [
-            'Broker Fee',
-            'Procuration Fee',
-            'Referral Fee',
-            'Other',
-            'Commission',
-        ];
-        if (!allowedTypes.includes(normalizedType)) {
-            console.log(`⚠️ Skipped unrecognized fee type: ${normalizedType}`);
-            continue;
-        }
-
-        const date = fee.date
-            ? fee.date.split('T')[0]
-            : new Date().toISOString().split('T')[0];
+        const date = fee.date ? fee.date.split('T')[0] : new Date().toISOString().split('T')[0];
         const amount = parseFloat(fee.amount) || 0;
-        const description = fee.name || normalizedType;
-
-        // Prevent duplicates
-        const [existing] = await connection.query(
-            `SELECT id FROM ledger_entries 
-       WHERE clientId = ? AND description = ? AND amount = ?`,
-            [clientId, description, amount]
-        );
-        if (existing.length) {
-            console.log(`ℹ️ Duplicate skipped: ${description}`);
-            continue;
-        }
-
-        const id = `led-${uuidv4()}`;
-        // const ledgerType = normalizedType === 'Commission' ? 'Commission' : 'Fee';
+        const description = fee.name?.trim() || normalizedType;
         const ledgerType = normalizedType;
 
-        try {
+        // Try to find a matching existing ledger entry
+        const existing = existingEntries.find(
+            (e) => e.type === ledgerType && e.description === description
+        );
+
+        if (existing) {
+            // Update amount/owner/date if needed
+            const existingAmount = parseFloat(existing.amount) || 0;
+            if (existingAmount !== amount || existing.ownerId !== ownerId) {
+                await connection.query(
+                    `UPDATE ledger_entries SET amount = ?, date = ?, ownerId = ? WHERE id = ?`,
+                    [amount, date, ownerId, existing.id]
+                );
+            }
+            matchedEntryIds.add(existing.id); // mark as matched
+        } else {
+            // Insert new ledger entry
+            const id = `led-${uuidv4()}`;
             await connection.query(
                 `INSERT INTO ledger_entries
-         (id, clientId, date, clientName, description, amount, type, pay_status, ownerId)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                 (id, clientId, date, clientName, description, amount, type, pay_status, ownerId)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [id, clientId, date, clientName, description, amount, ledgerType, 'Due', ownerId]
             );
+        }
+    }
 
-            console.log(
-                `✅ Ledger entry added: ${clientName} (${clientId}) - ${normalizedType} ($${amount})`
-            );
-        } catch (err) {
-            console.error('❌ Failed to insert ledger entry:', err.message);
+    // 3️⃣ Remove obsolete ledger entries (fees no longer exist)
+    for (const existing of existingEntries) {
+        if (!matchedEntryIds.has(existing.id)) {
+            await connection.query(`DELETE FROM ledger_entries WHERE id = ?`, [existing.id]);
         }
     }
 };
 
-// export const syncLedgerFromFees = async (connection, client) => {
-//     if (!client?.productDetails?.mortgage?.fees?.length) return;
-
-//     const fees = client.productDetails.mortgage.fees;
-//     const clientName = client.name;
-
-//     // Determine ownerId
-//     let ownerId =
-//         client.primaryAdvisor?.id ||
-//         client.primaryAdvisor ||
-//         client.createdBy ||
-//         'usr-system';
-
-//     for (const fee of fees) {
-//         if (!fee?.amount || !fee?.type) continue;
-
-//         const normalizedType = fee.type.trim();
-
-//         // 🛑 Skip "Expense" fees — those are entered manually
-//         if (normalizedType === 'Expense') {
-//             console.log(`⏭️ Skipped Expense fee for ${clientName}`);
-//             continue;
-//         }
-
-//         // 🟢 Only process allowed fee types
-//         const allowedTypes = ['Broker Fee', 'Procuration Fee', 'Referral Fee', 'Other', 'Commission'];
-//         if (!allowedTypes.includes(normalizedType)) {
-//             console.log(`⚠️ Skipped unrecognized fee type: ${normalizedType}`);
-//             continue;
-//         }
-
-//         const date = fee.date
-//             ? fee.date.split('T')[0]
-//             : new Date().toISOString().split('T')[0];
-//         const amount = parseFloat(fee.amount) || 0;
-//         const description = fee.name || normalizedType;
-
-//         // Prevent duplicates
-//         const [existing] = await connection.query(
-//             `SELECT id FROM ledger_entries 
-//        WHERE clientName = ? AND description = ? AND amount = ?`,
-//             [clientName, description, amount]
-//         );
-//         if (existing.length) {
-//             console.log(`ℹ️ Duplicate skipped: ${description}`);
-//             continue;
-//         }
-
-//         const id = `led-${uuidv4()}`;
-//         const ledgerType = normalizedType === 'Commission' ? 'Commission' : 'Fee';
-
-
-
-//         try {
-//             await connection.query(
-//                 `INSERT INTO ledger_entries
-//    (id, date, clientName, description, amount, type, pay_status, ownerId)
-//    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-//                 [id, date, clientName, description, amount, ledgerType, 'Due', ownerId] // ✅ correct
-//             );
-//             console.log(`✅ Ledger entry added: ${clientName} - ${normalizedType} ($${amount})`);
-//         } catch (err) {
-//             console.error('❌ Failed to insert ledger entry:', err.message);
-//         }
-//     }
-// };
-
-// 
-
-// const syncLedgerFromFees = async (connection, client) => {
-//     if (!client?.productDetails?.mortgage?.fees?.length) return;
-
-//     const fees = client.productDetails.mortgage.fees;
-//     const clientName = client.name;
-//     // const ownerId = client.primaryAdvisor;
-
-//     // Try to pull the advisor’s *user id*, fallback to createdBy if not found
-//     let ownerId = null;
-
-//     if (typeof client.primaryAdvisor === 'object' && client.primaryAdvisor?.id) {
-//         ownerId = client.primaryAdvisor.id;
-//     } else if (typeof client.primaryAdvisor === 'string' && client.primaryAdvisor.startsWith('usr-')) {
-//         ownerId = client.primaryAdvisor;
-//     } else if (client.createdBy) {
-//         ownerId = client.createdBy;
-//     }
-
-//     console.log(`🔹 Syncing ${fees.length} fees for ${clientName}`);
-
-//     for (const fee of fees) {
-//         if (!fee || !fee.amount || (!fee.name && !fee.type)) {
-//             console.warn('⚠️ Skipped fee (missing data):', fee);
-//             continue;
-//         }
-
-//         try {
-//             const entryId = `led-${uuidv4()}`;
-//             const date = fee.date || new Date().toISOString().split('T')[0];
-//             const description = fee.name || fee.type; // ✅ fallback
-
-//             // Prevent duplicate ledger entries
-//             const [exists] = await connection.query(
-//                 'SELECT id FROM ledger_entries WHERE clientName = ? AND description = ? AND amount = ?',
-//                 [clientName, description, fee.amount]
-//             );
-//             if (exists.length) continue;
-
-//             let type = 'Fee';
-//             if (/commission/i.test(description)) type = 'Commission';
-//             if (/expense/i.test(description)) type = 'Expense';
-
-//             await connection.query(
-//                 `INSERT INTO ledger_entries (id, date, clientName, description, amount, type, ownerId)
-//                  VALUES (?, ?, ?, ?, ?, ?, ?)`,
-//                 [entryId, date, clientName, description, fee.amount, type, ownerId]
-//             );
-
-//             console.log(`✅ Added ledger entry for ${description} (${fee.amount})`);
-//         } catch (err) {
-//             console.error(`❌ Ledger sync failed for fee "${fee.name || fee.type}":`, err.message);
-//         }
-//     }
-// };
-
-
-
-
-
-
-// ----------------- Multer setup -----------------
-// const storage = multer.diskStorage({
-//     destination: (req, file, cb) => {
-//         const uploadPath = 'uploads/';
-//         if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath);
-//         cb(null, uploadPath);
-//     },
-//     filename: (req, file, cb) => {
-//         const ext = path.extname(file.originalname);
-//         cb(null, `${file.fieldname}-${Date.now()}${ext}`);
-//     },
-// });
-
-// const upload = multer({ storage });
 
 
 const upload = multer({ storage: multer.memoryStorage() });
-
-
 
 // Hostinger FTP Connection Details
 const ftpClient = new Client();
@@ -360,69 +294,6 @@ router.delete("/:clientId/documents/:docId", protect, async (req, res) => {
     }
 });
 
-
-
-// ----------------- Upload document to Vercel Blob -----------------
-// router.post('/:id/documents', protect, upload.single('document'), async (req, res) => {
-//     const { id } = req.params;
-//     if (!req.file) return res.status(400).json({ message: 'No file uploaded.' });
-
-//     try {
-//         // Upload file buffer to Vercel Blob
-//         const file = req.file;
-//         const blobKey = `clients/${id}/${Date.now()}-${file.originalname}`;
-
-//         const blob = await put(blobKey, file.buffer, {
-//             access: 'public', // or 'private' if you want signed URLs
-//             contentType: file.mimetype,
-//         });
-
-//         const docId = uuidv4();
-
-//         await db.query(
-//             'INSERT INTO documents (id, clientId, filename, filetype, uploadDate, url) VALUES (?, ?, ?, ?, ?, ?)',
-//             [docId, id, file.originalname, path.extname(file.originalname).slice(1), new Date(), blob.url]
-//         );
-
-//         res.status(201).json({
-//             id: docId,
-//             clientId: id,
-//             fileName: file.originalname,
-//             fileType: path.extname(file.originalname).slice(1),
-//             uploadDate: new Date().toISOString().split('T')[0],
-//             url: blob.url,
-//         });
-//     } catch (err) {
-//         console.error('Upload error:', err);
-//         res.status(500).json({ message: 'Failed to upload document.' });
-//     }
-// });
-
-// ----------------- Delete document from Vercel Blob -----------------
-// router.delete('/documents/:id', protect, async (req, res) => {
-//     const { id } = req.params;
-
-//     try {
-//         // Get file URL from DB
-//         const [rows] = await db.query('SELECT url FROM documents WHERE id = ?', [id]);
-//         if (!rows.length) return res.status(404).json({ message: 'Document not found' });
-
-//         const fileUrl = rows[0].url;
-
-//         // Delete file from Blob storage
-//         await del(fileUrl);
-
-//         // Delete from DB
-//         await db.query('DELETE FROM documents WHERE id = ?', [id]);
-
-//         res.json({ message: 'Document deleted successfully' });
-//     } catch (err) {
-//         console.error('Delete error:', err);
-//         res.status(500).json({ message: 'Failed to delete document.' });
-//     }
-// });
-
-
 // Helper to format MySQL dates safely to 'YYYY-MM-DD'
 const formatDate = (date) => {
     if (!date) return null;
@@ -444,7 +315,6 @@ const formatDateForInput = (date) => {
 };
 
 
-// Helper to reconstruct the full client object from DB rows
 // Helper to reconstruct the full client object from DB rows
 const hydrateClient = async (clientRow) => {
     if (!clientRow) return null;
@@ -517,6 +387,18 @@ const hydrateClient = async (clientRow) => {
     }
 
 
+    // ✅ FIX: Parse caseWorker JSON safely
+    let caseWorker = null;
+    try {
+        const raw = clientRow.caseWorker || clientRow.case_worker; // supports snake_case or camelCase
+        if (raw) {
+            caseWorker = typeof raw === "string" ? JSON.parse(raw) : raw;
+        }
+    } catch (err) {
+        console.error("Failed to parse caseWorker JSON:", err);
+        caseWorker = null;
+    }
+
     // Re-nest flattened properties back into objects
     const client = {
         id: clientRow.id,
@@ -536,6 +418,7 @@ const hydrateClient = async (clientRow) => {
         product: { type: clientRow.productType },
         applicants,
         documents,
+        caseWorker,
         notes,
         property: {
             address: clientRow.propertyAddress,
@@ -594,18 +477,6 @@ const hydrateClient = async (clientRow) => {
 
 };
 
-// const ALL_CLIENT_FIELDS_FOR_UPDATE = `
-//     name = ?, email = ?, phone = ?, caseReference = ?, primaryAdvisor = ?, admin = ?,
-//     applicationType = ?, status = ?, caseStatus = ?, lastContacted = ?, value = ?, productType = ?,
-//     propertyAddress = ?, propertyValue = ?, purchasePrice = ?, dateOfPurchase = ?, yearBuilt = ?, propertyTypeProp = ?,
-//     isExLocal = ?, bedrooms = ?, livingRooms = ?, kitchens = ?, bathrooms = ?, separateToilets = ?,
-//     hasGarageOrParking = ?, flatsInBlock = ?, storeysInBlock = ?, floorOfFlat = ?, leaseRemaining = ?,
-//     groundRent = ?, serviceCharge = ?, businessWritten = ?, mortgageFees = ?,
-//     solicitorName = ?, solicitorCompany = ?, solicitorEmail = ?, solicitorPhone = ?,
-//     accountantName = ?, accountantCompany = ?, accountantEmail = ?, accountantPhone = ?,
-//     surveyorName = ?, surveyorCompany = ?, surveyorEmail = ?, surveyorPhone = ?,
-//     estateAgentCompanyName = ?, estateAgentPerson = ?, estateAgentAddress = ?, estateAgentPhone = ?
-// `;
 
 const ALL_CLIENT_FIELDS_FOR_UPDATE = `
   name = ?, email = ?, phone = ?, caseReference = ?, primaryAdvisor = ?, admin = ?,
@@ -629,22 +500,6 @@ const toMySQLDate = (dateStr) => {
     if (isNaN(d)) return null;
     return d.toISOString().slice(0, 10); // "YYYY-MM-DD"
 };
-// const getClientDataAsArray = (clientData) => [
-//     clientData.name, clientData.email, clientData.phone, clientData.caseReference, clientData.primaryAdvisor, clientData.admin,
-//     clientData.applicationType, clientData.status, clientData.caseStatus, toMySQLDateTime(clientData.lastContacted), clientData.value, clientData.product?.type,
-//     clientData.property?.address, clientData.property?.propertyValue, clientData.property?.purchasePrice,
-//     toMySQLDate(clientData.property?.dateOfPurchase), // ✅ fixed
-//     clientData.property?.yearBuilt, clientData.property?.propertyType,
-//     clientData.property?.isExLocal, clientData.property?.bedrooms, clientData.property?.livingRooms, clientData.property?.kitchens, clientData.property?.bathrooms, clientData.property?.separateToilets,
-//     clientData.property?.hasGarageOrParking, clientData.property?.flatsInBlock, clientData.property?.storeysInBlock, clientData.property?.floorOfFlat, clientData.property?.leaseRemaining,
-//     clientData.property?.groundRent, clientData.property?.serviceCharge, clientData.productDetails?.businessWritten,
-//     JSON.stringify(clientData.productDetails?.mortgage?.fees || []),
-//     clientData.productDetails?.solicitor?.name, clientData.productDetails?.solicitor?.company, clientData.productDetails?.solicitor?.email, clientData.productDetails?.solicitor?.phone,
-//     clientData.productDetails?.accountant?.name, clientData.productDetails?.accountant?.company, clientData.productDetails?.accountant?.email, clientData.productDetails?.accountant?.phone,
-//     clientData.productDetails?.surveyor?.name, clientData.productDetails?.surveyor?.company, clientData.productDetails?.surveyor?.email, clientData.productDetails?.surveyor?.phone,
-//     clientData.productDetails?.estateAgent?.companyName, clientData.productDetails?.estateAgent?.personDealingWith, clientData.productDetails?.estateAgent?.address, clientData.productDetails?.estateAgent?.phone
-// ];
-
 
 const getClientDataAsArray = (clientData) => [
     clientData.name,
@@ -686,17 +541,6 @@ const getClientDataAsArray = (clientData) => [
     clientData.productDetails?.estateAgent?.id || null,
 ];
 
-// Get all clients
-// router.get('/', protect, async (req, res) => {
-//     try {
-//         const [clientRows] = await db.query('SELECT * FROM clients ORDER BY createdDate DESC');
-//         const hydratedClients = await Promise.all(clientRows.map(hydrateClient));
-//         res.json(hydratedClients);
-//     } catch (error) {
-//         console.error("Failed to get clients:", error);
-//         res.status(500).json({ message: "Server error getting clients" });
-//     }
-// });
 
 router.get('/', protect, async (req, res) => {
     try {
@@ -829,12 +673,12 @@ router.post('/', protect, async (req, res) => {
         // await syncLedgerFromFees(connection, clientData);
         // ✅ Commit once — includes both client + ledger inserts
 
-        // ✅ Re-fetch the full client from DB (with mortgageFees loaded)
-        const [freshClientRows] = await connection.query('SELECT * FROM clients WHERE id = ?', [newId]);
-        const freshClient = await hydrateClient(freshClientRows[0]);
+        // // ✅ Re-fetch the full client from DB (with mortgageFees loaded)
+        // const [freshClientRows] = await connection.query('SELECT * FROM clients WHERE id = ?', [newId]);
+        // const freshClient = await hydrateClient(freshClientRows[0]);
 
-        // ✅ Now sync ledger with actual fees
-        await syncLedgerFromFees(connection, freshClient);
+        // // ✅ Now sync ledger with actual fees
+        // await syncLedgerFromFees(connection, freshClient);
         await connection.commit();
 
         const [newClientRow] = await db.query('SELECT * FROM clients WHERE id = ?', [newId]);
@@ -848,142 +692,6 @@ router.post('/', protect, async (req, res) => {
         connection.release();
     }
 });
-
-
-// Update a client (including converting to client)
-// router.put('/:id', protect, async (req, res) => {
-//     const { id } = req.params;
-//     const updates = req.body; // fields from frontend, e.g., { status: 'Client' }
-//     const connection = await db.getConnection();
-
-//     try {
-//         await connection.beginTransaction();
-
-//         // Get existing client
-//         const [rows] = await connection.query('SELECT * FROM clients WHERE id = ?', [id]);
-//         if (!rows.length) {
-//             await connection.rollback();
-//             return res.status(404).json({ message: 'Client not found' });
-//         }
-
-//         const current = rows[0];
-//         const merged = { ...current, ...updates }; // merge updates
-
-//         // Update main clients table
-//         const clientFields = getClientDataAsArray(merged);
-//         await connection.query(
-//             `UPDATE clients SET ${ALL_CLIENT_FIELDS_FOR_UPDATE} WHERE id = ?`,
-//             [...clientFields, id]
-//         );
-
-//         // Update applicants if provided
-//         if (merged.applicants) {
-//             await connection.query('DELETE FROM applicants WHERE clientId = ?', [id]);
-//             for (const app of merged.applicants) {
-//                 await connection.query(
-//                     `INSERT INTO applicants 
-//                      (clientId, title, firstName, middleName, surname, gender, dob, homeTelephone, mobileNumber, email, currentAddress, noOfDependents, nationality) 
-//                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-//                     [
-//                         id,
-//                         app.title || '',
-//                         app.firstName || '',
-//                         app.middleName || '',
-//                         app.surname || '',
-//                         app.gender || '',
-//                         app.dob || null,
-//                         app.homeTelephone || '',
-//                         app.mobileNumber || '',
-//                         app.email || '',
-//                         app.currentAddress || '',
-//                         app.noOfDependents || 0,
-//                         app.nationality || ''
-//                     ]
-//                 );
-//             }
-//         }
-
-//         // Update notes if provided
-//         if (merged.notes) {
-//             await connection.query('DELETE FROM notes WHERE clientId = ?', [id]);
-//             for (const note of merged.notes) {
-//                 const noteId = note.id?.startsWith('note-') ? note.id : `note-${uuidv4()}`;
-//                 await connection.query(
-//                     'INSERT INTO notes (id, clientId, text, author, date) VALUES (?, ?, ?, ?, ?)',
-//                     [noteId, id, note.text || '', note.author || '', toMySQLDate(note.date)]
-//                 );
-//             }
-//         }
-
-//         // Update mortgage_details if provided
-//         await connection.query('DELETE FROM mortgage_details WHERE clientId = ?', [id]);
-//         if (merged.productDetails?.mortgage) {
-//             const m = merged.productDetails.mortgage;
-//             await connection.query(
-//                 `INSERT INTO mortgage_details 
-//                  (clientId, mortgageType, dateOfFma, dateOffered, lender, lenderReference, propertyValue, mortgageLoanAmount, brokerFees, procurationFees, rate, productType, productTerm, rateExpiry, renewalReminderDate, mortgageTerm, advisor)
-//                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-//                 [
-//                     id,
-//                     m.mortgageType || '',
-//                     toMySQLDate(m.dateOfFMA),
-//                     toMySQLDate(m.dateOffered),
-//                     m.lender || '',
-//                     m.lenderReference || '',
-//                     m.propertyValue || 0,
-//                     m.mortgageLoanAmount || 0,
-//                     m.brokerFees || 0,
-//                     m.procurationFees || 0,
-//                     m.rate || 0,
-//                     m.productType || '',
-//                     m.productTerm || '',
-//                     toMySQLDate(m.rateExpiry),        // fix here
-//                     toMySQLDate(m.renewalReminderDate), // fix here
-//                     m.mortgageTerm || '',
-//                     m.advisor || ''
-//                 ]
-//             );
-//         }
-
-//         // Update protection_details if provided
-//         await connection.query('DELETE FROM protection_details WHERE clientId = ?', [id]);
-//         if (merged.productDetails?.protection) {
-//             const p = merged.productDetails.protection;
-//             await connection.query(
-//                 `INSERT INTO protection_details 
-//                  (clientId, typeOfInsurance, provider, providerReference, amountAssured, term, premium, dateOnRisk, commission, advisor) 
-//                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-//                 [id, p.typeOfInsurance || '', p.provider || '', p.providerReference || '', p.amountAssured || 0, p.term || '', p.premium || 0, p.dateOnRisk || null, p.commission || 0, p.advisor || '']
-//             );
-//         }
-
-//         // await connection.commit();
-
-//         // 🔹 Sync Ledger Entries (inside same transaction)
-//         if (typeof merged.productDetails?.mortgage?.fees === 'string') {
-//             try {
-//                 merged.productDetails.mortgage.fees = JSON.parse(merged.productDetails.mortgage.fees);
-//             } catch (err) {
-//                 console.error("Failed to parse mortgage fees JSON:", err);
-//             }
-//         }
-//         await syncLedgerFromFees(connection, merged);
-//         // ✅ Commit once — includes both client + ledger inserts
-//         await connection.commit();
-
-//         const [updatedRows] = await connection.query('SELECT * FROM clients WHERE id = ?', [id]);
-//         const updatedClient = await hydrateClient(updatedRows[0]);
-
-//         res.json(updatedClient);
-
-//     } catch (error) {
-//         await connection.rollback();
-//         console.error(`Failed to update client ${id}:`, error);
-//         res.status(500).json({ message: 'Server error during client update.' });
-//     } finally {
-//         connection.release();
-//     }
-// });
 
 
 
@@ -1043,6 +751,7 @@ router.put('/:id', protect, async (req, res) => {
             );
         }
 
+
         // --- applicants update ---
         if (merged.applicants) {
             await connection.query('DELETE FROM applicants WHERE clientId = ?', [id]);
@@ -1068,6 +777,15 @@ router.put('/:id', protect, async (req, res) => {
                     ]
                 );
             }
+        }
+
+        // --- caseWorker update ---
+        if (merged.caseWorker) {
+            const caseWorkerJson = JSON.stringify(merged.caseWorker);
+            await connection.query(
+                `UPDATE clients SET caseWorker = ? WHERE id = ?`,
+                [caseWorkerJson, id]
+            );
         }
 
         // --- notes update ---

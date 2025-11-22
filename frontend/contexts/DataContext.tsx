@@ -5,6 +5,16 @@ import * as api from '../services/apiService';
 
 export const DataContext = createContext<DataContextType>(null!);
 
+// Map fee labels → LedgerEntry.type
+const feeTypeMap: Record<string, LedgerEntry["type"]> = {
+    "Broker Fee": "Broker Fee",
+    "Arrangement Fee": "Fee",
+    "Valuation Fee": "Fee",
+    "Procuration Fee": "Procuration Fee",
+    "Referral Fee": "Referral Fee",
+    "Other": "Other"
+};
+
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     // Master data lists
     const [clients, setClients] = useState<Client[]>([]);
@@ -15,6 +25,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [ledger, setLedger] = useState<LedgerEntry[]>([]);
     const [passwords, setPasswords] = useState<PasswordEntry[]>([]);
     const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+
+
+
 
 
 
@@ -350,6 +363,24 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return false;
     };
 
+
+
+    // 🔵 NEW — global contact modal state
+    const [contactModalOpen, setContactModalOpen] = useState(false);
+    const [contactModalData, setContactModalData] = useState<Contact | null>(null);
+
+    const openContactModal = (contact?: Contact) => {
+        setContactModalData(contact || null);
+        setContactModalOpen(true);
+    };
+
+    const closeContactModal = () => {
+        setContactModalOpen(false);
+        setContactModalData(null);
+    };
+
+
+
     const value: DataContextType = {
         clients,
         addClient,
@@ -393,7 +424,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         logout,
         updateMyPassword,
         loading,
+        openContactModal,
+        closeContactModal,
+        contactModalOpen,
+        contactModalData,
     };
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 };
+

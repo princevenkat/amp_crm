@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { Contact } from '../../types';
 import { ContactType } from '../../types';
+import JoditEditor from "jodit-react";
+
 
 interface NewContactFormProps {
   onSubmit: (contact: Omit<Contact, 'id'>) => void;
@@ -14,7 +16,8 @@ const emptyFormState: Omit<Contact, 'id'> = {
   phone: '',
   company: '',
   address: '',
-  type: ContactType.Others,
+  type: ContactType.Clinics,
+  notes: '',
 };
 
 export const NewContactForm: React.FC<NewContactFormProps> = ({ onSubmit, onCancel, initialData }) => {
@@ -35,27 +38,67 @@ export const NewContactForm: React.FC<NewContactFormProps> = ({ onSubmit, onCanc
     onSubmit(formData);
   };
 
+
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4 text-sm">
       <div className="grid grid-cols-2 gap-4">
-        <div >
+        {/* <div>
           <label className="block font-medium text-text-secondary mb-1">Full Name</label>
           <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" />
-        </div>
+        </div> */}
         <div>
           <label className="block font-medium text-text-secondary mb-1">Company</label>
           <input type="text" name="company" value={formData.company} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" />
         </div>
-        <div className="col-span-2">
+        <div>
           <label className="block font-medium text-text-secondary mb-1">Company Address</label>
-          <textarea
+          {/* <textarea
             name="address"
             value={formData.address}
             onChange={handleChange}
             className="w-full bg-surface border border-gray-300 rounded-md p-2"
-            rows={2} // adjust number of visible lines as needed
-          ></textarea>
+            rows={2}
+          ></textarea> */}
+          <input type="text" name="address" value={formData.address} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" />
+
         </div>
+
+        <div className="col-span-2">
+          <label className="block font-medium text-text-secondary mb-1">Notes</label>
+          {/* <textarea
+            name="notes"
+            value={(formData as any).notes || ""}
+            onChange={handleChange}
+            className="w-full bg-surface border border-gray-300 rounded-md p-2"
+            rows={10}
+          ></textarea> */}
+
+          <JoditEditor
+            ref={useRef(null)}
+            value={formData.notes || ""}
+            config={{
+              readonly: false,
+              height: 120,
+              toolbarAdaptive: false,
+              toolbarSticky: false,
+
+              buttons: [
+                "bold", "italic", "underline", "|", "brush", "|", "ul", "ol", "|", "undo", "redo"
+              ],
+
+              removeButtons: [
+                "font", "fontsize", "paragraph", "image", "video", "file", "table", "link", "fullsize", "eraser", "align", "cut", "copy", "paste", "hr", "spellcheck", "symbol",],
+            }}
+            onBlur={(content) => {
+              setFormData(prev => ({ ...prev, notes: content }));
+            }}
+          />
+
+
+
+        </div>
+
         <div>
           <label className="block font-medium text-text-secondary mb-1">Email</label>
           <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" />

@@ -30,7 +30,7 @@ export enum ContactType {
   Accountant = "Accountant",
   Surveyor = "Surveyor",
   EstateAgent = "Estate Agent",
-  Others = "Others",
+  Clinics = "Clinics",
 }
 
 export interface Applicant {
@@ -236,6 +236,14 @@ export interface Client {
   };
 
   tasks?: Task[];
+
+  caseWorker?: {
+    name: string;
+    phone: string;
+    email: string;
+    reference: string;
+    profession: string;
+  } | null;
 }
 
 export interface Task {
@@ -257,6 +265,7 @@ export interface Contact {
   phone: string;
   company: string;
   address: string;
+  notes: string;
 }
 
 // FIX: Added the 'Deal' interface to resolve an import error in NewDealForm.tsx.
@@ -292,6 +301,7 @@ export interface LedgerEntry {
   clientName: string;
   description: string;
   amount: number;
+  caseReference: string;
   // type: "Commission" | "Fee" | "Expense";
   type:
     | "Fee"
@@ -396,4 +406,10 @@ export interface DataContextType {
     newPassword: string;
   }) => Promise<{ success: boolean; message: string }>;
   loading: boolean;
+
+  // 🔵 ADD THESE 4 NEW MODAL FIELDS
+  openContactModal: (contact?: Contact) => void;
+  closeContactModal: () => void;
+  contactModalOpen: boolean;
+  contactModalData: Contact | null;
 }

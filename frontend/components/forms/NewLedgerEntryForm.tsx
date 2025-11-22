@@ -9,14 +9,24 @@ interface NewLedgerEntryFormProps {
 }
 
 // ✅ Include pay_status and ownerId in default state
+// const emptyFormState: Omit<LedgerEntry, 'id'> = {
+//   date: new Date().toISOString().split('T')[0],
+//   clientName: '-',
+//   description: '',
+//   amount: 0,
+//   type: 'Commission',
+//   pay_status: 'Due',
+// };
 const emptyFormState: Omit<LedgerEntry, 'id'> = {
   date: new Date().toISOString().split('T')[0],
   clientName: '-',
+  caseReference: '-', // ✅ add this
   description: '',
   amount: 0,
   type: 'Commission',
   pay_status: 'Due',
 };
+
 
 export const NewLedgerEntryForm: React.FC<NewLedgerEntryFormProps> = ({
   onSubmit,
@@ -48,15 +58,34 @@ export const NewLedgerEntryForm: React.FC<NewLedgerEntryFormProps> = ({
   }, [initialData, currentUser]);
 
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  // const handleChange = (
+  //   e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  // ) => {
+  //   const { name, value } = e.target;
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     [name]: name === 'amount' ? parseFloat(value) || 0 : value,
+  //   }));
+  // };
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: name === 'amount' ? parseFloat(value) || 0 : value,
-    }));
+
+    if (name === 'clientId') {
+      const client = clients.find((c) => c.id === value);
+      setFormData((prev) => ({
+        ...prev,
+        clientName: client?.name || '-',
+        caseReference: client?.caseReference || '-',
+        ownerId: client?.ownerId || prev.ownerId, // optional
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: name === 'amount' ? parseFloat(value) || 0 : value,
+      }));
+    }
   };
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,7 +166,7 @@ export const NewLedgerEntryForm: React.FC<NewLedgerEntryFormProps> = ({
       {/* Amount */}
       <div>
         <label className="block font-medium text-text-secondary mb-1">
-          Amount ($)
+          Amount (£)
         </label>
         <input
           type="number"

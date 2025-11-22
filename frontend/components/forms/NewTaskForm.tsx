@@ -91,10 +91,10 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
     //   setError('Please select a client before saving this task.');
     //   return;
     // }
-    if (!clientId && !hideClientSelector) {
-      setError('Please select a client before saving this task.');
-      return;
-    }
+    // if (!clientId && !hideClientSelector) {
+    //   setError('Please select a client before saving this task.');
+    //   return;
+    // }
 
     onSubmit({
       title,
@@ -103,7 +103,8 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
       status,
       assignedTo,
       assignedBy,
-      clientId,
+      // clientId,
+      clientId: clientId || null,
     });
   };
 
@@ -154,7 +155,7 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
         ${error ? 'border-red-500' : 'border-gray-300'}
         ${initialData?.id ? 'bg-gray-100 cursor-not-allowed text-gray-600' : ''}`}
               readOnly={!!initialData?.id} // ✅ read-only only when editing
-              required
+            // required
             />
           </div>
 

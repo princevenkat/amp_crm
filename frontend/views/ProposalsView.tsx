@@ -95,7 +95,16 @@ export const ProposalsView: React.FC = () => {
                     {p.status}
                   </span>
                 </td>
-                <td className="px-6 py-4">{p.sentDate}</td>
+                <td className="px-6 py-4">
+                  {p.sentDate
+                    ? new Date(p.sentDate).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "numeric",
+                      year: "numeric",
+                    })
+                    : "N/A"}
+
+                </td>
                 <td className="px-6 py-4 text-right font-semibold">
                   {formatCurrency(Math.abs(p.value))}
                 </td>

@@ -13,6 +13,8 @@ import { formatCurrency } from "@/utils/formatCurrency";
 
 import { toast, Toaster, ToastBar } from 'react-hot-toast';
 import { TrashIcon } from '@heroicons/react/24/solid';
+import ProfessionalContactField from '@/components/ProfessionalContactField';
+import { NewContactForm } from '@/components/forms/NewContactForm';
 
 const emptyApplicant: Applicant = {
     title: '', firstName: '', middleName: '', surname: '', gender: '', dob: '',
@@ -206,7 +208,7 @@ const ApplicantDetails: React.FC<ApplicantDetailsProps> = ({ applicant, index, i
     );
 };
 
-const PropertyView: React.FC<{ property: PropertyDetails; isEditing: boolean; onChange: (field: keyof PropertyDetails, value: any) => void; }> = ({ property, isEditing, onChange }) => {
+const PropertyView: React.FC<{ property: PropertyDetails; isEditing: boolean; onChange: (field: keyof PropertyDetails, value: any) => void; allApplicants?: Applicant[]; }> = ({ property, isEditing, onChange, allApplicants }) => {
     // console.log("property from backend:", property);
     // console.log("propertyType from backend:", property?.propertyType);
 
@@ -288,7 +290,7 @@ const PropertyView: React.FC<{ property: PropertyDetails; isEditing: boolean; on
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            {fields.map(f => (
+            {/* {fields.map(f => (
                 <div key={f.name} className={f.fullWidth ? 'md:col-span-2' : (f.type === 'checkbox' ? 'flex items-center gap-2' : '')}>
                     <label className="block font-medium text-text-secondary mb-1">{f.label}</label>
                     {f.type === 'select' ? (
@@ -314,7 +316,86 @@ const PropertyView: React.FC<{ property: PropertyDetails; isEditing: boolean; on
 
                     )}
                 </div>
+            ))} */}
+            {fields.map(f => (
+                <div
+                    key={f.name}
+                    className={
+                        f.fullWidth
+                            ? "md:col-span-2"
+                            : f.type === "checkbox"
+                                ? "flex items-center gap-2"
+                                : ""
+                    }
+                >
+                    <label className="block font-medium text-text-secondary mb-1 flex justify-between items-center">
+                        {f.label}
+                        {/* 🔽 Copy Address Dropdown – Only for address field */}
+                        {f.name === "address" && allApplicants && allApplicants.length > 0 && (
+                            <div className="mb-2">
+                                <select
+                                    className="text-sm text-black text-sm bg-surface border border-gray-300 rounded-md py-2 px-3 cursor-pointer flex-fill"
+                                    onChange={(e) => {
+                                        const index = parseInt(e.target.value, 10);
+                                        if (!isNaN(index)) {
+                                            onChange("address", allApplicants[index].currentAddress);
+                                        }
+                                    }}
+                                >
+                                    <option value="">Copy Address From Applicant...</option>
+                                    {allApplicants.map((a, i) => (
+                                        <option key={i} value={i}>
+                                            Applicant {i + 1} — {a.firstName} {a.surname}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
+                    </label>
+
+
+                    {/* 🔽 Normal Field Rendering */}
+                    {f.type === "select" ? (
+                        <select
+                            name={f.name}
+                            value={String(property[f.name])}
+                            onChange={handleChange}
+                            className="w-full bg-surface border border-gray-300 rounded-md p-2"
+                        >
+                            <option value="">Select...</option>
+                            {f.options?.map((opt) => (
+                                <option key={opt} value={opt}>
+                                    {opt}
+                                </option>
+                            ))}
+                        </select>
+                    ) : f.type === "checkbox" ? (
+                        <input
+                            type="checkbox"
+                            name={f.name}
+                            checked={!!property[f.name]}
+                            onChange={handleChange}
+                            className="bg-surface border border-gray-300 rounded-md"
+                        />
+                    ) : (
+                        <input
+                            type={f.type}
+                            name={f.name}
+                            value={
+                                f.type === "date" && property[f.name]
+                                    ? new Date(property[f.name] as string)
+                                        .toISOString()
+                                        .split("T")[0]
+                                    : String(property[f.name] ?? "")
+                            }
+                            onChange={handleChange}
+                            className="w-full bg-surface border border-gray-300 rounded-md p-2"
+                        />
+                    )}
+                </div>
             ))}
+
             {property.propertyType === 'Flat' && (
                 <>
                     <hr className="col-span-2 my-2" />
@@ -340,7 +421,11 @@ const FormSection: React.FC<{ title: string; children: React.ReactNode }> = ({ t
 
 const FormSectionNew: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
     <div className="mt-6">
-        <h4 className="text-md font-semibold text-text-primary border-b pb-2 mb-4">{title}</h4>
+        {title && (
+            <h4 className="text-md font-semibold text-text-primary border-b pb-2 mb-4">
+                {title}
+            </h4>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-x-8 gap-y-4 text-sm">{children}</div>
     </div>
 );
@@ -508,6 +593,24 @@ const ProductView: React.FC<{
                     <div>
                         <label className="font-semibold text-text-secondary">Lender</label>
                         {isEditing ? (
+                            // <select
+                            //     disabled={!isEditing}
+                            //     value={productDetails.mortgage?.lender || ''}
+                            //     onChange={(e) => {
+                            //         const selected = lenders.find(l => l.id === e.target.value);
+                            //         if (selected) {
+                            //             onSubFieldChange('mortgage', 'lender', selected.id);
+                            //             onSubFieldChange('mortgage', 'lenderName', selected.name); // optional extra field if you want display name
+                            //             onSubFieldChange('mortgage', 'lenderReference', selected.company || '');
+                            //         }
+                            //     }}
+                            //     className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100"
+                            // >
+                            //     <option value="">Select Lender...</option>
+                            //     {lenders.map(l => (
+                            //         <option key={l.id} value={l.id}>{l.name} ({l.company})</option>
+                            //     ))}
+                            // </select>
                             <select
                                 disabled={!isEditing}
                                 value={productDetails.mortgage?.lender || ''}
@@ -515,8 +618,8 @@ const ProductView: React.FC<{
                                     const selected = lenders.find(l => l.id === e.target.value);
                                     if (selected) {
                                         onSubFieldChange('mortgage', 'lender', selected.id);
-                                        onSubFieldChange('mortgage', 'lenderName', selected.name); // optional extra field if you want display name
-                                        onSubFieldChange('mortgage', 'lenderReference', selected.company || '');
+                                        onSubFieldChange('mortgage', 'lenderName', selected.name); // optional
+                                        // Do NOT update lenderReference here
                                     }
                                 }}
                                 className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100"
@@ -534,7 +637,14 @@ const ProductView: React.FC<{
                         <label className="font-semibold text-text-secondary">Lender Reference</label>
 
                         {isEditing ? (
-                            <input disabled={!isEditing} type="text" value={productDetails.mortgage?.lenderReference || ''} onChange={(e) => onSubFieldChange('mortgage', 'lenderReference', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                            // <input disabled={!isEditing} type="text" value={productDetails.mortgage?.lenderReference || ''} onChange={(e) => onSubFieldChange('mortgage', 'lenderReference', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                            <input
+                                disabled={!isEditing}
+                                type="text"
+                                value={productDetails.mortgage?.lenderReference || ''}
+                                onChange={(e) => onSubFieldChange('mortgage', 'lenderReference', e.target.value)}
+                                className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100"
+                            />
                         ) : (
                             <p className=" py-2">{productDetails.mortgage?.lenderReference}</p>
                         )}
@@ -637,12 +747,12 @@ const ProductView: React.FC<{
 
 
                     <div>
-                        <label className="font-semibold text-text-secondary">Rate</label>
+                        <label className="font-semibold text-text-secondary">Rate (%)</label>
 
                         {isEditing ? (
                             <input disabled={!isEditing} type="text" value={productDetails.mortgage?.rate || ''} onChange={(e) => onSubFieldChange('mortgage', 'rate', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
                         ) : (
-                            <p className="py-2">{formatCurrency(productDetails.mortgage?.rate)}</p>  // uses your global formatter
+                            <p className="py-2">{productDetails.mortgage?.rate || ''}</p>  // uses your global formatter
                         )}
                     </div>
                     <div>
@@ -676,7 +786,7 @@ const ProductView: React.FC<{
                         {isEditing ? (
                             <input disabled={!isEditing} type="text" value={productDetails.mortgage?.productTerm || ''} onChange={(e) => onSubFieldChange('mortgage', 'productTerm', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
                         ) : (
-                            <p className="py-2">{formatCurrency(productDetails.mortgage?.productTerm)}</p>  // uses your global formatter
+                            <p className="py-2">{productDetails.mortgage?.productTerm}</p>  // uses your global formatter
                         )}
                     </div>
                     <div>
@@ -684,7 +794,7 @@ const ProductView: React.FC<{
                         {isEditing ? (
                             <input disabled={!isEditing} type="text" value={productDetails.mortgage?.mortgageTerm || ''} onChange={(e) => onSubFieldChange('mortgage', 'mortgageTerm', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
                         ) : (
-                            <p className="py-2">{formatCurrency(productDetails.mortgage?.mortgageTerm)}</p>  // uses your global formatter
+                            <p className="py-2">{productDetails.mortgage?.mortgageTerm}</p>  // uses your global formatter
                         )}
                     </div>
                     <div>
@@ -825,176 +935,40 @@ const ProductView: React.FC<{
                 </FormSection>
             )}
 
-            <FormSectionNew title="Professional Contacts">
+            {/* <FormSectionNew title="Professional Contacts">
 
+                <ProfessionalContactField
+                    label="Solicitor"
+                    contact={productDetails.solicitor}
+                    contacts={solicitors}
+                    isEditing={isEditing}
+                    onChange={(field, value) => onSubFieldChange("solicitor", field, value)}
+                />
 
-                {/* SOLICITOR */}
-                <div className="border p-4 rounded-md">
-                    <h5 className="font-bold mb-2">Solicitor</h5>
-                    {isEditing ? (
-                        <select
-                            value={productDetails.solicitor?.id || ''}
-                            onChange={(e) => {
-                                const selected = solicitors.find(s => s.id === e.target.value);
-                                onSubFieldChange('solicitor', 'id', selected?.id || '');
-                            }}
-                            className="w-full p-2 border rounded-md bg-surface text-text-primary"
-                        >
-                            <option value="">Select Solicitor...</option>
-                            {solicitors.map(s => (
-                                <option key={s.id} value={s.id}>
-                                    {s.name} {s.company ? `(${s.company})` : ''}
-                                </option>
-                            ))}
-                        </select>
-                    ) : (
-                        // <p className="p-2">
-                        //     {solicitors.find(s => s.id === productDetails.solicitor?.id)?.name || 'Not Assigned'}
-                        // </p>
-                        <div className="py-2 space-y-1 text-xs">
-                            {(() => {
-                                const selected = solicitors.find(s => s.id === productDetails.solicitor?.id);
-                                if (!selected) return <p>Not Assigned</p>;
-                                return (
-                                    <>
-                                        <p><strong>Name:</strong> {selected.name}</p>
-                                        {selected.company && <p><strong>Company:</strong> {selected.company}</p>}
-                                        {selected.address && <p><strong>Address:</strong> {selected.address}</p>}
-                                        {selected.email && <p><strong>Email:</strong> {selected.email}</p>}
-                                        {selected.phone && <p><strong>Phone:</strong> {selected.phone}</p>}
-                                    </>
-                                );
-                            })()}
-                        </div>
-                    )}
-                </div>
+                <ProfessionalContactField
+                    label="Accountant"
+                    contact={productDetails.accountant}
+                    contacts={accountants}
+                    isEditing={isEditing}
+                    onChange={(field, value) => onSubFieldChange("accountant", field, value)}
+                />
 
-                {/* ACCOUNTANT */}
-                <div className="border p-4 rounded-md">
-                    <h5 className="font-bold mb-2">Accountant</h5>
-                    {isEditing ? (
-                        <select
-                            value={productDetails.accountant?.id || ''}
-                            onChange={(e) => {
-                                const selected = accountants.find(a => a.id === e.target.value);
-                                onSubFieldChange('accountant', 'id', selected?.id || '');
-                            }}
-                            className="w-full p-2 border rounded-md bg-surface text-text-primary"
-                        >
-                            <option value="">Select Accountant...</option>
-                            {accountants.map(a => (
-                                <option key={a.id} value={a.id}>
-                                    {a.name} {a.company ? `(${a.company})` : ''}
-                                </option>
-                            ))}
-                        </select>
-                    ) : (
-                        // <p className="p-2">
-                        //     {accountants.find(a => a.id === productDetails.accountant?.id)?.name || 'Not Assigned'}
-                        // </p>
-                        <div className="py-2 space-y-1 text-xs">
-                            {(() => {
-                                const selected = accountants.find(s => s.id === productDetails.accountant?.id);
-                                if (!selected) return <p>Not Assigned</p>;
-                                return (
-                                    <>
-                                        <p><strong>Name:</strong> {selected.name}</p>
-                                        {selected.company && <p><strong>Company:</strong> {selected.company}</p>}
-                                        {selected.address && <p><strong>Address:</strong> {selected.address}</p>}
-                                        {selected.email && <p><strong>Email:</strong> {selected.email}</p>}
-                                        {selected.phone && <p><strong>Phone:</strong> {selected.phone}</p>}
-                                    </>
-                                );
-                            })()}
-                        </div>
-                    )}
-                </div>
+                <ProfessionalContactField
+                    label="Surveyor"
+                    contact={productDetails.surveyor}
+                    contacts={surveyors}
+                    isEditing={isEditing}
+                    onChange={(field, value) => onSubFieldChange("surveyor", field, value)}
+                />
 
-                {/* SURVEYOR */}
-                <div className="border p-4 rounded-md">
-                    <h5 className="font-bold mb-2">Surveyor</h5>
-                    {isEditing ? (
-                        <select
-                            value={productDetails.surveyor?.id || ''}
-                            onChange={(e) => {
-                                const selected = surveyors.find(s => s.id === e.target.value);
-                                onSubFieldChange('surveyor', 'id', selected?.id || '');
-                            }}
-                            className="w-full p-2 border rounded-md bg-surface text-text-primary"
-                        >
-                            <option value="">Select Surveyor...</option>
-                            {surveyors.map(s => (
-                                <option key={s.id} value={s.id}>
-                                    {s.name} {s.company ? `(${s.company})` : ''}
-                                </option>
-                            ))}
-                        </select>
-                    ) : (
-                        // <p className="p-2">
-                        //     {surveyors.find(s => s.id === productDetails.surveyor?.id)?.name || 'Not Assigned'}
-                        // </p>
-                        <div className="py-2 space-y-1 text-xs">
-                            {(() => {
-                                const selected = surveyors.find(s => s.id === productDetails.surveyor?.id);
-                                if (!selected) return <p>Not Assigned</p>;
-                                return (
-                                    <>
-                                        <p><strong>Name:</strong> {selected.name}</p>
-                                        {selected.company && <p><strong>Company:</strong> {selected.company}</p>}
-                                        {selected.address && <p><strong>Address:</strong> {selected.address}</p>}
-                                        {selected.email && <p><strong>Email:</strong> {selected.email}</p>}
-                                        {selected.phone && <p><strong>Phone:</strong> {selected.phone}</p>}
-                                    </>
-                                );
-                            })()}
-                        </div>
-                    )}
-                </div>
-
-                {/* ESTATE AGENT */}
-                <div className="border p-4 rounded-md">
-                    <h5 className="font-bold mb-2">Estate Agent</h5>
-                    {isEditing ? (
-                        <select
-                            value={productDetails.estateAgent?.id || ''}
-                            onChange={(e) => {
-                                const selected = estateAgents.find(ea => ea.id === e.target.value);
-                                onSubFieldChange('estateAgent', 'id', selected?.id || '');
-                            }}
-                            className="w-full p-2 border rounded-md bg-surface text-text-primary"
-                        >
-                            <option value="">Select Estate Agent...</option>
-                            {estateAgents.map(ea => (
-                                <option key={ea.id} value={ea.id}>
-                                    {ea.company} {ea.name ? `(${ea.name})` : ''}
-                                </option>
-                            ))}
-                        </select>
-                    ) : (
-                        // <p className="p-2">
-                        //     {estateAgents.find(ea => ea.id === productDetails.estateAgent?.id)?.company || 'Not Assigned'}
-                        // </p>
-                        <div className="py-2 space-y-1 text-xs">
-                            {(() => {
-                                const selected = estateAgents.find(s => s.id === productDetails.estateAgent?.id);
-                                if (!selected) return <p>Not Assigned</p>;
-                                return (
-                                    <>
-                                        <p><strong>Name:</strong> {selected.name}</p>
-                                        {selected.company && <p><strong>Company:</strong> {selected.company}</p>}
-                                        {selected.address && <p><strong>Address:</strong> {selected.address}</p>}
-                                        {selected.email && <p><strong>Email:</strong> {selected.email}</p>}
-                                        {selected.phone && <p><strong>Phone:</strong> {selected.phone}</p>}
-                                    </>
-                                );
-                            })()}
-                        </div>
-                    )}
-                </div>
-
-
-
-            </FormSectionNew>
+                <ProfessionalContactField
+                    label="Estate Agent"
+                    contact={productDetails.estateAgent}
+                    contacts={estateAgents}
+                    isEditing={isEditing}
+                    onChange={(field, value) => onSubFieldChange("estateAgent", field, value)}
+                />
+            </FormSectionNew> */}
 
             <FormSection title="Limited Company Details">
                 <div>
@@ -1090,7 +1064,6 @@ const ProductView: React.FC<{
         </div>
     );
 };
-
 
 
 
@@ -1284,147 +1257,95 @@ const DocumentsView: React.FC<{ client: Client }> = ({ client }) => {
 const AssociatedContactsEditor: React.FC<{
     productDetails?: ProductDetails;
     isEditing: boolean;
-    onChange: (contactType: 'lender' | 'solicitor' | 'accountant' | 'surveyor' | 'estateagent', field: keyof ProfessionalContact, value: string) => void;
+    onChange: (
+        contactType: 'lender' | 'solicitor' | 'accountant' | 'surveyor' | 'estateagent',
+        field: keyof ProfessionalContact,
+        value: string
+    ) => void;
     contactsDirectory: ProfessionalContact[];
-}> = ({ productDetails, isEditing, onChange, contactsDirectory }) => {
-    // const contacts: { type: 'lender' | 'solicitor' | 'accountant' | 'surveyor' | 'estateagent'; label: string; data?: ProfessionalContact }[] = [
-    //     { type: 'lender', label: 'Lender', data: productDetails?.lender },
-    //     { type: 'solicitor', label: 'Solicitor', data: productDetails?.solicitor },
-    //     { type: 'accountant', label: 'Accountant', data: productDetails?.accountant },
-    //     { type: 'surveyor', label: 'Surveyor', data: productDetails?.surveyor },
-    //     { type: 'estateagent', label: 'Estate Agent', data: productDetails?.estateagent },
-    // ];
-    const lenderContact =
-        typeof productDetails?.mortgage?.lender === "string"
-            ? contactsDirectory.find(c => c.id === productDetails.mortgage.lender)
-            : productDetails?.mortgage?.lender;
+}> = ({ productDetails, isEditing, onChange }) => {
 
-    const contacts: {
-        type: 'lender' | 'solicitor' | 'accountant' | 'surveyor' | 'estateagent';
-        label: string;
-        data?: ProfessionalContact;
-    }[] = [
-            { type: 'lender', label: 'Lender', data: lenderContact },
-            { type: 'solicitor', label: 'Solicitor', data: productDetails?.solicitor },
-            { type: 'accountant', label: 'Accountant', data: productDetails?.accountant },
-            { type: 'surveyor', label: 'Surveyor', data: productDetails?.surveyor },
-            { type: 'estateagent', label: 'Estate Agent', data: productDetails?.estateAgent },
-        ];
+    const {
+        getContactsByType,
+        contactModalOpen,
+        contactModalData,
+        closeContactModal,
+        addContact,
+        updateContact,
+    } = useContext(DataContext);
 
-    // const isProtectionOnly: boolean =
-    //     !!productDetails?.protection && !productDetails?.mortgage?.lender;
-
-    // // ✅ Define contact list with correct typing
-    // const contacts: {
-    //     type: 'lender' | 'solicitor' | 'accountant' | 'surveyor' | 'estateagent';
-    //     label: string;
-    //     data?: ProfessionalContact;
-    // }[] = [];
-
-    // // Add contacts conditionally (to preserve type safety)
-    // if (!isProtectionOnly) {
-    //     contacts.push({
-    //         type: 'lender',
-    //         label: 'Lender',
-    //         data: productDetails?.mortgage?.lender as unknown as ProfessionalContact
-    //     });
-    // }
-
-    // contacts.push(
-    //     { type: 'solicitor', label: 'Solicitor', data: productDetails?.solicitor },
-    //     { type: 'accountant', label: 'Accountant', data: productDetails?.accountant },
-    //     { type: 'surveyor', label: 'Surveyor', data: productDetails?.surveyor },
-    //     { type: 'estateagent', label: 'Estate Agent', data: productDetails?.estateAgent },
-    // );
-
-    // if (!isEditing) {
-    //     const hasContacts = contacts.some(c => c.data?.name);
-    //     return (
-    //         <ul className="space-y-4">
-    //             {hasContacts ? (
-    //                 contacts.filter(c => c.data?.name).map(({ type, label, data }) => (
-    //                     <li key={type} className="p-4 bg-gray-50 rounded-md text-sm border">
-    //                         <p className="font-semibold text-text-primary">{label}: {data!.name}</p>
-    //                         <p className="text-text-secondary">{data!.company}</p>
-    //                         <p className="text-text-secondary">{data!.address}</p>
-    //                         <p className="text-text-secondary">{data!.email} | {data!.phone}</p>
-    //                     </li>
-    //                 ))
-    //             ) : (
-    //                 <p className="text-sm text-text-secondary">No associated contacts found.</p>
-    //             )}
-    //         </ul>
-    //     );
-    // }
-
-    console.log(productDetails);
-
-    const hasAnyField = (c?: ProfessionalContact) => {
-        return c && (
-            c.name ||
-            c.company ||
-            c.address ||
-            c.email ||
-            c.phone
-        );
-    };
-    // if (!isEditing) {
-    const visibleContacts = contacts.filter(c => hasAnyField(c.data));
+    const solicitors = getContactsByType(ContactType.Solicitor);
+    const accountants = getContactsByType(ContactType.Accountant);
+    const surveyors = getContactsByType(ContactType.Surveyor);
+    const estateAgents = getContactsByType(ContactType.EstateAgent);
+    const clinics = getContactsByType(ContactType.Clinics);
 
     return (
-        <ul className="space-y-4">
-            {visibleContacts.length > 0 ? (
-                visibleContacts.map(({ type, label, data }) => (
-                    <li key={type} className="p-4 bg-gray-50 rounded-md text-sm border">
-                        <p className="font-semibold text-text-primary">
-                            {label}: {data?.name || '—'}
-                        </p>
-                        <p className="text-text-secondary">{data?.company || '— Company Empty'}</p>
-                        <p className="text-text-secondary">{data?.address || '— Address Empty'}</p>
-                        <p className="text-text-secondary">
-                            {(data?.email || '—')} | {(data?.phone || '—')}
-                        </p>
-                    </li>
-                ))
-            ) : (
-                <p className="text-sm text-text-secondary">No associated contacts found.</p>
-            )}
-        </ul>
-    );
-    // }
+        <FormSectionNew title="">
 
-    // return (
-    //     <div className="space-y-6">
-    //         {contacts.map(({ type, label, data }) => (
-    //             <div key={type} className="border p-4 rounded-md">
-    //                 <h5 className="col-span-full font-bold capitalize mb-2">{label}</h5>
-    //                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-    //                     <div>
-    //                         <label className="block font-medium text-text-secondary mb-1">Name</label>
-    //                         <input type="text" placeholder="Name" value={data?.name || ''} onChange={(e) => onChange(type, 'name', e.target.value)} className="w-full bg-surface border border-gray-300 rounded-md p-2" />
-    //                     </div>
-    //                     <div>
-    //                         <label className="block font-medium text-text-secondary mb-1">Company</label>
-    //                         <input type="text" placeholder="Company" value={data?.company || ''} onChange={(e) => onChange(type, 'company', e.target.value)} className="w-full bg-surface border border-gray-300 rounded-md p-2" />
-    //                     </div>
-    //                     <div>
-    //                         <label className="block font-medium text-text-secondary mb-1">Address</label>
-    //                         <input type="text" placeholder="Address" value={data?.address || ''} onChange={(e) => onChange(type, 'address', e.target.value)} className="w-full bg-surface border border-gray-300 rounded-md p-2" />
-    //                     </div>
-    //                     <div>
-    //                         <label className="block font-medium text-text-secondary mb-1">Email</label>
-    //                         <input type="email" placeholder="Email" value={data?.email || ''} onChange={(e) => onChange(type, 'email', e.target.value)} className="w-full bg-surface border border-gray-300 rounded-md p-2" />
-    //                     </div>
-    //                     <div>
-    //                         <label className="block font-medium text-text-secondary mb-1">Phone</label>
-    //                         <input type="tel" placeholder="Phone" value={data?.phone || ''} onChange={(e) => onChange(type, 'phone', e.target.value)} className="w-full bg-surface border border-gray-300 rounded-md p-2" />
-    //                     </div>
-    //                 </div>
-    //             </div>
-    //         ))}
-    //     </div>
-    // );
+            {/* 🟦 GLOBAL MODAL — used by all contact fields */}
+            <Modal
+                title={contactModalData ? "Edit Contact" : "Add New Contact"}
+                isOpen={contactModalOpen}
+                onClose={closeContactModal}
+            >
+                <NewContactForm
+                    initialData={contactModalData}
+                    onSubmit={async (data) => {
+                        if (contactModalData) {
+                            await updateContact(contactModalData.id, data);
+                        } else {
+                            await addContact(data);
+                        }
+                        closeContactModal();
+                    }}
+                    onCancel={closeContactModal}
+                />
+            </Modal>
+
+            <ProfessionalContactField
+                label="Solicitor"
+                contact={productDetails.solicitor}
+                contacts={solicitors}
+                isEditing={isEditing}
+                onChange={(field, value) => onChange("solicitor", field, value)}
+            />
+
+            <ProfessionalContactField
+                label="Accountant"
+                contact={productDetails.accountant}
+                contacts={accountants}
+                isEditing={isEditing}
+                onChange={(field, value) => onChange("accountant", field, value)}
+            />
+
+            <ProfessionalContactField
+                label="Surveyor"
+                contact={productDetails.surveyor}
+                contacts={surveyors}
+                isEditing={isEditing}
+                onChange={(field, value) => onChange("surveyor", field, value)}
+            />
+
+            <ProfessionalContactField
+                label="Estate Agent"
+                contact={productDetails.estateAgent}
+                contacts={estateAgents}
+                isEditing={isEditing}
+                onChange={(field, value) => onChange("estateAgent", field, value)}
+            />
+            <ProfessionalContactField
+                label="Clinics"
+                contact={productDetails.clinics}
+                contacts={clinics}
+                isEditing={isEditing}
+                onChange={(field, value) => onChange("clinics", field, value)}
+            />
+        </FormSectionNew>
+    );
 };
+
+
 
 const NotesView: React.FC<{
     notes: Note[];
@@ -1466,7 +1387,17 @@ const NotesView: React.FC<{
                             <li key={note.id} className="p-4 bg-gray-50 rounded-md text-sm border">
                                 <p className="whitespace-pre-wrap">{note.text}</p>
                                 <p className="text-xs text-text-secondary mt-2 text-right">
-                                    - {note.author} on {note.date}
+                                    - {note.author} on
+                                    {note.date
+                                        ? new Date(note.date).toLocaleDateString("en-GB", {
+                                            day: "2-digit",
+                                            month: "numeric",
+                                            year: "numeric",
+                                        })
+                                        : "N/A"}
+
+
+
                                 </p>
                             </li>
                         ))}
@@ -1513,6 +1444,132 @@ const NotesView: React.FC<{
         </div>
     );
 };
+
+
+interface CaseWorker {
+    name: string;
+    phone: string;
+    email: string;
+    reference: string;
+    profession: string;
+}
+
+interface CaseWorkerViewProps {
+    caseWorker: CaseWorker;
+    isEditing: boolean;
+    onChange: (updated: CaseWorker) => void;
+}
+
+export const CaseWorkerView: React.FC<CaseWorkerViewProps> = ({
+    caseWorker,
+    isEditing,
+    onChange,
+}) => {
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        onChange({ ...caseWorker, [name]: value });
+    };
+
+    return (
+        <div className="space-y-4 text-sm">
+
+            {/* ---------- VIEW MODE ---------- */}
+            {!isEditing && (
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <strong>Name:</strong> {caseWorker.name || "—"}
+                    </div>
+                    <div>
+                        <strong>Phone:</strong> {caseWorker.phone || "—"}
+                    </div>
+                    <div>
+                        <strong>Email:</strong> {caseWorker.email || "—"}
+                    </div>
+                    <div>
+                        <strong>Reference:</strong> {caseWorker.reference || "—"}
+                    </div>
+                    <div>
+                        <strong>Profession:</strong> {caseWorker.profession || "—"}
+                    </div>
+                </div>
+            )}
+
+            {/* ---------- EDIT MODE ---------- */}
+            {isEditing && (
+                <div className="grid grid-cols-2 gap-4">
+
+                    <div>
+                        <label className="block mb-1 text-text-secondary font-medium">Name</label>
+                        <input
+                            type="text"
+                            name="name"
+                            value={caseWorker.name}
+                            onChange={handleChange}
+                            className="w-full bg-surface border border-gray-300 rounded-md p-2"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block mb-1 text-text-secondary font-medium">Phone</label>
+                        <input
+                            type="text"
+                            name="phone"
+                            value={caseWorker.phone}
+                            onChange={handleChange}
+                            className="w-full bg-surface border border-gray-300 rounded-md p-2"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block mb-1 text-text-secondary font-medium">Email</label>
+                        <input
+                            type="email"
+                            name="email"
+                            value={caseWorker.email}
+                            onChange={handleChange}
+                            className="w-full bg-surface border border-gray-300 rounded-md p-2"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block mb-1 text-text-secondary font-medium">Reference</label>
+                        <input
+                            type="text"
+                            name="reference"
+                            value={caseWorker.reference}
+                            onChange={handleChange}
+                            className="w-full bg-surface border border-gray-300 rounded-md p-2"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block mb-1 text-text-secondary font-medium">
+                            Profession
+                        </label>
+
+                        <select
+                            name="profession"
+                            value={caseWorker.profession || ""}
+                            onChange={handleChange}
+                            className="w-full bg-surface border border-gray-300 rounded-md p-2"
+                        >
+                            <option value="">Select profession</option>
+                            <option value="Solicitor">Solicitor</option>
+                            <option value="Accountant">Accountant</option>
+                            <option value="Agent">Agent</option>
+                            <option value="Surveyor">Surveyor</option>
+                            <option value="Doctor">Doctor</option>
+                            <option value="Nurse">Nurse</option>
+                        </select>
+                    </div>
+                </div>
+            )}
+
+        </div>
+    );
+};
+
 
 const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ client, onBack }) => {
     const { tasks, contacts, addTask, addContact, updateClient, deleteClient, updateTask, deleteTask, currentUser, teamMembers } = useContext(DataContext);
@@ -1764,6 +1821,9 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
     const canDelete = currentUser && [UserRole.Admin, UserRole.SuperAdmin].includes(currentUser.role);
 
 
+    const allApplicants = useMemo(() => {
+        return editedClient?.applicants ?? [];
+    }, [editedClient?.applicants]);
 
     const tabs = [
         {
@@ -1803,7 +1863,7 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
         },
         {
             label: 'Property',
-            content: <PropertyView property={editedClient.property} isEditing={isEditing} onChange={handlePropertyChange} />
+            content: <PropertyView property={editedClient.property} isEditing={isEditing} onChange={handlePropertyChange} allApplicants={allApplicants} />
         },
         {
             label: 'Product',
@@ -1828,6 +1888,27 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                 onChange={(contactType, field, value) => handleProductSubFieldChange(contactType, field, value)}
                 contactsDirectory={contacts}
             />
+        },
+        {
+            label: 'Case worker',
+            content: (
+                <CaseWorkerView
+                    caseWorker={editedClient.caseWorker || {
+                        name: "",
+                        phone: "",
+                        email: "",
+                        reference: "",
+                        profession: "",
+                    }}
+                    isEditing={isEditing}
+                    onChange={(updated) => {
+                        setEditedClient(prev => ({
+                            ...prev,
+                            caseWorker: updated
+                        }));
+                    }}
+                />
+            ),
         },
         {
             label: 'Notes',
@@ -2095,7 +2176,16 @@ export const ClientsView: React.FC = () => {
                                     </span>
                                 </td>
                                 <td className="px-6 py-4">{client.productDetails?.businessWritten || 'N/A'}</td>
-                                <td className="px-6 py-4">{client.lastContacted}</td>
+                                <td className="px-6 py-4">
+                                    {client.lastContacted
+                                        ? new Date(client.lastContacted).toLocaleDateString("en-GB", {
+                                            day: "2-digit",
+                                            month: "numeric",
+                                            year: "numeric",
+                                        })
+                                        : "N/A"}
+
+                                </td>
                                 <td className="px-6 py-4">
                                     <button onClick={() => setSelectedClient(client)} className="text-green-600 hover:underline font-semibold">View</button>
                                     {/* {client.status === 'Archived' && (

@@ -91,6 +91,18 @@ export const updateClient = (id: string, data: Partial<Client>) =>
 export const deleteClient = (id: string) =>
   apiRequest<void>(`/clients/${id}`, "DELETE");
 
+// --- Case Worker (inside Clients module) ---
+export const updateCaseWorker = (
+  id: string,
+  data: {
+    name?: string;
+    phone?: string;
+    email?: string;
+    reference?: string;
+    profession?: string;
+  }
+) => apiRequest<Client>(`/clients/${id}/caseworker`, "PUT", data);
+
 // Tasks
 export const getTasks = () => apiRequest<Task[]>("/tasks");
 export const createTask = (data: Omit<Task, "id">) =>

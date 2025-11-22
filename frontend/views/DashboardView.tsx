@@ -144,7 +144,7 @@ export const DashboardView: React.FC = () => {
                 <h1 className="text-3xl font-bold">Dashboard</h1>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <StatCard title="Total Revenue" value={`$${totalRevenue.toLocaleString()}`} description="Gross income this year" />
+                <StatCard title="Total Revenue" value={`£${totalRevenue.toLocaleString()}`} description="Gross income this year" />
                 <StatCard title="Active Clients" value={activeClientsCount.toString()} description="Includes active and leads" />
                 <StatCard title="Active Leads" value={activeLeadsCount.toString()} description="In pipeline" />
                 <StatCard title="Clients Won" value={clientsWonCount.toString()} description="Completed this year" />

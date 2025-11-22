@@ -13,21 +13,73 @@ export const ContactsView: React.FC = () => {
   const [contactToEdit, setContactToEdit] = useState<Contact | null>(null);
 
 
+
+  // Sorting state
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Contact; direction: 'asc' | 'desc' } | null>(null);
+  const [selectedType, setSelectedType] = useState(''); // <-- new state for type filter
+  const contactTypes = ['Lender', 'Solicitor', 'Accountant', 'Surveyor', 'EstateAgent', 'Clinics'].sort();;
+
+
   const lenders = contacts.filter(c => c.type === 'Lender');
   const solicitors = contacts.filter(c => c.type === 'Solicitor');
   const accountants = contacts.filter(c => c.type === 'Accountant');
   const surveyors = contacts.filter(c => c.type === 'Surveyor');
   const estateAgents = contacts.filter(c => c.type === 'EstateAgent');
+  const clinics = contacts.filter(c => c.type === 'Clinics');
 
 
+  // OLD
+  // const filteredContacts = useMemo(() => {
+  //   return contacts.filter(contact =>
+  //     contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //     contact.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //     contact.type.toLowerCase().includes(searchTerm.toLowerCase())
+  //   );
+  // }, [searchTerm, contacts]);
+
+  // const filteredContacts = useMemo(() => {
+  //   return contacts.filter(contact => {
+  //     const matchesSearch =
+  //       contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //       contact.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //       contact.type.toLowerCase().includes(searchTerm.toLowerCase());
+
+  //     const matchesType = selectedType ? contact.type === selectedType : true;
+
+  //     return matchesSearch && matchesType;
+  //   });
+  // }, [searchTerm, selectedType, contacts]);
 
   const filteredContacts = useMemo(() => {
-    return contacts.filter(contact =>
-      contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact.type.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [searchTerm, contacts]);
+    let filtered = contacts.filter(contact => {
+      const matchesSearch =
+        contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        contact.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        contact.type.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesType = selectedType ? contact.type === selectedType : true;
+
+      return matchesSearch && matchesType;
+    });
+
+    if (sortConfig) {
+      filtered.sort((a, b) => {
+        const aValue = a[sortConfig.key] || '';
+        const bValue = b[sortConfig.key] || '';
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+          return sortConfig.direction === 'asc'
+            ? aValue.localeCompare(bValue)
+            : bValue.localeCompare(aValue);
+        }
+        return 0;
+      });
+    } else {
+      // default sort by type ascending
+      filtered.sort((a, b) => a.type.localeCompare(b.type));
+    }
+
+    return filtered;
+  }, [contacts, searchTerm, selectedType, sortConfig]);
 
   const handleOpenCreateModal = () => {
     setContactToEdit(null);
@@ -53,6 +105,15 @@ export const ContactsView: React.FC = () => {
     handleCloseModal();
   };
 
+
+  const handleSort = (key: keyof Contact) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
   return (
     <div className="p-4 sm:p-8">
       <Modal title={contactToEdit ? "Edit Contact" : "Create New Contact"} isOpen={isModalOpen} onClose={handleCloseModal}>
@@ -62,9 +123,24 @@ export const ContactsView: React.FC = () => {
           initialData={contactToEdit}
         />
       </Modal>
+
+
+
+
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
         <h1 className="text-3xl font-bold">Contacts Directory</h1>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
+          {/* Type Dropdown */}
+          <select
+            value={selectedType}
+            onChange={(e) => setSelectedType(e.target.value)}
+            className="bg-surface border border-gray-200 rounded-lg py-2 px-3 text-primary text-md focus:outline-none cursor-pointer "
+          >
+            <option value="">All Types</option>
+            {contactTypes.map(type => (
+              <option key={type} value={type}>{type}</option>
+            ))}
+          </select>
           <div className="relative w-full sm:w-auto">
             <span className="absolute inset-y-0 left-0 flex items-center pl-3">{SearchIcon}</span>
             <input
@@ -89,10 +165,34 @@ export const ContactsView: React.FC = () => {
         <table className="min-w-full text-sm text-left">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="px-6 py-3 font-medium text-text-secondary">Name</th>
-              <th className="px-6 py-3 font-medium text-text-secondary">Type</th>
-              <th className="px-6 py-3 font-medium text-text-secondary">Company</th>
+              {/* <th className="px-6 py-3 font-medium text-text-secondary" onClick={() => handleSort('name')}>Name</th>
+              <th className="px-6 py-3 font-medium text-text-secondary" onClick={() => handleSort('type')}>Type</th>
+              <th className="px-6 py-3 font-medium text-text-secondary" onClick={() => handleSort('company')}>Company</th> */}
+              {(['type', 'company'] as (keyof Contact)[]).map((key) => {
+                const isActive = sortConfig?.key === key;
+                const direction = isActive ? sortConfig!.direction : 'asc';
+                return (
+                  <th
+                    key={key}
+                    className={`px-6 py-3 font-medium text-text-secondary cursor-pointer select-none ${isActive ? 'text-primary' : ''
+                      }`}
+                    onClick={() => handleSort(key)}
+                  >
+                    <div className="flex items-center gap-1">
+                      {key.charAt(0).toUpperCase() + key.slice(1)}
+                      <span className="flex flex-col text-xs">
+                        {/* Only render the arrow if it's active */}
+                        {isActive && direction === 'asc' && <span className="text-primary">↑</span>}
+                        {isActive && direction === 'desc' && <span className="text-primary">↓</span>}
+                        {/* If not active, optionally show a small grey hint arrow */}
+                        {!isActive && <span className="text-gray-400">↑</span>}
+                      </span>
+                    </div>
+                  </th>
+                );
+              })}
               <th className="px-6 py-3 font-medium text-text-secondary">Address</th>
+              <th className="px-6 py-3 font-medium text-text-secondary">Notes</th>
               <th className="px-6 py-3 font-medium text-text-secondary">Email</th>
               <th className="px-6 py-3 font-medium text-text-secondary">Phone</th>
               <th className="px-6 py-3 font-medium text-text-secondary">Actions</th>
@@ -101,12 +201,20 @@ export const ContactsView: React.FC = () => {
           <tbody>
             {filteredContacts.map(contact => (
               <tr key={contact.id} className="border-b border-gray-200 hover:bg-gray-50">
-                <td className="px-6 py-4 font-semibold text-text-primary">{contact.name}</td>
+                {/* <td className="px-6 py-4 font-semibold text-text-primary">{contact.name}</td> */}
                 <td className="px-6 py-4">
                   <span className="bg-primary/10 text-primary px-2 py-1 text-xs rounded-full">{contact.type}</span>
                 </td>
                 <td className="px-6 py-4">{contact.company}</td>
                 <td className="px-6 py-4">{contact.address}</td>
+                <td className="px-6 py-4">{contact.notes ? (
+                  <div
+                    className=" max-w-none"
+                    dangerouslySetInnerHTML={{ __html: contact.notes }}
+                  />
+                ) : (
+                  <p className="text-gray-500">No notes added</p>
+                )}</td>
                 <td className="px-6 py-4">{contact.email}</td>
                 <td className="px-6 py-4">{contact.phone}</td>
                 <td className="px-6 py-4">

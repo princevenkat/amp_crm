@@ -102,7 +102,13 @@ const NotesView: React.FC<{
                                 <p className="whitespace-pre-wrap">{note.text}</p>
                                 <div className="flex justify-between items-center mt-2">
                                     <p className="text-xs text-text-secondary">
-                                        - {note.author} on {note.date}
+                                        - {note.author} on  {note.date
+                                            ? new Date(note.date).toLocaleDateString("en-GB", {
+                                                day: "2-digit",
+                                                month: "numeric",
+                                                year: "numeric",
+                                            })
+                                            : "N/A"}
                                     </p>
                                     <div className="flex gap-4">
                                         <button type="button" onClick={() => handleStartEdit(note)} className="text-xs text-secondary font-semibold hover:underline">Edit</button>
@@ -403,7 +409,16 @@ const PipelineTableRow: React.FC<{
         <tr className="border-b border-gray-200 hover:bg-gray-50">
             <td className="px-6 py-4">{applicant?.title || 'N/A'}</td>
             <td className="px-6 py-4 font-semibold text-text-primary">{client.name}</td>
-            <td className="px-6 py-4">{applicant?.dob || 'N/A'}</td>
+            <td className="px-6 py-4">
+                {applicant?.dob
+                    ? new Date(applicant?.dob).toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "numeric",
+                        year: "numeric",
+                    })
+                    : "N/A"}
+
+            </td>
             <td className="px-6 py-4">{applicant?.nationality || 'N/A'}</td>
             <td className="px-6 py-4">{applicant?.mobileNumber || 'N/A'}</td>
             <td className="px-6 py-4">{applicant?.email || 'N/A'}</td>
