@@ -9,7 +9,7 @@ const router = express.Router();
 // Get all team members (excluding passwords)
 router.get('/', protect, async (req, res) => {
     try {
-        const [team] = await db.query('SELECT id, name, role, email, avatar FROM team_members');
+        const [team] = await db.query('SELECT id, name, department, role, email, mobile, avatar FROM team_members');
         res.json(team);
     } catch (error) {
         console.error("Failed to get team members:", error);
@@ -19,9 +19,9 @@ router.get('/', protect, async (req, res) => {
 
 // Create a new team member
 router.post('/', protect, adminOnly, async (req, res) => {
-    const { name, email, role, password } = req.body;
+    const { name, department, email, mobile, role, password } = req.body;
 
-    if (!name || !email || !role || !password) {
+    if (!name || !email || !mobile || !role || !password) {
         return res.status(400).json({ message: 'Please provide all required fields' });
     }
 
@@ -37,15 +37,17 @@ router.post('/', protect, adminOnly, async (req, res) => {
         const newMember = {
             id: `team-${uuidv4()}`,
             name,
+            department,
             email: email.toLowerCase(),
+            mobile,
             role,
             password: hashedPassword,
             avatar: `https://picsum.photos/seed/${name.split(' ')[0]}/100/100`,
         };
 
         await db.query(
-            'INSERT INTO team_members (id, name, email, role, password, avatar) VALUES (?, ?, ?, ?, ?, ?)',
-            [newMember.id, newMember.name, newMember.email, newMember.role, newMember.password, newMember.avatar]
+            'INSERT INTO team_members (id, name, department, email, mobile, role, password, avatar) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [newMember.id, newMember.name, newMember.department, newMember.email, newMember.mobile, newMember.role, newMember.password, newMember.avatar]
         );
 
         const { password: _, ...memberData } = newMember;
@@ -59,7 +61,7 @@ router.post('/', protect, adminOnly, async (req, res) => {
 // Update a team member
 router.put('/:id', protect, adminOnly, async (req, res) => {
     const { id } = req.params;
-    const { name, email, role, password } = req.body;
+    const { name, department, email, mobile, role, password } = req.body;
 
     try {
         const [rows] = await db.query('SELECT * FROM team_members WHERE id = ?', [id]);
@@ -68,7 +70,7 @@ router.put('/:id', protect, adminOnly, async (req, res) => {
         }
 
         let updateQuery = 'UPDATE team_members SET name = ?, email = ?, role = ?';
-        const queryParams = [name, email, role];
+        const queryParams = [name, department, email, mobile, role];
 
         if (password) {
             const salt = bcrypt.genSaltSync(10);
@@ -82,7 +84,7 @@ router.put('/:id', protect, adminOnly, async (req, res) => {
 
         await db.query(updateQuery, queryParams);
 
-        const [updatedRows] = await db.query('SELECT id, name, role, email, avatar FROM team_members WHERE id = ?', [id]);
+        const [updatedRows] = await db.query('SELECT id, name, department, role, email, mobile, avatar FROM team_members WHERE id = ?', [id]);
         res.json(updatedRows[0]);
 
     } catch (error) {

@@ -11,17 +11,19 @@ interface NewTeamMemberFormProps {
 
 const emptyFormState: Omit<TeamMember, 'id' | 'avatar'> = {
   name: '',
+  department: '',
   role: UserRole.Adviser,
   email: '',
+  mobile: '',
   password: '',
 };
 
 export const NewTeamMemberForm: React.FC<NewTeamMemberFormProps> = ({ onSubmit, onCancel, initialData }) => {
-  const [formData, setFormData] = useState(initialData ? { name: initialData.name, role: initialData.role, email: initialData.email, password: '' } : emptyFormState);
+  const [formData, setFormData] = useState(initialData ? { name: initialData.name, department: initialData.department, role: initialData.role, email: initialData.email, mobile: initialData.mobile, password: '' } : emptyFormState);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   useEffect(() => {
-    setFormData(initialData ? { name: initialData.name, role: initialData.role, email: initialData.email, password: '' } : emptyFormState);
+    setFormData(initialData ? { name: initialData.name, department: initialData.department, role: initialData.role, email: initialData.email, mobile: initialData.mobile, password: '' } : emptyFormState);
   }, [initialData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -34,7 +36,7 @@ export const NewTeamMemberForm: React.FC<NewTeamMemberFormProps> = ({ onSubmit, 
     // If we are editing and the password is blank, don't submit it
     const submissionData = { ...formData };
     if (initialData && !submissionData.password) {
-        delete (submissionData as Partial<typeof submissionData>).password;
+      delete (submissionData as Partial<typeof submissionData>).password;
     }
     onSubmit(submissionData);
   };
@@ -46,11 +48,15 @@ export const NewTeamMemberForm: React.FC<NewTeamMemberFormProps> = ({ onSubmit, 
         <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" required />
       </div>
       <div>
+        <label className="block font-medium text-text-secondary mb-1">Department</label>
+        <input type="text" name="department" value={formData.department} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" />
+      </div>
+      <div>
         <label className="block font-medium text-text-secondary mb-1">Role</label>
         <select name="role" value={formData.role} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" required>
-            {Object.values(UserRole).map(role => (
-                <option key={role} value={role}>{role}</option>
-            ))}
+          {Object.values(UserRole).map(role => (
+            <option key={role} value={role}>{role}</option>
+          ))}
         </select>
       </div>
       <div>
@@ -58,25 +64,29 @@ export const NewTeamMemberForm: React.FC<NewTeamMemberFormProps> = ({ onSubmit, 
         <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" required />
       </div>
       <div>
+        <label className="block font-medium text-text-secondary mb-1">Mobile</label>
+        <input type="tel" name="mobile" value={formData.mobile} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" required />
+      </div>
+      <div>
         <label className="block font-medium text-text-secondary mb-1">Password</label>
         <div className="relative">
-            <input 
-                type={isPasswordVisible ? 'text' : 'password'}
-                name="password" 
-                value={formData.password} 
-                onChange={handleChange} 
-                className="w-full bg-surface border border-gray-300 rounded-md p-2 pr-10" 
-                placeholder={initialData ? "Leave blank to keep current password" : ""}
-                required={!initialData} 
-            />
-            <button
-                type="button"
-                onClick={() => setIsPasswordVisible(!isPasswordVisible)}
-                className="absolute inset-y-0 right-0 flex items-center px-3 text-text-secondary hover:text-text-primary"
-                aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
-            >
-                {isPasswordVisible ? EyeOffIcon : EyeIcon}
-            </button>
+          <input
+            type={isPasswordVisible ? 'text' : 'password'}
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            className="w-full bg-surface border border-gray-300 rounded-md p-2 pr-10"
+            placeholder={initialData ? "Leave blank to keep current password" : ""}
+            required={!initialData}
+          />
+          <button
+            type="button"
+            onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+            className="absolute inset-y-0 right-0 flex items-center px-3 text-text-secondary hover:text-text-primary"
+            aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
+          >
+            {isPasswordVisible ? EyeOffIcon : EyeIcon}
+          </button>
         </div>
       </div>
       <div className="flex justify-end gap-4 pt-4">

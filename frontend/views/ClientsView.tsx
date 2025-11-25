@@ -1581,6 +1581,8 @@ export const CaseWorkerView: React.FC<CaseWorkerViewProps> = ({
 };
 
 
+
+
 const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ client, onBack }) => {
     const { tasks, contacts, addTask, addContact, updateClient, deleteClient, updateTask, deleteTask, currentUser, teamMembers } = useContext(DataContext);
 

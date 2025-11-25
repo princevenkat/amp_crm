@@ -341,8 +341,10 @@ export enum UserRole {
 export interface TeamMember {
   id: string;
   name: string;
+  department: string;
   role: UserRole;
   email: string;
+  mobile: string;
   avatar: string;
   password?: string;
 }
