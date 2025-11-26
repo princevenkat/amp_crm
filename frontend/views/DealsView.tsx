@@ -139,6 +139,7 @@ const ApplicantDetailsForm: React.FC<{ applicant: Applicant; onChange: (e: React
         { name: 'email', label: 'Email Address', type: 'email', required: true },
         { name: 'noOfDependents', label: 'No Of Dependents', type: 'number', required: false },
         { name: 'nationality', label: 'Nationality', type: 'text', required: false },
+        { name: 'introducer', label: 'Introducer', type: 'text', required: false },
 
     ];
 

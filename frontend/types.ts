@@ -47,6 +47,7 @@ export interface Applicant {
   currentAddress: string;
   noOfDependents: number;
   nationality: string;
+  introducer: string;
 }
 
 export interface PropertyDetails {

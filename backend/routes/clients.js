@@ -485,7 +485,7 @@ const ALL_CLIENT_FIELDS_FOR_UPDATE = `
   isExLocal = ?, bedrooms = ?, livingRooms = ?, kitchens = ?, bathrooms = ?, separateToilets = ?,
   hasGarageOrParking = ?, flatsInBlock = ?, storeysInBlock = ?, floorOfFlat = ?, leaseRemaining = ?,
   groundRent = ?, serviceCharge = ?, businessWritten = ?, mortgageFees = ?,
-  solicitor_id = ?, accountant_id = ?, surveyor_id = ?, estate_agent_id = ?
+  solicitor_id = ?, accountant_id = ?, surveyor_id = ?, estate_agent_id = ?, introducer = ?
 `;
 
 const toMySQLDateTime = (isoDate) => {
@@ -539,6 +539,7 @@ const getClientDataAsArray = (clientData) => [
     clientData.productDetails?.accountant?.id || null,
     clientData.productDetails?.surveyor?.id || null,
     clientData.productDetails?.estateAgent?.id || null,
+    clientData.introducer || null,
 ];
 
 
@@ -614,7 +615,7 @@ router.post('/', protect, async (req, res) => {
             purchasePrice: clientData.property?.purchasePrice,
             dateOfPurchase: clientData.property?.dateOfPurchase || null,
             yearBuilt: clientData.property?.yearBuilt || null,
-            propertyTypeProp: clientData.property?.propertyType, // Aliased field
+            propertyTypeProp: clientData.property?.propertyType || null, // Aliased field
             isExLocal: clientData.property?.isExLocal,
             bedrooms: clientData.property?.bedrooms,
             livingRooms: clientData.property?.livingRooms,
@@ -628,6 +629,7 @@ router.post('/', protect, async (req, res) => {
             accountant_id: clientData.productDetails?.accountant?.id || null,
             surveyor_id: clientData.productDetails?.surveyor?.id || null,
             estate_agent_id: clientData.productDetails?.estateAgent?.id || null,
+            introducer: clientData.introducer,
         };
 
         const columns = Object.keys(clientInsertData).join(', ');
@@ -660,9 +662,9 @@ router.post('/', protect, async (req, res) => {
                 const dob = app.dob || null;
                 await connection.query(
                     `INSERT INTO applicants 
-            (clientId, title, firstName, middleName, surname, gender, dob, homeTelephone, mobileNumber, email, currentAddress, noOfDependents, nationality) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [newId, app.title, app.firstName, app.middleName, app.surname, app.gender, dob, app.homeTelephone, app.mobileNumber, app.email, app.currentAddress, app.noOfDependents, app.nationality]
+            (clientId, title, firstName, middleName, surname, gender, dob, homeTelephone, mobileNumber, email, currentAddress, noOfDependents, nationality, introducer) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [newId, app.title, app.firstName, app.middleName, app.surname, app.gender, dob, app.homeTelephone, app.mobileNumber, app.email, app.currentAddress, app.noOfDependents, app.nationality, app.introducer]
                 );
             }
         }
@@ -758,8 +760,8 @@ router.put('/:id', protect, async (req, res) => {
             for (const app of merged.applicants) {
                 await connection.query(
                     `INSERT INTO applicants 
-            (clientId, title, firstName, middleName, surname, gender, dob, homeTelephone, mobileNumber, email, currentAddress, noOfDependents, nationality) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            (clientId, title, firstName, middleName, surname, gender, dob, homeTelephone, mobileNumber, email, currentAddress, noOfDependents, nationality, introducer) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                     [
                         id,
                         app.title || '',
@@ -774,6 +776,7 @@ router.put('/:id', protect, async (req, res) => {
                         app.currentAddress || '',
                         app.noOfDependents || 0,
                         app.nationality || '',
+                        app.introducer || '',
                     ]
                 );
             }

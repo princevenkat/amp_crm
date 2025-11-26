@@ -18,7 +18,7 @@ import { NewContactForm } from '@/components/forms/NewContactForm';
 
 const emptyApplicant: Applicant = {
     title: '', firstName: '', middleName: '', surname: '', gender: '', dob: '',
-    homeTelephone: '', mobileNumber: '', email: '', currentAddress: '', noOfDependents: 0, nationality: ''
+    homeTelephone: '', mobileNumber: '', email: '', currentAddress: '', noOfDependents: 0, nationality: '', introducer: ''
 };
 
 
@@ -54,6 +54,7 @@ const ApplicantDetails: React.FC<ApplicantDetailsProps> = ({ applicant, index, i
                     <p><strong className="text-text-secondary">Email:</strong> {applicant.email}</p>
                     <p><strong className="text-text-secondary">Mobile:</strong> {applicant.mobileNumber}</p>
                     <p><strong className="text-text-secondary">Home Tel:</strong> {applicant.homeTelephone}</p>
+                    <p><strong className="text-text-secondary">Introducer:</strong> {applicant.introducer}</p>
                     <p className="col-span-2"><strong className="text-text-secondary">Address:</strong> {applicant.currentAddress}</p>
                 </div>
             </div>
@@ -85,6 +86,7 @@ const ApplicantDetails: React.FC<ApplicantDetailsProps> = ({ applicant, index, i
         { name: 'email', label: 'Email Address', type: 'email', required: true },
         { name: 'noOfDependents', label: 'No Of Dependents', type: 'number', required: false },
         { name: 'nationality', label: 'Nationality', type: 'text', required: false },
+        { name: 'introducer', label: 'Introducer', type: 'text', required: false },
     ];
 
     return (
