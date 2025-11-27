@@ -455,7 +455,7 @@ const ProductView: React.FC<{
     const estateAgents = getContactsByType(ContactType.EstateAgent);
 
 
-    console.log(JSON.stringify(productDetails, null, 2))
+    // console.log(JSON.stringify(productDetails, null, 2))
 
     const [directors, setDirectors] = useState<string[]>(productDetails.limitedCompany?.directors || ['']);
 
