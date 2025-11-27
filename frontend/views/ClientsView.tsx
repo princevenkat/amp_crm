@@ -442,18 +442,20 @@ const ProductView: React.FC<{
 }> = ({ productDetails, propertyValue, isEditing, onChange, onSubFieldChange, advisors }) => {
 
     //console.log('Product Details Limited Company:', productDetails);
-    console.log('Product Details:', productDetails);
+    // console.log('Product Details:', productDetails);
 
     const { getContactsByType } = useContext(DataContext)
 
     const lenders = getContactsByType(ContactType.Lender);
-    const solicitors = getContactsByType(ContactType.Solicitor);
+
+    const providers = getContactsByType(ContactType.Provider);
+    const solicitors = getContactsByType(ContactType.Provider);
     const accountants = getContactsByType(ContactType.Accountant);
     const surveyors = getContactsByType(ContactType.Surveyor);
     const estateAgents = getContactsByType(ContactType.EstateAgent);
 
 
-
+    console.log(JSON.stringify(productDetails, null, 2))
 
     const [directors, setDirectors] = useState<string[]>(productDetails.limitedCompany?.directors || ['']);
 
@@ -482,10 +484,16 @@ const ProductView: React.FC<{
     };
 
     const businessWritten = productDetails.businessWritten;
+
+    // const showMortgage = businessWritten === 'Mortgage Only';
+    // const showProtection = businessWritten === 'Protection Only' || businessWritten === 'Mortgage & Protection';
+    // const showBuildingContent = businessWritten === 'Protection Only' || businessWritten === 'Mortgage & Protection' || businessWritten === 'Building & Content';
+    // const showMortgageProtection = businessWritten === 'Protection Only' || businessWritten === 'Mortgage & Protection' || businessWritten === 'Building & Content';
+
+    // Determine which sections should show
     const showMortgage = businessWritten === 'Mortgage Only' || businessWritten === 'Mortgage & Protection';
     const showProtection = businessWritten === 'Protection Only' || businessWritten === 'Mortgage & Protection' || businessWritten === 'Building & Content';
-
-
+    const showBuildingContent = businessWritten === 'Building & Content';
 
 
     return (
@@ -511,6 +519,7 @@ const ProductView: React.FC<{
                     )}
                 </div>
             </div>
+
 
             {showMortgage && (
                 <FormSection title="Mortgage Details">
@@ -850,7 +859,7 @@ const ProductView: React.FC<{
             )}
 
             {showProtection && (
-                <FormSection title="Protection / B&C Details">
+                <FormSection title="Protection">
                     <div>
                         <label className="font-semibold text-text-secondary">Protection Advisor</label>
                         {isEditing ? (
@@ -878,14 +887,43 @@ const ProductView: React.FC<{
                             <p className="py-2">{productDetails.protection?.typeOfInsurance}</p>
                         )}
                     </div>
-                    <div>
+                    {/* <div>
                         <label className="font-semibold text-text-secondary">Provider</label>
                         {isEditing ? (
                             <input disabled={!isEditing} type="text" value={productDetails.protection?.provider || ''} onChange={(e) => onSubFieldChange('protection', 'provider', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
                         ) : (
                             <p className="py-2">{productDetails.protection?.provider}</p>
                         )}
+                    </div> */}
+                    <div>
+                        <label className="font-semibold text-text-secondary">Provider</label>
+
+                        {isEditing ? (
+                            <select
+                                disabled={!isEditing}
+                                value={productDetails.protection?.provider || ''}
+                                onChange={(e) => {
+                                    const selected = providers.find(l => l.id === e.target.value);
+                                    if (selected) {
+                                        onSubFieldChange('protection', 'provider', selected.id);
+                                        onSubFieldChange('protection', 'lenderName', selected.name); // optional
+                                        // Do NOT update lenderReference here
+                                    }
+                                }}
+                                className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100"
+                            >
+                                <option value="">Select Provider...</option>
+                                {providers.map(l => (
+                                    // <option key={l.id} value={l.id}>{l.name} ({l.company})</option>
+                                    <option key={l.id} value={l.id}>{l.company}</option>
+                                ))}
+                            </select>
+                        ) : (
+                            <p className="py-2">{providers.find(l => l.id === productDetails.protection?.provider)?.company || 'Not Assigned'}</p>
+                        )}
                     </div>
+
+
                     <div>
                         <label className="font-semibold text-text-secondary">Provider Reference</label>
                         {isEditing ? (
@@ -938,6 +976,117 @@ const ProductView: React.FC<{
                 </FormSection>
             )}
 
+            {showBuildingContent && (
+
+                <FormSection title="Building & Content">
+                    <div>
+                        <label className="font-semibold text-text-secondary">Protection Advisor</label>
+                        {isEditing ? (
+                            <select disabled={!isEditing} value={productDetails.bandc?.advisor || ''} onChange={(e) => onSubFieldChange('bandc', 'advisor', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100">
+                                <option value="">Select...</option>
+                                {advisors.map(name => <option key={name} value={name}>{name}</option>)}
+                            </select>
+                        ) : (
+                            <p className="py-2">{productDetails.bandc?.advisor || 'Not Assigned'}</p>
+                        )}
+                    </div>
+                    <div>
+                        <label className="font-semibold text-text-secondary">Type of Insurance</label>
+                        {isEditing ? (
+                            <select disabled={!isEditing} value={productDetails.bandc?.typeOfInsurance || ''} onChange={(e) => onSubFieldChange('bandc', 'typeOfInsurance', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100">
+                                <option value="">Select...</option>
+                                <option>Level term</option>
+                                <option>Decreasing term</option>
+                                <option>Increasing term</option>
+                                <option>CIC</option>
+                                <option>Income protection</option>
+                                <option>FIB</option>
+                            </select>
+                        ) : (
+                            <p className="py-2">{productDetails.bandc?.typeOfInsurance}</p>
+                        )}
+                    </div>
+                    <div>
+                        <label className="font-semibold text-text-secondary">Provider</label>
+
+                        {isEditing ? (
+                            <select
+                                disabled={!isEditing}
+                                value={productDetails.bandc?.provider || ''}
+                                onChange={(e) => {
+                                    const selected = providers.find(l => l.id === e.target.value);
+                                    if (selected) {
+                                        onSubFieldChange('bandc', 'provider', selected.id);
+                                        onSubFieldChange('bandc', 'providerName', selected.name); // optional
+                                        // Do NOT update lenderReference here
+                                    }
+                                }}
+                                className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100"
+                            >
+                                <option value="">Select Provider...</option>
+                                {providers.map(l => (
+                                    // <option key={l.id} value={l.id}>{l.name} ({l.company})</option>
+                                    <option key={l.id} value={l.id}>{l.company}</option>
+                                ))}
+                            </select>
+                        ) : (
+                            <p className="py-2">{providers.find(l => l.id === productDetails.bandc?.provider)?.company || 'Not Assigned'}</p>
+                        )}
+                    </div>
+                    <div>
+                        <label className="font-semibold text-text-secondary">Provider Reference</label>
+                        {isEditing ? (
+                            <input disabled={!isEditing} type="text" value={productDetails.bandc?.providerReference || ''} onChange={(e) => onSubFieldChange('bandc', 'providerReference', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        ) : (
+                            <p className="py-2">{productDetails.bandc?.providerReference}</p>
+                        )}
+                    </div>
+                    <div>
+                        <label className="font-semibold text-text-secondary">Amount Assured</label>
+                        {isEditing ? (
+                            <input disabled={!isEditing} type="number" value={productDetails.bandc?.amountAssured || ''} onChange={(e) => onSubFieldChange('bandc', 'amountAssured', Number(e.target.value))} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        ) : (
+                            <p className="py-2">{productDetails.bandc?.amountAssured}</p>
+                        )}
+                    </div>
+                    <div>
+                        <label className="font-semibold text-text-secondary">Term</label>
+                        {isEditing ? (
+                            <input disabled={!isEditing} type="text" value={productDetails.bandc?.term || ''} onChange={(e) => onSubFieldChange('bandc', 'term', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        ) : (
+                            <p className="py-2">{productDetails.bandc?.term}</p>
+                        )}
+                    </div>
+                    <div>
+                        <label className="font-semibold text-text-secondary">Premium</label>
+                        {isEditing ? (
+                            <input disabled={!isEditing} type="number" value={productDetails.bandc?.premium || ''} onChange={(e) => onSubFieldChange('bandc', 'premium', Number(e.target.value))} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        ) : (
+                            <p className="py-2">{productDetails.bandc?.premium}</p>
+                        )}
+                    </div>
+                    <div>
+                        <label className="font-semibold text-text-secondary">Date on Risk</label>
+                        {isEditing ? (
+
+                            <input disabled={!isEditing} type="date" value={productDetails.bandc?.dateOnRisk || ''} onChange={(e) => onSubFieldChange('bandc', 'dateOnRisk', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        ) : (
+                            <p className="py-2">{productDetails.bandc?.dateOnRisk}</p>
+                        )}
+                    </div>
+                    <div>
+                        <label className="font-semibold text-text-secondary">Commission</label>
+                        {isEditing ? (
+                            <input disabled={!isEditing} type="number" value={productDetails.bandc?.commission || ''} onChange={(e) => onSubFieldChange('bandc', 'commission', Number(e.target.value))} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                        ) : (
+                            <p className="py-2">{productDetails.bandc?.commission}</p>
+                        )}
+                    </div>
+                </FormSection>
+
+
+            )}
+
             {/* <FormSectionNew title="Professional Contacts">
 
                 <ProfessionalContactField
@@ -973,7 +1122,144 @@ const ProductView: React.FC<{
                 />
             </FormSectionNew> */}
 
-            <FormSection title="Limited Company Details">
+            {/* <FormSection title="Limited Company Details">
+                <div>
+                    <label className="font-semibold text-text-secondary">Company Name</label>
+
+                    {isEditing ? (
+                        <input disabled={!isEditing} type="text" value={productDetails.limitedCompany?.name || ''} onChange={(e) => onSubFieldChange('limitedCompany', 'name', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                    ) : (
+                        <p className="py-2">
+                            {productDetails.limitedCompany?.name || ''}
+                        </p>
+                    )}
+                </div>
+                <div>
+                    <label className="font-semibold text-text-secondary">Registration Number</label>
+                    {isEditing ? (
+                        <input disabled={!isEditing} type="text" value={productDetails.limitedCompany?.registrationNumber || ''} onChange={(e) => onSubFieldChange('limitedCompany', 'registrationNumber', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                    ) : (
+                        <p className="py-2">
+                            {productDetails.limitedCompany?.registrationNumber || ''}
+                        </p>
+                    )}
+                </div>
+                <div>
+                    <label className="font-semibold text-text-secondary">Company Address</label>
+                    {isEditing ? (
+                        <input disabled={!isEditing} type="text" value={productDetails.limitedCompany?.address || ''} onChange={(e) => onSubFieldChange('limitedCompany', 'address', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                    ) : (
+                        <p className="py-2">
+                            {productDetails.limitedCompany?.address || ''}
+                        </p>
+                    )}
+                </div>
+                <div>
+                    <label className="font-semibold text-text-secondary">Date Established</label>
+                    {isEditing ? (
+                        <input disabled={!isEditing} type="date" value={productDetails.limitedCompany?.dateEstablished || ''} onChange={(e) => onSubFieldChange('limitedCompany', 'dateEstablished', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                    ) : (
+                        <p className="py-2">
+                            {productDetails.limitedCompany?.dateEstablished || ''}
+                        </p>
+                    )}
+                </div>
+                <div className="col-span-2 space-y-2">
+                    <label className="font-semibold text-text-secondary">Directors</label>
+                    {directors.map((director, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                            {isEditing ? (
+                                <input
+                                    disabled={!isEditing}
+                                    type="text"
+                                    placeholder={`Director ${index + 1} Name`}
+                                    value={director}
+                                    onChange={(e) => handleDirectorChange(index, e.target.value)}
+                                    className="w-full p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100"
+                                />
+                            ) : (
+                                <p>
+                                    {director}
+                                </p>
+                            )}
+                            {isEditing && directors.length > 1 && (
+                                <button type="button" onClick={() => removeDirector(index)} className="text-danger p-1 rounded-full hover:bg-danger/10">
+                                    {MinusIcon}
+                                </button>
+                            )}
+
+                        </div>
+                    ))}
+                    {isEditing && <button type="button" onClick={addDirector} className="text-sm text-secondary mt-2 flex items-center gap-1">{PlusIcon} Add director</button>}
+                </div>
+                <div>
+                    <label className="font-semibold text-text-secondary">Phone</label>
+                    {isEditing ? (
+                        <input disabled={!isEditing} type="tel" value={productDetails.limitedCompany?.phone || ''} onChange={(e) => onSubFieldChange('limitedCompany', 'phone', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                    ) : (
+                        <p className="py-2">
+                            {productDetails.limitedCompany?.phone || ''}
+                        </p>
+                    )}
+                </div>
+                <div>
+                    <label className="font-semibold text-text-secondary">Email</label>
+                    {isEditing ? (
+                        <input disabled={!isEditing} type="email" value={productDetails.limitedCompany?.email || ''} onChange={(e) => onSubFieldChange('limitedCompany', 'email', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                    ) : (
+                        <p className="py-2">
+                            {productDetails.limitedCompany?.email || ''}
+                        </p>
+                    )}
+                </div>
+            </FormSection> */}
+        </div>
+    );
+};
+
+
+const LimitedCompany: React.FC<{
+    productDetails: ProductDetails;
+    propertyValue: number;
+    isEditing: boolean;
+    onChange: (key: keyof ProductDetails, value: any) => void;
+    onSubFieldChange: (section: Exclude<keyof ProductDetails, 'businessWritten'>, field: string, value: any) => void;
+    advisors: string[];
+}> = ({ productDetails, propertyValue, isEditing, onChange, onSubFieldChange, advisors }) => {
+
+    const [directors, setDirectors] = useState<string[]>(productDetails.limitedCompany?.directors || ['']);
+
+    useEffect(() => {
+        setDirectors(productDetails.limitedCompany?.directors || ['']);
+    }, [productDetails.limitedCompany?.directors]);
+
+
+    const handleDirectorChange = (index: number, value: string) => {
+        const newDirectors = [...directors];
+        newDirectors[index] = value;
+        setDirectors(newDirectors);
+        onSubFieldChange('limitedCompany', 'directors', newDirectors);
+    };
+
+    const addDirector = () => {
+        const newDirectors = [...directors, ''];
+        setDirectors(newDirectors);
+        onSubFieldChange('limitedCompany', 'directors', newDirectors);
+    };
+
+    const removeDirector = (indexToRemove: number) => {
+        const newDirectors = directors.filter((_, index) => index !== indexToRemove);
+        setDirectors(newDirectors);
+        onSubFieldChange('limitedCompany', 'directors', newDirectors);
+    };
+
+
+
+
+
+    return (
+        <div className="text-sm">
+            <FormSection title="Details">
                 <div>
                     <label className="font-semibold text-text-secondary">Company Name</label>
 
@@ -1067,6 +1353,7 @@ const ProductView: React.FC<{
         </div>
     );
 };
+
 
 
 
@@ -1346,13 +1633,13 @@ const AssociatedContactsEditor: React.FC<{
                 isEditing={isEditing}
                 onChange={(field, value) => onChange("estateAgent", field, value)}
             />
-            <ProfessionalContactField
+            {/* <ProfessionalContactField
                 label="Clinics"
                 contact={productDetails.clinics}
                 contacts={clinics}
                 isEditing={isEditing}
                 onChange={(field, value) => onChange("clinics", field, value)}
-            />
+            /> */}
         </FormSectionNew>
     );
 };
@@ -1399,8 +1686,7 @@ const NotesView: React.FC<{
                             <li key={note.id} className="p-4 bg-gray-50 rounded-md text-sm border">
                                 <p className="whitespace-pre-wrap">{note.text}</p>
                                 <p className="text-xs text-text-secondary mt-2 text-right">
-                                    - {note.author} on
-                                    {note.date
+                                    - {note.author} on {note.date
                                         ? new Date(note.date).toLocaleDateString("en-GB", {
                                             day: "2-digit",
                                             month: "numeric",
@@ -1447,7 +1733,13 @@ const NotesView: React.FC<{
                     />
                     <div className="flex justify-between items-center mt-2">
                         <p className="text-xs text-text-secondary text-right">
-                            - {note.author} on {note.date}
+                            - {note.author} on                            {note.date
+                                ? new Date(note.date).toLocaleDateString("en-GB", {
+                                    day: "2-digit",
+                                    month: "numeric",
+                                    year: "numeric",
+                                })
+                                : "—"}
                         </p>
                         <button onClick={() => handleDeleteNote(note.id)} className="text-xs text-danger hover:underline">Delete</button>
                     </div>
@@ -1795,6 +2087,7 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
     //     }
     //     handleCloseTaskModal();
     // };
+
     const handleSaveTask = async (taskData: Omit<Task, 'id'>) => {
         const finalTaskData = {
             ...taskData,
@@ -1809,7 +2102,6 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
 
         handleCloseTaskModal();
     };
-
 
     const handleDeleteTask = async (taskId: string) => {
         if (window.confirm('Are you sure you want to delete this task?')) {
@@ -1832,7 +2124,8 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
     const caseStatuses: CaseStatus[] = ['Initial Enquiry', 'AIP', 'FMA Submitted', 'Offered', 'Completed', 'Renewal', ''];
     const clientStatuses: Client['status'][] = ['Active', 'Lead', 'Archived'];
 
-    const canDelete = currentUser && [UserRole.Admin, UserRole.SuperAdmin].includes(currentUser.role);
+    //const canDelete = currentUser && [UserRole.Admin, UserRole.SuperAdmin].includes(currentUser.role);
+    const canDelete = currentUser && [UserRole.SuperAdmin].includes(currentUser.role);
 
 
     const allApplicants = useMemo(() => {
@@ -1882,6 +2175,17 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
         {
             label: 'Product',
             content: <ProductView
+                productDetails={editedClient.productDetails || { businessWritten: '' }}
+                propertyValue={editedClient.property.propertyValue}
+                isEditing={isEditing}
+                onChange={handleProductFieldChange}
+                onSubFieldChange={handleProductSubFieldChange}
+                advisors={advisors}
+            />,
+        },
+        {
+            label: 'Limited Company Details',
+            content: <LimitedCompany
                 productDetails={editedClient.productDetails || { businessWritten: '' }}
                 propertyValue={editedClient.property.propertyValue}
                 isEditing={isEditing}
@@ -1977,8 +2281,50 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                 </div>
                 <div className="text-sm md:text-right space-y-1 w-full md:w-auto bg-gray-50 p-3 rounded-lg border">
                     <p><strong className="text-text-secondary">Case Ref:</strong> {isEditing ? <input type="text" name="caseReference" value={editedClient.caseReference} onChange={handleGeneralChange} className="bg-surface border border-gray-300 rounded-md p-1 text-sm ml-1" /> : editedClient.caseReference}</p>
-                    <p><strong className="text-text-secondary">Primary Advisor:</strong> {isEditing ? <select name="primaryAdvisor" value={editedClient.primaryAdvisor} onChange={handleGeneralChange} className="bg-surface border border-gray-300 rounded-md p-1 text-sm ml-1">{advisors.map(a => <option key={a} value={a}>{a}</option>)}</select> : editedClient.primaryAdvisor}</p>
-                    <p><strong className="text-text-secondary">Admin:</strong> {isEditing ? <select name="admin" value={editedClient.admin} onChange={handleGeneralChange} className="bg-surface border border-gray-300 rounded-md p-1 text-sm ml-1">{admins.map(a => <option key={a} value={a}>{a}</option>)}</select> : editedClient.admin}</p>
+                    {/* <p><strong className="text-text-secondary">Primary Advisor:</strong> {isEditing ? <select name="primaryAdvisor" value={editedClient.primaryAdvisor} onChange={handleGeneralChange} className="bg-surface border border-gray-300 rounded-md p-1 text-sm ml-1">{advisors.map(a => <option key={a} value={a}>{a}</option>)}</select> : editedClient.primaryAdvisor}</p>
+                    <p><strong className="text-text-secondary">Admin:</strong> {isEditing ? <select name="admin" value={editedClient.admin} onChange={handleGeneralChange} className="bg-surface border border-gray-300 rounded-md p-1 text-sm ml-1">{admins.map(a => <option key={a} value={a}>{a}</option>)}</select> : editedClient.admin}</p> */}
+
+                    <p className="text-text-secondary">
+                        <strong>Primary Advisor:</strong>
+                        {isEditing ? (
+                            <select
+                                name="primaryAdvisor"
+                                value={editedClient.primaryAdvisor}
+                                onChange={handleGeneralChange}
+                                className="bg-surface border border-gray-300 rounded-md p-1 text-sm ml-1"
+                            >
+                                {advisors.map(a => <option key={a} value={a}>{a}</option>)}
+                            </select>
+                        ) : (
+                            editedClient.primaryAdvisor
+                        )}
+                    </p>
+
+                    {/* Show all advisors below */}
+                    {/* <p className="text-xs text-gray-500 ml-1">
+                        All Advisors: {advisors.join(", ") || "—"}
+                    </p> */}
+
+                    <p className="text-text-secondary">
+                        <strong>Admin:</strong>
+                        {isEditing ? (
+                            <select
+                                name="admin"
+                                value={editedClient.admin}
+                                onChange={handleGeneralChange}
+                                className="bg-surface border border-gray-300 rounded-md p-1 text-sm ml-1"
+                            >
+                                {admins.map(a => <option key={a} value={a}>{a}</option>)}
+                            </select>
+                        ) : (
+                            editedClient.admin
+                        )}
+                    </p>
+
+                    {/* Show all admins below */}
+                    {/* <p className="text-xs text-gray-500 ml-1">
+                        All Admins: {admins.join(", ") || "—"}
+                    </p> */}
                 </div>
             </div>
             <div className="flex flex-col-reverse sm:flex-row justify-end mb-4 gap-2">
@@ -2035,13 +2381,16 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                                                     {EditIcon}
                                                 </button>
                                                 {/* 🗑️ Delete Button */}
-                                                <button
-                                                    onClick={() => handleDeleteTask(t.id)}
-                                                    className="text-gray-400 hover:text-danger p-1"
-                                                    aria-label="Delete task"
-                                                >
-                                                    <TrashIcon className="size-4 text-red-500" />
-                                                </button>
+
+                                                {canDelete && (
+                                                    <button
+                                                        onClick={() => handleDeleteTask(t.id)}
+                                                        className="text-gray-400 hover:text-danger p-1"
+                                                        aria-label="Delete task"
+                                                    >
+                                                        <TrashIcon className="size-4 text-red-500" />
+                                                    </button>
+                                                )}
                                             </div>
                                             <p className="font-semibold text-text-primary pr-8">{t.title}</p>
                                             {t.description && <p className="text-xs text-text-secondary mt-1">{t.description}</p>}
@@ -2089,6 +2438,8 @@ export const ClientsView: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isCreatingClient, setIsCreatingClient] = useState(false);
 
+    const [caseStatusFilter, setCaseStatusFilter] = useState<string>(''); // '' = no filter
+
     useEffect(() => {
         if (selectedClientIdForNav) {
             const clientToSelect = clients.find(c => c.id === selectedClientIdForNav);
@@ -2099,13 +2450,22 @@ export const ClientsView: React.FC = () => {
         }
     }, [selectedClientIdForNav, clients, setSelectedClientIdForNav]);
 
+    // const filteredClients = useMemo(() => {
+    //     return clients.filter(client =>
+    //         client.status !== 'Lead' &&
+    //         (client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    //             client.email.toLowerCase().includes(searchTerm.toLowerCase()))
+    //     );
+    // }, [searchTerm, clients]);
+
     const filteredClients = useMemo(() => {
         return clients.filter(client =>
             client.status !== 'Lead' &&
             (client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                client.email.toLowerCase().includes(searchTerm.toLowerCase()))
+                client.email.toLowerCase().includes(searchTerm.toLowerCase())) &&
+            (caseStatusFilter ? client.caseStatus === caseStatusFilter : true)
         );
-    }, [searchTerm, clients]);
+    }, [searchTerm, clients, caseStatusFilter]);
 
     const handleAddClient = async (client: Omit<Client, 'id' | 'avatar'>) => {
         await addClient({ ...client, status: 'Active' });
@@ -2137,6 +2497,16 @@ export const ClientsView: React.FC = () => {
         // fetchClients(); // ❌ remove this line
     };
 
+
+    const caseStatusColors: Record<string, string> = {
+        'Initial Enquiry': 'bg-blue-500 text-white',
+        'AIP': 'bg-yellow-400 text-black',
+        'FMA Submitted': 'bg-purple-500 text-white',
+        'Offered': 'bg-orange-500 text-white',
+        'Completed': 'bg-green-500 text-white',
+        'Renewal': 'bg-red-500 text-white',
+    };
+
     return (
         <div className="p-4 sm:p-8">
             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
@@ -2161,6 +2531,22 @@ export const ClientsView: React.FC = () => {
                         {PlusIcon}
                         <span>Create Client</span>
                     </button> */}
+
+                    <div className="relative w-full sm:w-auto">
+                        <select
+                            value={caseStatusFilter}
+                            onChange={(e) => setCaseStatusFilter(e.target.value)}
+                            className="bg-surface border border-gray-200 rounded-lg py-2 px-3 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 w-full"
+                        >
+                            <option value="">All Case Statuses</option>
+                            <option value="Initial Enquiry">Initial Enquiry</option>
+                            <option value="AIP">AIP</option>
+                            <option value="FMA Submitted">FMA Submitted</option>
+                            <option value="Offered">Offered</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Renewal">Renewal</option>
+                        </select>
+                    </div>
                 </div>
             </div>
             <div className="bg-surface rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
@@ -2168,6 +2554,7 @@ export const ClientsView: React.FC = () => {
                     <thead className="bg-gray-50 border-b border-gray-200">
                         <tr>
                             <th className="px-6 py-3 font-medium text-text-secondary">Name</th>
+                            {/* <th className="px-6 py-3 font-medium text-text-secondary">Status</th> */}
                             <th className="px-6 py-3 font-medium text-text-secondary">Status</th>
                             <th className="px-6 py-3 font-medium text-text-secondary">Product</th>
                             <th className="px-6 py-3 font-medium text-text-secondary">Last Contacted</th>
@@ -2184,10 +2571,22 @@ export const ClientsView: React.FC = () => {
                                         <p className="text-xs text-text-secondary">{client.email}</p>
                                     </div>
                                 </td>
-                                <td className="px-6 py-4">
+                                {/* <td className="px-6 py-4">
                                     <span className={`px-2 py-1 text-xs rounded-full capitalize ${client.status === 'Active' ? 'bg-success/20 text-success' : (client.status === 'Lead' ? 'bg-warning/20 text-warning' : 'bg-gray-500/20 text-gray-500')}`}>
                                         {client.status}
                                     </span>
+                                </td> */}
+                                <td className="px-6 py-4">
+                                    {/* {client.caseStatus ? (
+                                        <span className="px-3 py-1 text-xs rounded-full inline-block bg-[#002d62] text-white">
+                                            {client.caseStatus}
+                                        </span>
+                                    ) : 'N/A'} */}
+                                    {client.caseStatus ? (
+                                        <span className={`px-3 py-1 text-xs rounded-full inline-block ${caseStatusColors[client.caseStatus] || 'bg-gray-200 text-black'}`}>
+                                            {client.caseStatus}
+                                        </span>
+                                    ) : 'N/A'}
                                 </td>
                                 <td className="px-6 py-4">{client.productDetails?.businessWritten || 'N/A'}</td>
                                 <td className="px-6 py-4">

@@ -139,6 +139,25 @@ export interface ProtectionDetails {
   advisor?: string;
 }
 
+export interface BandCDetails {
+  typeOfInsurance:
+    | "Level term"
+    | "Decreasing term"
+    | "Increasing term"
+    | "CIC"
+    | "Income protection"
+    | "FIB"
+    | "";
+  provider: string;
+  providerReference: string;
+  amountAssured: number;
+  term: string; // e.g. "25 years"
+  premium: number;
+  dateOnRisk: string;
+  commission: number;
+  advisor?: string;
+}
+
 export interface ProfessionalContact {
   name: string;
   company: string;
@@ -168,6 +187,7 @@ export interface ProductDetails {
   businessWritten: BusinessWrittenType;
   mortgage?: MortgageDetails;
   protection?: ProtectionDetails;
+  bandc?: BandCDetails;
   solicitor?: ProfessionalContact;
   provider?: ProfessionalContact;
   accountant?: ProfessionalContact;
@@ -337,6 +357,7 @@ export enum UserRole {
   SuperAdmin = "Super Admin",
   Admin = "Admin",
   Adviser = "Adviser",
+  Marketing = "Marketing",
 }
 
 export interface TeamMember {
@@ -383,13 +404,23 @@ export interface DataContextType {
     updatedData: Partial<LedgerEntry>
   ) => Promise<void>;
   deleteLedgerEntry: (entryId: string) => Promise<boolean>;
+  // passwords: PasswordEntry[];
+  // addPasswordEntry: (entry: Omit<PasswordEntry, "id">) => Promise<void>;
+  // fetchPasswords: () => Promise<void>;
+  // updatePasswordEntry: (
+  //   entryId: string,
+  //   updatedData: Partial<PasswordEntry>
+  // ) => Promise<void>;
+
   passwords: PasswordEntry[];
   addPasswordEntry: (entry: Omit<PasswordEntry, "id">) => Promise<void>;
+  fetchPasswords: () => Promise<void>;
   updatePasswordEntry: (
     entryId: string,
     updatedData: Partial<PasswordEntry>
   ) => Promise<void>;
   deletePasswordEntry: (entryId: string) => Promise<boolean>;
+
   teamMembers: TeamMember[];
   addTeamMember: (member: Omit<TeamMember, "id" | "avatar">) => Promise<void>;
   updateTeamMember: (

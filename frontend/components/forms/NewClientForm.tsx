@@ -13,7 +13,7 @@ const caseStatuses: CaseStatus[] = ['Initial Enquiry', 'AIP', 'FMA Submitted', '
 
 const emptyApplicant: Applicant = {
   title: '', firstName: '', middleName: '', surname: '', gender: '', dob: '',
-  homeTelephone: '', mobileNumber: '', email: '', currentAddress: '', noOfDependents: 0, nationality: ''
+  homeTelephone: '', mobileNumber: '', email: '', currentAddress: '', noOfDependents: 0, nationality: '', introducer: ''
 };
 
 // Fix: Define a type for the form's state to prevent type widening on properties like `status`.

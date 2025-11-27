@@ -15,7 +15,7 @@ router.get('/', protect, async (req, res) => {
 
         let query, params;
 
-        if (userRole === 'Admin' || userRole === 'Super Admin') {
+        if (userRole === 'Admin' || userRole === 'Super Admin' || userRole === 'Marketing') {
             // Admin: see all contacts
             query = 'SELECT * FROM contacts ORDER BY name ASC';
             params = [];
@@ -64,23 +64,48 @@ router.post('/', protect, async (req, res) => {
     }
 });
 
+
+
 // 🟨 Update a contact (only if user owns it or is admin)
+// router.put('/:id', protect, async (req, res) => {
+//     const { id } = req.params;
+//     const { name, type, email, phone, company, address, notes } = req.body;
+//     const userId = req.user.id;
+//     const userRole = req.user.role;
+
+//     try {
+//         // Check ownership unless admin
+//         if (userRole !== 'Admin' || userRole !== 'Super Admin') {
+//             const [rows] = await db.query('SELECT createdBy FROM contacts WHERE id = ?', [id]);
+//             if (rows.length === 0) return res.status(404).json({ message: 'Contact not found' });
+//             if (rows[0].createdBy !== userId) {
+//                 return res.status(403).json({ message: 'Not authorized to edit this contact' });
+//             }
+//         }
+
+//         const [result] = await db.query(
+//             'UPDATE contacts SET name = ?, type = ?, email = ?, phone = ?, company = ?, address = ?, notes = ? WHERE id = ?',
+//             [name, type, email, phone, company, address, notes, id]
+//         );
+
+//         if (result.affectedRows === 0) {
+//             return res.status(404).json({ message: 'Contact not found' });
+//         }
+
+//         const [updatedContactRows] = await db.query('SELECT * FROM contacts WHERE id = ?', [id]);
+//         res.json(updatedContactRows[0]);
+//     } catch (error) {
+//         console.error("Failed to update contact:", error);
+//         res.status(500).json({ message: "Server error" });
+//     }
+// });
+
+// 🟨 Update a contact (all users allowed)
 router.put('/:id', protect, async (req, res) => {
     const { id } = req.params;
     const { name, type, email, phone, company, address, notes } = req.body;
-    const userId = req.user.id;
-    const userRole = req.user.role;
 
     try {
-        // Check ownership unless admin
-        if (userRole !== 'Admin' || userRole !== 'Super Admin') {
-            const [rows] = await db.query('SELECT createdBy FROM contacts WHERE id = ?', [id]);
-            if (rows.length === 0) return res.status(404).json({ message: 'Contact not found' });
-            if (rows[0].createdBy !== userId) {
-                return res.status(403).json({ message: 'Not authorized to edit this contact' });
-            }
-        }
-
         const [result] = await db.query(
             'UPDATE contacts SET name = ?, type = ?, email = ?, phone = ?, company = ?, address = ?, notes = ? WHERE id = ?',
             [name, type, email, phone, company, address, notes, id]
@@ -90,6 +115,7 @@ router.put('/:id', protect, async (req, res) => {
             return res.status(404).json({ message: 'Contact not found' });
         }
 
+        // Return updated contact
         const [updatedContactRows] = await db.query('SELECT * FROM contacts WHERE id = ?', [id]);
         res.json(updatedContactRows[0]);
     } catch (error) {
@@ -97,6 +123,8 @@ router.put('/:id', protect, async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 });
+
+
 
 // // 🟥 Delete a contact (only if user owns it or is admin)
 // router.delete('/:id', protect, async (req, res) => {
@@ -201,7 +229,7 @@ router.get('/', protect, async (req, res) => {
         let query = '';
         let params = [];
 
-        if (userRole === 'Admin' || userRole === 'Super Admin') {
+        if (userRole === 'Admin' || userRole === 'Super Admin' || userRole === 'Marketing') {
             query = 'SELECT * FROM contacts';
             if (type) {
                 query += ' WHERE type = ?';

@@ -25,11 +25,24 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
 
   const [title, setTitle] = useState(initialData?.title || '');
   const [description, setDescription] = useState(initialData?.description || '');
+
+  // const [dueDate, setDueDate] = useState(() => {
+  //   if (!initialData?.dueDate) return '';
+  //   const d = new Date(initialData.dueDate);
+  //   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  // });
+
   const [dueDate, setDueDate] = useState(() => {
-    if (!initialData?.dueDate) return '';
-    const d = new Date(initialData.dueDate);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (initialData?.dueDate) {
+      const d = new Date(initialData.dueDate);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    } else {
+      // Default to today
+      const today = new Date();
+      return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    }
   });
+
   const [status, setStatus] = useState<Task['status']>(initialData?.status || 'Enquiry');
   const [assignedTo, setAssignedTo] = useState(initialData?.assignedTo || '');
   const [assignedBy, setAssignedBy] = useState(initialData?.assignedBy || '');

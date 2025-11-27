@@ -131,7 +131,13 @@ export const deleteTeamMember = (id: string) =>
   apiRequest<void>(`/team/${id}`, "DELETE");
 
 // Passwords
-export const getPasswords = () => apiRequest<PasswordEntry[]>("/passwords");
+// export const getPasswords = () => apiRequest<PasswordEntry[]>("/passwords");
+
+export const getPasswords = (ownerId?: string) => {
+  const query = ownerId ? `?ownerId=${ownerId}` : "";
+  return apiRequest<PasswordEntry[]>(`/passwords${query}`);
+};
+
 export const createPasswordEntry = (data: Omit<PasswordEntry, "id">) =>
   apiRequest<PasswordEntry>("/passwords", "POST", data);
 export const updatePasswordEntry = (id: string, data: Partial<PasswordEntry>) =>

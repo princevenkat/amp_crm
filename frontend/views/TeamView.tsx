@@ -64,7 +64,7 @@ export const TeamView: React.FC = () => {
                     </button>
                 )}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                 {teamMembers.map(member => (
                     <Card key={member.id} className="text-center group relative py-[40px]">
                         {/* {canManageTeam && (
@@ -117,6 +117,7 @@ export const TeamView: React.FC = () => {
                         <CardContent>
                             {/* <img src={member.avatar} alt={member.name} className="w-24 h-24 rounded-full mx-auto mb-4" /> */}
                             <h3 className="text-lg font-bold text-text-primary">{member.name}</h3>
+                            <p className="text-sm text-primary font-normal">{member.department}</p>
                             <p className="text-sm text-secondary font-medium">{member.role}</p>
                             <p className="text-sm text-text-secondary mt-2">{member.email}</p>
                         </CardContent>

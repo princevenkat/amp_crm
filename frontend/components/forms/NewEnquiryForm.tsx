@@ -82,8 +82,8 @@ export const NewEnquiryForm: React.FC<NewEnquiryFormProps> = ({ onSubmit, onCanc
 
     const submissionData: Omit<Client, 'id' | 'avatar'> = {
       caseReference: `ENQ-${Date.now().toString().slice(-6)}`,
-      primaryAdvisor: 'John Doe', // Default value
-      admin: 'Emily White', // Default value
+      primaryAdvisor: '', // Default value
+      admin: '', // Default value
       applicationType: 'Single',
       applicants: [applicantData],
       name: `${applicantData.firstName} ${applicantData.surname}`,

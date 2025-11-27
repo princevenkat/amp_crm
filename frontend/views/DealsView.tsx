@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useContext } from 'react';
 import { DataContext } from '../contexts/DataContext';
 import type { Client, Applicant, Note, Task } from '../types';
+import { UserRole } from '../types';
+
 import { EditIcon, PlusIcon, SearchIcon } from '../components/ui/Icons';
 import { NewEnquiryForm } from '../components/forms/NewEnquiryForm';
 import { Modal } from '../components/ui/Modal';
@@ -143,6 +145,7 @@ const ApplicantDetailsForm: React.FC<{ applicant: Applicant; onChange: (e: React
 
     ];
 
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {formFields.map(field => (
@@ -262,6 +265,10 @@ const EditLeadView: React.FC<{ lead: Client; onSave: (updatedLead: Client) => vo
             }
         }
     };
+
+    const { currentUser } = useContext(DataContext);
+    const canDelete = currentUser && [UserRole.SuperAdmin].includes(currentUser.role);
+
     return (
         <div className="p-4 sm:p-8">
             {/* Task Modal */}
@@ -348,13 +355,15 @@ const EditLeadView: React.FC<{ lead: Client; onSave: (updatedLead: Client) => vo
                                                         {EditIcon}
                                                     </button>
                                                     {/* 🗑️ Delete Button */}
-                                                    <button
-                                                        onClick={() => handleDeleteTask(task.id)}
-                                                        className="text-gray-400 hover:text-danger p-1"
-                                                        aria-label="Delete task"
-                                                    >
-                                                        <TrashIcon className="size-4 text-red-500" />
-                                                    </button>
+                                                    {canDelete && (
+                                                        <button
+                                                            onClick={() => handleDeleteTask(task.id)}
+                                                            className="text-gray-400 hover:text-danger p-1"
+                                                            aria-label="Delete task"
+                                                        >
+                                                            <TrashIcon className="size-4 text-red-500" />
+                                                        </button>
+                                                    )}
                                                 </div>
                                                 <p className="font-semibold text-text-primary pr-8">{task.title}</p>
                                                 {task.description && (
@@ -406,9 +415,12 @@ const PipelineTableRow: React.FC<{
     };
 
 
+    const { currentUser } = useContext(DataContext);
+    const canDelete = currentUser && [UserRole.SuperAdmin].includes(currentUser.role);
+
     return (
         <tr className="border-b border-gray-200 hover:bg-gray-50">
-            <td className="px-6 py-4">{applicant?.title || 'N/A'}</td>
+            {/* <td className="px-6 py-4">{applicant?.title || 'N/A'}</td> */}
             <td className="px-6 py-4 font-semibold text-text-primary">{client.name}</td>
             <td className="px-6 py-4">
                 {applicant?.dob
@@ -427,12 +439,17 @@ const PipelineTableRow: React.FC<{
                 <div className="flex gap-4">
                     <button onClick={() => onEdit(client)} className="text-sm font-semibold text-secondary hover:underline">Edit</button>
                     <button onClick={handleConvert} className="text-sm font-semibold text-primary hover:underline">Convert to Client</button>
-                    <button
-                        onClick={() => onDelete(client)}
-                        className="text-sm font-semibold text-danger hover:underline"
-                    >
-                        Delete
-                    </button>
+
+                    {canDelete && (
+                        <button
+                            onClick={() => onDelete(client)}
+                            className="text-sm font-semibold text-danger hover:underline"
+                        >
+
+                            Delete
+
+                        </button>
+                    )}
                 </div>
             </td>
         </tr>
@@ -441,7 +458,7 @@ const PipelineTableRow: React.FC<{
 
 
 export const DealsView: React.FC = () => {
-    const { clients, addClient, updateClient, deleteClient } = useContext(DataContext);
+    const { clients, addClient, updateClient, deleteClient, currentUser, teamMembers } = useContext(DataContext);
     const [searchTerm, setSearchTerm] = useState('');
     const [isCreatingEnquiry, setIsCreatingEnquiry] = useState(false);
     const [leadToEdit, setLeadToEdit] = useState<Client | null>(null);
@@ -522,7 +539,7 @@ export const DealsView: React.FC = () => {
             />
         );
     }
-
+    const canDelete = currentUser?.role === UserRole.SuperAdmin;
     return (
         <div className="p-4 sm:p-8">
             <Modal title="New Enquiry" isOpen={isCreatingEnquiry} onClose={() => setIsCreatingEnquiry(false)} size="4xl">
@@ -558,7 +575,7 @@ export const DealsView: React.FC = () => {
                 <table className="min-w-full text-sm text-left">
                     <thead className="bg-gray-50 border-b border-gray-200">
                         <tr>
-                            <th className="px-6 py-3 font-medium text-text-secondary">Title</th>
+                            {/* <th className="px-6 py-3 font-medium text-text-secondary">Title</th> */}
                             <th className="px-6 py-3 font-medium text-text-secondary">Name</th>
                             <th className="px-6 py-3 font-medium text-text-secondary">DOB</th>
                             <th className="px-6 py-3 font-medium text-text-secondary">Nationality</th>

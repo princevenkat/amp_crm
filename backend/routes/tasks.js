@@ -27,7 +27,7 @@ router.get("/", protect, async (req, res) => {
         }
 
         // Admins see all
-        else if (role === "Admin" || role === "Super Admin") {
+        else if (role === "Admin" || role === "Super Admin" || role === "Marketing") {
             query = "SELECT * FROM tasks ORDER BY dueDate ASC";
         }
 

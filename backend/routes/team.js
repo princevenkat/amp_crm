@@ -59,6 +59,41 @@ router.post('/', protect, adminOnly, async (req, res) => {
 });
 
 // Update a team member
+// router.put('/:id', protect, adminOnly, async (req, res) => {
+//     const { id } = req.params;
+//     const { name, department, email, mobile, role, password } = req.body;
+
+//     try {
+//         const [rows] = await db.query('SELECT * FROM team_members WHERE id = ?', [id]);
+//         if (rows.length === 0) {
+//             return res.status(404).json({ message: 'Team member not found' });
+//         }
+
+//         let updateQuery = 'UPDATE team_members SET name = ?, email = ?, role = ?';
+//         const queryParams = [name, department, email, mobile, role];
+
+//         if (password) {
+//             const salt = bcrypt.genSaltSync(10);
+//             const hashedPassword = bcrypt.hashSync(password, salt);
+//             updateQuery += ', password = ?';
+//             queryParams.push(hashedPassword);
+//         }
+
+//         updateQuery += ' WHERE id = ?';
+//         queryParams.push(id);
+
+//         await db.query(updateQuery, queryParams);
+
+//         const [updatedRows] = await db.query('SELECT id, name, department, role, email, mobile, avatar FROM team_members WHERE id = ?', [id]);
+//         res.json(updatedRows[0]);
+
+//     } catch (error) {
+//         console.error("Failed to update team member:", error);
+//         res.status(500).json({ message: "Server error" });
+//     }
+// });
+
+// Update a team member
 router.put('/:id', protect, adminOnly, async (req, res) => {
     const { id } = req.params;
     const { name, department, email, mobile, role, password } = req.body;
@@ -69,7 +104,11 @@ router.put('/:id', protect, adminOnly, async (req, res) => {
             return res.status(404).json({ message: 'Team member not found' });
         }
 
-        let updateQuery = 'UPDATE team_members SET name = ?, email = ?, role = ?';
+        let updateQuery = `
+            UPDATE team_members 
+            SET name = ?, department = ?, email = ?, mobile = ?, role = ?
+        `;
+
         const queryParams = [name, department, email, mobile, role];
 
         if (password) {
@@ -84,7 +123,10 @@ router.put('/:id', protect, adminOnly, async (req, res) => {
 
         await db.query(updateQuery, queryParams);
 
-        const [updatedRows] = await db.query('SELECT id, name, department, role, email, mobile, avatar FROM team_members WHERE id = ?', [id]);
+        const [updatedRows] = await db.query(
+            'SELECT id, name, department, role, email, mobile, avatar FROM team_members WHERE id = ?',
+            [id]
+        );
         res.json(updatedRows[0]);
 
     } catch (error) {
@@ -92,6 +134,7 @@ router.put('/:id', protect, adminOnly, async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 });
+
 
 // Delete a team member
 router.delete('/:id', protect, adminOnly, async (req, res) => {

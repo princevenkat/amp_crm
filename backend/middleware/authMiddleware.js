@@ -13,7 +13,7 @@ export const protect = async (req, res, next) => {
 
             // Verify token
             const decoded = jwt.verify(token, JWT_SECRET);
-            
+
             // Get user from the token and attach to request
             const [rows] = await db.query('SELECT * FROM team_members WHERE id = ?', [decoded.id]);
             const user = rows[0];

@@ -32,10 +32,14 @@ import { ResetPasswordView } from "./views/ResetPasswordView";
 
 const ADVISER_VIEWS = [
     View.Dashboard, View.Deals, View.Leads, View.Contacts, View.Tasks, View.Calendar,
-    View.PasswordManager, View.BusinessLedger, View.Settings
+    View.PasswordManager, View.Settings
 ];
 const ADMIN_VIEWS = [...ADVISER_VIEWS, View.Team];
 
+
+const MARKETING_VIEWS = [
+    View.Tasks, View.Calendar, View.Settings
+];
 
 const hasAccess = (view: View, role: UserRole): boolean => {
     if (role === UserRole.SuperAdmin) {
@@ -47,6 +51,8 @@ const hasAccess = (view: View, role: UserRole): boolean => {
             return ADMIN_VIEWS.includes(view);
         case UserRole.Adviser:
             return ADVISER_VIEWS.includes(view);
+        case UserRole.Marketing:
+            return MARKETING_VIEWS.includes(view);
         default:
             return false;
     }
@@ -224,6 +230,20 @@ const App: React.FC = () => {
         }
     };
 
+    useEffect(() => {
+        if (!currentUser) return;
+
+        // Only set default if currentView is not yet set
+        if (!currentView) {
+            if (currentUser.role === UserRole.Marketing) {
+                setCurrentView(View.Tasks);
+            } else {
+                setCurrentView(View.Dashboard);
+            }
+        }
+    }, [currentUser, currentView, setCurrentView]);
+
+
     const handleSetView = useCallback((view: View) => {
         setCurrentView(view);
         setIsSidebarOpen(false); // Close sidebar on nav item click
@@ -259,6 +279,8 @@ const App: React.FC = () => {
 
     //     </div>
     // );
+
+
     return (
         <BrowserRouter>
             <Routes>

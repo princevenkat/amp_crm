@@ -45,7 +45,6 @@ const startServer = async () => {
     //app.use('/uploads', express.static(path.join(path.resolve(), 'backend/uploads')));
     app.use('/uploads', express.static(path.join(process.cwd(), 'backend/uploads')));
 
-
     app.use('/api/tasks', taskRoutes);
     app.use('/api/contacts', contactRoutes);
     app.use('/api/team', teamRoutes);

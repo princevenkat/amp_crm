@@ -15,34 +15,77 @@ const PasswordForm: React.FC<{
     teamMembers: TeamMember[];
 }> = ({ onSubmit, onCancel, initialData, currentUser, teamMembers }) => {
 
+    // const getInitialState = () => {
+    //     if (initialData) {
+    //         // Since API doesn't send back credentials, we create a shell for editing
+    //         // The user must re-enter credentials to update them.
+    //         return {
+    //             ...initialData,
+    //             password: '',
+    //             memorablePhrase: '',
+    //             securityQuestions: initialData.securityQuestions.map(sq => ({ ...sq, answer: '' })),
+    //         };
+    //     }
+    //     return {
+    //         ownerId: currentUser.id,
+    //         service: '',
+    //         accessLink: '',
+    //         username: '',
+    //         password: '',
+    //         memorablePhrase: '',
+    //         securityQuestions: [],
+    //     };
+    // };
+
     const getInitialState = () => {
         if (initialData) {
-            // Since API doesn't send back credentials, we create a shell for editing
-            // The user must re-enter credentials to update them.
             return {
                 ...initialData,
-                password: '',
-                memorablePhrase: '',
-                securityQuestions: initialData.securityQuestions.map(sq => ({ ...sq, answer: '' })),
+                // Do NOT clear fields. Use the existing values from DB.
+                password: initialData.password || '',
+                memorablePhrase: initialData.memorablePhrase || '',
+                securityQuestions: initialData.securityQuestions || [],
             };
         }
+
+        // New entry
         return {
-            ownerId: currentUser.id,
-            service: '',
-            accessLink: '',
+            name: '',
             username: '',
             password: '',
             memorablePhrase: '',
+            url: '',
+            description: '',
+            category: '',
+            sharedWith: [],
             securityQuestions: [],
+            createdBy: currentUser.id,
+            accessBy: currentUser.id,
+            ownerId: String(currentUser.id), // ✅ important!
+            provider_lenders: 'Provider',
         };
     };
 
     const [formData, setFormData] = useState(getInitialState());
 
+    // const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    //     const { name, value } = e.target;
+    //     setFormData(prev => ({ ...prev, [name]: value }));
+    // };
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData(prev => ({
+            ...prev,
+            [name]: name === 'ownerId' ? String(value) : value, // ✅ store as string
+        }));
     };
+    // const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    //     const { name, value } = e.target;
+    //     setFormData(prev => ({
+    //         ...prev,
+    //         [name]: name === 'ownerId' ? String(value) : value, // ensure it's a string (matches select value)
+    //     }));
+    // };
 
     const handleSqChange = (index: number, field: 'question' | 'answer', value: string) => {
         const updatedSqs = [...formData.securityQuestions];
@@ -67,11 +110,13 @@ const PasswordForm: React.FC<{
         const submissionData = { ...formData };
 
         // Don't submit empty strings for credentials if user didn't want to update them
-        if (initialData) {
-            if (!submissionData.password) delete (submissionData as any).password;
-            if (!submissionData.memorablePhrase) delete (submissionData as any).memorablePhrase;
-            submissionData.securityQuestions = submissionData.securityQuestions.filter(sq => sq.answer);
-        }
+        // if (initialData) {
+        //     if (!submissionData.password) delete (submissionData as any).password;
+        //     if (!submissionData.memorablePhrase) delete (submissionData as any).memorablePhrase;
+        //     submissionData.securityQuestions = submissionData.securityQuestions.filter(sq => sq.answer);
+        // }
+
+        console.log(submissionData);
 
         if ('id' in submissionData) {
             const { id, ...finalData } = submissionData;
@@ -89,17 +134,42 @@ const PasswordForm: React.FC<{
             <CardHeader>{initialData ? 'Edit Entry' : 'Add New Entry'}</CardHeader>
             <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4 text-sm">
-                    {canSelectOwner && (
-                        <div>
-                            <label className="block font-medium text-text-secondary mb-1">Owner</label>
-                            <select name="ownerId" value={formData.ownerId} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" required>
+                    {/* {canSelectOwner && ( */}
+                    <div>
+                        <label className="block font-medium text-text-secondary mb-1">Owner</label>
+                        {/* <select name="ownerId" value={formData.ownerId} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" required>
                                 {advisers.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                            </select>
-                        </div>
-                    )}
+                            </select> */}
+                        <select
+                            name="ownerId"
+                            value={formData.ownerId}
+                            onChange={handleChange}
+                            className="w-full bg-surface border border-gray-300 rounded-md p-2"
+                            required
+                        >
+                            {teamMembers.map(m => (
+                                <option key={m.id} value={m.id}>{m.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                    {/* )} */}
                     <div>
                         <label className="block font-medium text-text-secondary mb-1">Lender / Provider Name</label>
                         <input type="text" name="service" value={formData.service} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" required />
+                    </div>
+                    <div>
+                        <label className="block font-medium text-text-secondary mb-1">Type</label>
+                        <select
+                            name="provider_lenders"
+                            value={formData.provider_lenders}
+                            onChange={handleChange}
+                            className="w-full bg-surface border border-gray-300 rounded-md p-2"
+                            required
+                        >
+                            <option value="Provider">Provider</option>
+                            <option value="Lender">Lender</option>
+                            <option value="Others">Others</option>
+                        </select>
                     </div>
                     <div>
                         <label className="block font-medium text-text-secondary mb-1">Access Link</label>
@@ -112,7 +182,7 @@ const PasswordForm: React.FC<{
                         </div>
                         <div>
                             <label className="block font-medium text-text-secondary mb-1">Password</label>
-                            <input type="password" name="password" value={formData.password || ''} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" placeholder={initialData ? 'Leave blank to keep current' : ''} />
+                            <input type="text" name="password" value={formData.password} onChange={handleChange} className="w-full bg-surface border border-gray-300 rounded-md p-2" />
                         </div>
                     </div>
                     <div>
@@ -152,7 +222,10 @@ const PasswordDetail: React.FC<{
     entry: PasswordEntry;
     onEdit: () => void;
     onDelete: () => void;
-}> = ({ entry, onEdit, onDelete }) => {
+    teamMembers: TeamMember[];
+}> = ({ entry, onEdit, onDelete, teamMembers }) => {
+
+    const owner = teamMembers.find(m => m.id === entry.ownerId);
 
     const SecretField: React.FC<{ value?: string }> = ({ value }) => {
         if (!value || value !== 'set') return <span className="text-gray-400 italic">Not set</span>;
@@ -164,6 +237,7 @@ const PasswordDetail: React.FC<{
             <CardHeader>
                 <div className="flex justify-between items-center">
                     <span>{entry.service}</span>
+                    {/* <span>{owner?.name || 'Unknown'}</span> */}
                     <div className="flex gap-2">
                         <button onClick={onEdit} className="text-text-secondary hover:text-secondary p-1">{EditIcon}</button>
                         <button onClick={onDelete} className="text-text-secondary hover:text-danger p-1">{MinusIcon}</button>
@@ -171,6 +245,10 @@ const PasswordDetail: React.FC<{
                 </div>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
+                <div>
+                    <label className="font-semibold text-text-secondary">Type</label>
+                    <p>{entry.provider_lenders || 'Not set'}</p>
+                </div>
                 <div>
                     <label className="font-semibold text-text-secondary">Access Link</label>
                     <a href={entry.accessLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-secondary hover:underline break-all">
@@ -184,20 +262,22 @@ const PasswordDetail: React.FC<{
                 </div>
                 <div>
                     <label className="font-semibold text-text-secondary">Password</label>
-                    <SecretField value={entry.password} />
+                    {/* <SecretField value={entry.password} /> */}
+                    <p> {entry.password}</p>
                 </div>
                 <div>
                     <label className="font-semibold text-text-secondary">Memorable Phrase</label>
-                    <SecretField value={entry.memorablePhrase} />
+                    {/* <SecretField value={entry.memorablePhrase} /> */}
+                    <p>{entry.memorablePhrase}</p>
                 </div>
-                {entry.securityQuestions.length > 0 && (
+                {(entry.securityQuestions ?? []).length > 0 && (
                     <div className="pt-2 border-t">
                         <h4 className="font-semibold text-text-secondary mb-2">Security Questions</h4>
                         <ul className="space-y-3">
                             {entry.securityQuestions.map((sq) => (
-                                <li key={sq.id} className="p-3 bg-gray-50 rounded-md border">
-                                    <p className="font-medium text-text-primary">{sq.question}</p>
-                                    <SecretField value={sq.answer} />
+                                <li key={sq.id} className="p-3 bg-gray-50 rounded-md border flex">
+                                    <p className="font-semibold text-text-primary flex-1"><span className="text-gray-400 text-[12px] font-normal block">Question:</span> {sq.question}</p>
+                                    <p className="font-semibold text-text-primary flex-1"><span className="text-gray-400 text-[12px] font-normal block">Answer:</span> {sq.answer}</p>
                                 </li>
                             ))}
                         </ul>
@@ -216,6 +296,7 @@ export const PasswordManagerView: React.FC = () => {
         teamMembers,
         addPasswordEntry,
         updatePasswordEntry,
+        fetchPasswords,
         deletePasswordEntry
     } = useContext(DataContext);
 
@@ -223,12 +304,20 @@ export const PasswordManagerView: React.FC = () => {
     const [selectedEntry, setSelectedEntry] = useState<PasswordEntry | null>(null);
     const [isFormActive, setIsFormActive] = useState(false); // Combines isCreating and isEditing
 
+
+
     // const canManage = currentUser && [UserRole.Admin, UserRole.SuperAdmin].includes(currentUser.role);
     const canManage = currentUser && [UserRole.Admin, UserRole.SuperAdmin, UserRole.Adviser].includes(currentUser.role);
 
 
     // Reset selection when changing the viewed user
+    // useEffect(() => {
+    //     setSelectedEntry(null);
+    //     setIsFormActive(false);
+    // }, [viewingUserId]);
+
     useEffect(() => {
+        fetchPasswords(viewingUserId); // pass ownerId to backend
         setSelectedEntry(null);
         setIsFormActive(false);
     }, [viewingUserId]);
@@ -240,12 +329,36 @@ export const PasswordManagerView: React.FC = () => {
     //     }
     //     return passwords.filter(p => p.ownerId === viewingUserId);
     // }, [passwords, viewingUserId, canManage, currentUser]);
+
+    // Filtered entries for display
     const displayedPasswords = useMemo(() => {
-        if (!canManage) {
-            return passwords.filter(p => p.ownerId === currentUser?.id);
+        // Start with filtering based on management rights
+        let filtered = canManage
+            ? passwords.filter(p => p.ownerId === viewingUserId)
+            : passwords.filter(p => p.ownerId === currentUser?.id);
+
+        // Ensure the selected entry is always included
+        if (selectedEntry && !filtered.some(p => p.id === selectedEntry.id)) {
+            filtered = [selectedEntry, ...filtered];
         }
-        return passwords.filter(p => p.ownerId === viewingUserId);
-    }, [passwords, viewingUserId, canManage, currentUser]);
+
+        return filtered;
+    }, [passwords, viewingUserId, canManage, currentUser, selectedEntry]);
+
+    // const displayedPasswords = useMemo(() => {
+    //     return passwords; // No filtering at all
+    // }, [passwords]);
+
+
+    // console.log("Passwords:", passwords);
+    // console.log("Displayed:", displayedPasswords);
+
+    // const displayedPasswords = useMemo(() => {
+    //     if (!canManage) {
+    //         return passwords.filter(p => p.ownerId === currentUser?.id);
+    //     }
+    //     return passwords.filter(p => p.ownerId === viewingUserId);
+    // }, [passwords, viewingUserId, canManage, currentUser]);
 
     const handleSelectEntry = (entry: PasswordEntry) => {
         setSelectedEntry(entry);
@@ -267,14 +380,46 @@ export const PasswordManagerView: React.FC = () => {
         setIsFormActive(false);
     };
 
+    // const handleSave = async (entryData: Omit<PasswordEntry, 'id'>) => {
+    //     if (selectedEntry && isFormActive) { // Editing existing
+    //         await updatePasswordEntry(selectedEntry.id, entryData);
+    //     } else { // Creating new
+    //         await addPasswordEntry(entryData);
+    //     }
+    //     setIsFormActive(false);
+    //     setSelectedEntry(null); // Deselect to show updated list
+    // };
+
+    // const handleSave = async (entryData: Omit<PasswordEntry, 'id'>) => {
+    //     if (selectedEntry && isFormActive) {
+    //         await updatePasswordEntry(selectedEntry.id, entryData);
+    //     } else {
+    //         await addPasswordEntry(entryData);
+    //     }
+
+    //     await fetchPasswords(); // 👈 refresh data
+
+    //     setIsFormActive(false);
+    //     setSelectedEntry(null);
+    // };
+
     const handleSave = async (entryData: Omit<PasswordEntry, 'id'>) => {
-        if (selectedEntry && isFormActive) { // Editing existing
+        if (selectedEntry && isFormActive) {
+            // Editing existing entry
             await updatePasswordEntry(selectedEntry.id, entryData);
-        } else { // Creating new
-            await addPasswordEntry(entryData);
+
+            // Keep it selected and update local state
+            setSelectedEntry(prev => prev ? { ...prev, ...entryData } : prev);
+        } else {
+            // Creating new entry
+            const newEntry = await addPasswordEntry(entryData);
+
+            // Select the newly created entry
+            setSelectedEntry(newEntry);
         }
+
+        await fetchPasswords(viewingUserId); // refresh data
         setIsFormActive(false);
-        setSelectedEntry(null); // Deselect to show updated list
     };
 
     const handleDelete = async () => {
@@ -299,17 +444,17 @@ export const PasswordManagerView: React.FC = () => {
                             ))}
                         </select>
                     )} */}
-                    {canManage && (
-                        <select
-                            value={viewingUserId}
-                            onChange={(e) => setViewingUserId(e.target.value)}
-                            className="bg-surface border border-gray-200 rounded-lg py-2 px-3 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
-                        >
-                            {teamMembers.map(member => (
-                                <option key={member.id} value={member.id}>{member.name}'s Passwords</option>
-                            ))}
-                        </select>
-                    )}
+                    {/* {canManage && ( */}
+                    <select
+                        value={viewingUserId}
+                        onChange={(e) => setViewingUserId(e.target.value)}
+                        className="bg-surface border border-gray-200 rounded-lg py-2 px-3 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
+                    >
+                        {teamMembers.map(member => (
+                            <option key={member.id} value={member.id}>{member.name}'s Passwords</option>
+                        ))}
+                    </select>
+                    {/* )} */}
                     <button onClick={handleAddNew} className="flex items-center justify-center gap-2 bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-md transition-colors">
                         {PlusIcon}
                         <span>Add New</span>
@@ -328,7 +473,10 @@ export const PasswordManagerView: React.FC = () => {
                                     <li key={entry.id}>
                                         <button
                                             onClick={() => handleSelectEntry(entry)}
-                                            className={`w-full text-left p-3 rounded-md text-sm font-medium transition-colors ${selectedEntry?.id === entry.id && !isFormActive ? 'bg-primary text-white' : 'bg-gray-50 hover:bg-gray-100'}`}
+                                            className={`w-full text-left p-3 rounded-md text-sm font-medium transition-colors ${selectedEntry?.id === entry.id && !isFormActive
+                                                ? 'bg-primary text-white'
+                                                : 'bg-gray-50 hover:bg-gray-100'
+                                                }`}
                                         >
                                             {entry.service}
                                         </button>
@@ -354,6 +502,7 @@ export const PasswordManagerView: React.FC = () => {
                             entry={selectedEntry}
                             onEdit={handleEdit}
                             onDelete={handleDelete}
+                            teamMembers={teamMembers}
                         />
                     ) : (
                         <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg border-2 border-dashed">

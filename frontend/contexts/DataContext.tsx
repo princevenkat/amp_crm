@@ -28,10 +28,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
 
 
-
-
-
-
     // Auth and loading state
     const [currentUser, setCurrentUser] = useState<TeamMember | null>(null);
     const [loading, setLoading] = useState(true);
@@ -335,6 +331,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setPasswords(prev => prev.map(entry => entry.id === entryId ? updatedEntry : entry));
     };
 
+    const fetchPasswords = async () => {
+        try {
+            const data = await api.getPasswords();
+            setPasswords(data);
+        } catch (error) {
+            console.error("Failed to fetch passwords", error);
+        }
+    };
+
     const deletePasswordEntry = async (entryId: string): Promise<boolean> => {
         if (window.confirm('Are you sure you want to delete this password entry?')) {
             await api.deletePasswordEntry(entryId);
@@ -343,6 +348,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
         return false;
     };
+
+
+
 
     const addLedgerEntry = async (entry: Omit<LedgerEntry, 'id'>) => {
         const newEntry = await api.createLedgerEntry(entry);
@@ -408,6 +416,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         passwords,
         addPasswordEntry,
         updatePasswordEntry,
+        fetchPasswords,
         deletePasswordEntry,
         teamMembers,
         addTeamMember,

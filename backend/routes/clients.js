@@ -324,6 +324,7 @@ const hydrateClient = async (clientRow) => {
         [applicants],
         [mortgageRows],
         [protectionRows],
+        [bcRows],
         [documents],
         [notes],
         [contactsData]
@@ -331,6 +332,7 @@ const hydrateClient = async (clientRow) => {
         db.query('SELECT * FROM applicants WHERE clientId = ?', [clientRow.id]),
         db.query('SELECT * FROM mortgage_details WHERE clientId = ?', [clientRow.id]),
         db.query('SELECT * FROM protection_details WHERE clientId = ?', [clientRow.id]),
+        db.query('SELECT * FROM bc_details WHERE clientId = ?', [clientRow.id]),
         db.query('SELECT * FROM documents WHERE clientId = ?', [clientRow.id]),
         db.query('SELECT * FROM notes WHERE clientId = ? ORDER BY date DESC', [clientRow.id]),
         db.query(
@@ -467,6 +469,7 @@ const hydrateClient = async (clientRow) => {
             estateAgent,
             limitedCompany,
             protection: protectionRows[0] || null,
+            bandc: bcRows[0] || null,
         }
     };
 
@@ -548,7 +551,7 @@ router.get('/', protect, async (req, res) => {
         const user = req.user; // populated from JWT by protect middleware
         let clientRows = [];
 
-        if (user.role === 'Admin' || user.role === 'Super Admin') {
+        if (user.role === 'Admin' || user.role === 'Super Admin' || user.role === 'Marketing') {
             // 🟢 Admin sees all clients
             [clientRows] = await db.query(`
                 SELECT * FROM clients 
@@ -869,6 +872,43 @@ router.put('/:id', protect, async (req, res) => {
             );
         }
 
+
+        // --- Building & Content details ---
+        await connection.query('DELETE FROM bc_details WHERE clientId = ?', [id]);
+        if (merged.productDetails?.bandc) {
+            const p = merged.productDetails.bandc;
+
+            // 🔧 Ensure dateOnRisk is in "YYYY-MM-DD" format
+            let formattedDateOnRisk = null;
+            if (p.dateOnRisk) {
+                // Handle both ISO strings and plain dates safely
+                const date = new Date(p.dateOnRisk);
+                if (!isNaN(date.getTime())) {
+                    formattedDateOnRisk = date.toISOString().split('T')[0];
+                }
+            }
+
+
+
+            await connection.query(
+                `INSERT INTO bc_details 
+          (clientId, typeOfInsurance, provider, providerReference, amountAssured, term, premium, dateOnRisk, commission, advisor) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    id,
+                    p.typeOfInsurance || '',
+                    p.provider || '',
+                    p.providerReference || '',
+                    p.amountAssured || 0,
+                    p.term || '',
+                    p.premium || 0,
+                    formattedDateOnRisk,
+                    p.commission || 0,
+                    p.advisor || '',
+                ]
+            );
+        }
+
         // --- ledger sync ---
         if (typeof merged.productDetails?.mortgage?.fees === 'string') {
             try {
@@ -918,6 +958,7 @@ router.delete('/:id', protect, async (req, res) => {
         await connection.query('DELETE FROM notes WHERE clientId = ?', [id]);
         await connection.query('DELETE FROM mortgage_details WHERE clientId = ?', [id]);
         await connection.query('DELETE FROM protection_details WHERE clientId = ?', [id]);
+        await connection.query('DELETE FROM bc_details WHERE clientId = ?', [id]);
         // Finally delete the client
         const [result] = await connection.query('DELETE FROM clients WHERE id = ?', [id]);
 

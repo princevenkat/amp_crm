@@ -1,132 +1,292 @@
-import express from 'express';
-import { v4 as uuidv4 } from 'uuid';
-import db from '../mysql-connector.js';
-import { protect } from '../middleware/authMiddleware.js';
+import express from "express";
+import db from "../mysql-connector.js";
+import { v4 as uuidv4 } from "uuid";
+import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// Helper to hydrate security questions
-const getSecurityQuestions = async (entryId) => {
-    const [questions] = await db.query('SELECT id, question FROM password_security_questions WHERE entryId = ?', [entryId]);
-    // In a real high-security app, answers would be encrypted and only revealed on-demand.
-    // For this app's logic, we will mark them as "set".
-    return questions.map(q => ({ ...q, answer: 'set' }));
-};
+/*
+    TABLES (expected):
 
-// Get password entries
-router.get('/', protect, async (req, res) => {
-    const { id, role } = req.user;
+    password_entries:
+    ----------------------------------------------------
+    id (string) PK
+    service (string)
+    username (string)
+    password (string)
+    memorablePhrase (string)
+    accessLink (string)
+    ownerId (string) -> team_members.id
 
+    password_security_questions:
+    ----------------------------------------------------
+    id (string) PK
+    entryId (string) FK -> password_entries.id
+    question (string)
+    answer (string)
+*/
+
+/* ============================================================================
+   GET ALL PASSWORD ENTRIES (with security questions)
+============================================================================ */
+router.get("/", protect, async (req, res) => {
     try {
-        let query = 'SELECT * FROM password_entries';
-        const params = [];
+        // Fetch all entries belonging to logged-in user
+        const [entries] = await db.query(
+            "SELECT * FROM password_entries"
+        );
 
-        // if (role !== 'Admin' && role !== 'Super Admin') {
-        //     query += ' WHERE ownerId = ?';
-        //     params.push(id);
-        // }
+        // Fetch all questions in one query
+        const [questions] = await db.query(
+            `SELECT * FROM password_security_questions`
+        );
 
-        const FULL_ACCESS_ROLES = ['Admin', 'Super Admin', 'Adviser'];
-
-        if (!FULL_ACCESS_ROLES.includes(role)) {
-            query += ' WHERE ownerId = ?';
-            params.push(id);
-        }
-
-        const [entries] = await db.query(query, params);
-
-        const sanitizedEntries = await Promise.all(entries.map(async (entry) => {
-            const securityQuestions = await getSecurityQuestions(entry.id);
-            return {
-                id: entry.id,
-                ownerId: entry.ownerId,
-                service: entry.service,
-                accessLink: entry.accessLink,
-                username: entry.username,
-                password: entry.password ? 'set' : '',
-                memorablePhrase: entry.memorablePhrase ? 'set' : '',
-                securityQuestions,
-            };
+        // Attach questions to entries
+        const result = entries.map(entry => ({
+            ...entry,
+            securityQuestions: questions.filter(q => q.entryId === entry.id)
         }));
 
-        res.json(sanitizedEntries);
+        // print(result);
+
+        res.json(result);
+
     } catch (error) {
-        console.error("Failed to get passwords:", error);
+        console.error("GET /passwords error:", error);
         res.status(500).json({ message: "Server error" });
     }
 });
 
-// Create a new password entry
-router.post('/', protect, async (req, res) => {
-    const { ownerId, service, accessLink, username, password, memorablePhrase, securityQuestions } = req.body;
-    const connection = await db.getConnection();
+// router.get("/", protect, async (req, res) => {
+//     try {
+//         let query = "SELECT * FROM password_entries";
+//         const params = [];
 
+//         // Restrict non-managers to their own entries
+//         if (!req.user.canManage) {
+//             query += " WHERE ownerId = ?";
+//             params.push(req.user.id);
+//         } else if (req.query.ownerId) {
+//             // Managers can view a specific user's passwords
+//             query += " WHERE ownerId = ?";
+//             params.push(req.query.ownerId);
+//         }
+
+//         const [entries] = await db.query(query, params);
+
+//         const [questions] = await db.query(
+//             `SELECT * FROM password_security_questions`
+//         );
+
+//         const result = entries.map(entry => ({
+//             ...entry,
+//             securityQuestions: questions.filter(q => q.entryId === entry.id)
+//         }));
+
+//         res.json(result);
+//     } catch (error) {
+//         console.error("GET /passwords error:", error);
+//         res.status(500).json({ message: "Server error" });
+//     }
+// });
+
+
+/* ============================================================================
+   CREATE NEW PASSWORD ENTRY
+============================================================================ */
+router.post("/", protect, async (req, res) => {
     try {
-        await connection.beginTransaction();
+        const id = uuidv4();
+        const {
+            service,
+            provider_lenders,
+            username,
+            password,
+            memorablePhrase,
+            accessLink,
+            securityQuestions = []
+        } = req.body;
 
-        const newEntry = {
-            id: `pwd-${uuidv4()}`,
-            ownerId, service, accessLink, username, password, memorablePhrase
-        };
-
-        await connection.query(
-            'INSERT INTO password_entries (id, ownerId, service, accessLink, username, password, memorablePhrase) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [newEntry.id, newEntry.ownerId, newEntry.service, newEntry.accessLink, newEntry.username, newEntry.password, newEntry.memorablePhrase]
-        );
-
-        if (securityQuestions && securityQuestions.length > 0) {
-            for (const sq of securityQuestions) {
-                await connection.query(
-                    'INSERT INTO password_security_questions (id, entryId, question, answer) VALUES (?, ?, ?, ?)',
-                    [`sq-${uuidv4()}`, newEntry.id, sq.question, sq.answer]
-                );
-            }
-        }
-
-        await connection.commit();
-        const [createdEntry] = await db.query('SELECT * FROM password_entries WHERE id = ?', [newEntry.id]);
-        res.status(201).json(createdEntry[0]);
-    } catch (error) {
-        await connection.rollback();
-        console.error("Failed to create password entry:", error);
-        res.status(500).json({ message: "Server error" });
-    } finally {
-        connection.release();
-    }
-});
-
-// Update a password entry
-router.put('/:id', protect, async (req, res) => {
-    // This would be a complex transactional update in a real app.
-    // Simplified for this context.
-    const { id } = req.params;
-    const { service, accessLink, username, password, memorablePhrase } = req.body;
-
-    try {
         await db.query(
-            'UPDATE password_entries SET service = ?, accessLink = ?, username = ?, password = ?, memorablePhrase = ? WHERE id = ?',
-            [service, accessLink, username, password, memorablePhrase, id]
+            `INSERT INTO password_entries 
+             (id, service, provider_lenders, username, password, memorablePhrase, accessLink, ownerId)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                id,
+                service || "",
+                provider_lenders || "",
+                username || "",
+                password || "",
+                memorablePhrase || "",
+                accessLink || "",
+                req.user.id
+            ]
         );
-        const [updatedEntry] = await db.query('SELECT * FROM password_entries WHERE id = ?', [id]);
-        res.json(updatedEntry[0]);
+
+        // Insert security questions
+        for (const sq of securityQuestions) {
+            await db.query(
+                `INSERT INTO password_security_questions (id, entryId, question, answer)
+                 VALUES (?, ?, ?, ?)`,
+                [uuidv4(), id, sq.question, sq.answer]
+            );
+        }
+
+        res.json({ success: true, id });
+
     } catch (error) {
-        console.error("Failed to update password entry:", error);
+        console.error("POST /passwords error:", error);
         res.status(500).json({ message: "Server error" });
     }
 });
 
-// Delete a password entry
-router.delete('/:id', protect, async (req, res) => {
+/* ============================================================================
+   UPDATE PASSWORD ENTRY
+============================================================================ */
+// router.put("/:id", protect, async (req, res) => {
+//     const { id } = req.params;
+
+//     try {
+//         const {
+//             service,
+//             username,
+//             password,
+//             memorablePhrase,
+//             accessLink,
+//             securityQuestions = [],
+//             ownerId,
+//         } = req.body;
+
+//         // Update main entry
+//         // await db.query(
+//         //     `UPDATE password_entries
+//         //      SET service=?, username=?, password=?, memorablePhrase=?, accessLink=?, ownerId=?
+//         //      WHERE id=? AND ownerId=?`,
+//         //     [
+//         //         service || "",
+//         //         username || "",
+//         //         password || "",
+//         //         memorablePhrase || "",
+//         //         accessLink || "",
+//         //         id,
+//         //         ownerId || req.user.id,
+//         //         req.user.id
+//         //     ]
+//         // );
+
+//         await db.query(
+//             `UPDATE password_entries
+//      SET service=?, username=?, password=?, memorablePhrase=?, accessLink=?, ownerId=?
+//      WHERE id=? AND ownerId=?`,
+//             [
+//                 service || "",
+//                 username || "",
+//                 password || "",
+//                 memorablePhrase || "",
+//                 accessLink || "",
+//                 ownerId || req.user.id,   // NEW OWNER ID
+//                 id,                       // ENTRY ID
+//                 req.user.id               // OLD OWNER (must match)
+//             ]
+//         );
+
+//         // Remove old questions
+//         await db.query(
+//             `DELETE FROM password_security_questions WHERE entryId=?`,
+//             [id]
+//         );
+
+//         // Insert new questions
+//         for (const sq of securityQuestions) {
+//             await db.query(
+//                 `INSERT INTO password_security_questions (id, entryId, question, answer)
+//                  VALUES (?, ?, ?, ?)`,
+//                 [uuidv4(), id, sq.question, sq.answer]
+//             );
+//         }
+
+//         res.json({ success: true });
+
+//     } catch (error) {
+//         console.error("PUT /passwords error:", error);
+//         res.status(500).json({ message: "Server error" });
+//     }
+// });
+
+
+router.put("/:id", protect, async (req, res) => {
     const { id } = req.params;
+
     try {
-        await db.query('DELETE FROM password_security_questions WHERE entryId = ?', [id]);
-        const [result] = await db.query('DELETE FROM password_entries WHERE id = ?', [id]);
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ message: 'Password entry not found' });
+        const {
+            service,
+            provider_lenders,
+            username,
+            password,
+            memorablePhrase,
+            accessLink,
+            securityQuestions = [],
+            ownerId,
+        } = req.body;
+
+        // Update main entry (any user can update)
+        await db.query(
+            `UPDATE password_entries
+             SET service=?, provider_lenders=?, username=?, password=?, memorablePhrase=?, accessLink=?, ownerId=?
+             WHERE id=?`,
+            [
+                service || "",
+                provider_lenders || "",
+                username || "",
+                password || "",
+                memorablePhrase || "",
+                accessLink || "",
+                ownerId || null, // new ownerId if provided
+                id               // entry ID
+            ]
+        );
+
+        // Remove old security questions
+        await db.query(`DELETE FROM password_security_questions WHERE entryId=?`, [id]);
+
+        // Insert new security questions
+        for (const sq of securityQuestions) {
+            await db.query(
+                `INSERT INTO password_security_questions (id, entryId, question, answer)
+                 VALUES (?, ?, ?, ?)`,
+                [uuidv4(), id, sq.question, sq.answer]
+            );
         }
-        res.status(204).send();
+
+        res.json({ success: true });
     } catch (error) {
-        console.error("Failed to delete password entry:", error);
+        console.error("PUT /passwords error:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+/* ============================================================================
+   DELETE PASSWORD ENTRY
+============================================================================ */
+router.delete("/:id", protect, async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // Delete questions first
+        await db.query(
+            `DELETE FROM password_security_questions WHERE entryId=?`,
+            [id]
+        );
+
+        // Delete entry
+        await db.query(
+            `DELETE FROM password_entries WHERE id=? AND ownerId=?`,
+            [id, req.user.id]
+        );
+
+        res.json({ success: true });
+
+    } catch (error) {
+        console.error("DELETE /passwords error:", error);
         res.status(500).json({ message: "Server error" });
     }
 });
