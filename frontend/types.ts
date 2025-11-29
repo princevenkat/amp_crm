@@ -183,10 +183,68 @@ export interface LimitedCompanyDetails {
   email: string;
 }
 
+// PROTECTION DATAS
+export type PolicyType =
+  | "Critical Illness"
+  | "Family Income Benefit"
+  | "Income Protection"
+  | "Life and Critical Illness"
+  | "Life Cover"
+  | "Life or Critical Illness"
+  | "Mortgage Cover"
+  | "Whole of Life"
+  | "Building only"
+  | "Contents only"
+  | "Building & contents";
+
+export type SingleOrJoint = "Single" | "Joint";
+
+export type PremiumPeriod = "Guaranteed" | "Reviewable";
+
+export type ProductType = "Renewable" | "Convertible";
+
+export type ProtectionBasis = "Level" | "Increasing" | "Decreasing";
+
+export type ProductStatus =
+  | "Cancelled"
+  | "Declined"
+  | "Deferred"
+  | "Lapsed"
+  | "Live"
+  | "Matured"
+  | "NTU"
+  | "Paid Up"
+  | "Pending"
+  | "Replaced"
+  | "Retain"
+  | "Surrendered"
+  | "Underwriting";
+
+export interface ProtectionItem {
+  _id: string;
+  advisor: string;
+  typeOfInsurance: string;
+  provider: string;
+  providerReference: string;
+  amountAssured: number;
+  term: string;
+  premium: number;
+  dateOnRisk: string;
+  commission: number;
+  // New fields
+  policyType: PolicyType;
+  singleOrJoint: SingleOrJoint;
+  premiumPeriod: PremiumPeriod;
+  productType: ProductType;
+  protectionBasis: ProtectionBasis;
+  productStatus: ProductStatus;
+}
+
 export interface ProductDetails {
   businessWritten: BusinessWrittenType;
   mortgage?: MortgageDetails;
   protection?: ProtectionDetails;
+  protections?: ProtectionItem[];
   bandc?: BandCDetails;
   solicitor?: ProfessionalContact;
   provider?: ProfessionalContact;
@@ -278,6 +336,8 @@ export interface Task {
   assignedTo: string;
   assignedBy: string;
   clientId?: string;
+  clientName?: string; // ✅ add this
+  caseReference?: string; // ✅ add this
 }
 
 export interface Contact {
@@ -442,10 +502,10 @@ export interface DataContextType {
     newPassword: string;
   }) => Promise<{ success: boolean; message: string }>;
   loading: boolean;
-
   // 🔵 ADD THESE 4 NEW MODAL FIELDS
   openContactModal: (contact?: Contact) => void;
   closeContactModal: () => void;
   contactModalOpen: boolean;
   contactModalData: Contact | null;
+  duplicateClient: (client: Client) => Promise<Client>;
 }

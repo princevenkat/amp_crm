@@ -6,38 +6,83 @@ import { protect } from "../middleware/authMiddleware.js";
 const router = express.Router();
 
 // 🟩 Get all tasks (with role-based access)
+// router.get("/", protect, async (req, res) => {
+//     try {
+//         const { role, id: userId, name, fullName, email } = req.user;
+
+//         let query = "";
+//         let params = [];
+
+//         // Determine identifier consistently with creation
+//         const userIdentifier = name || fullName || email || userId;
+
+//         if (role === "Adviser") {
+//             query = `
+//         SELECT * FROM tasks
+//         WHERE LOWER(assignedTo) = LOWER(?) 
+//            OR LOWER(assignedBy) = LOWER(?)
+//         ORDER BY dueDate ASC
+//       `;
+//             params = [userIdentifier, userIdentifier];
+//         }
+
+//         // Admins see all
+//         else if (role === "Admin" || role === "Super Admin" || role === "Marketing") {
+//             query = "SELECT * FROM tasks ORDER BY dueDate ASC";
+//         }
+
+//         // Fallback for unknown role
+//         else {
+//             query = `
+//         SELECT * FROM tasks
+//         WHERE LOWER(assignedTo) = LOWER(?)
+//            OR LOWER(assignedBy) = LOWER(?)
+//         ORDER BY dueDate ASC
+//       `;
+//             params = [userIdentifier, userIdentifier];
+//         }
+
+//         const [tasks] = await db.query(query, params);
+//         res.json(tasks);
+//     } catch (error) {
+//         console.error("❌ Failed to get tasks:", error);
+//         res.status(500).json({ message: "Server error" });
+//     }
+// });
+
+// 🟩 Get all tasks (with role-based access) + caseReference
 router.get("/", protect, async (req, res) => {
     try {
         const { role, id: userId, name, fullName, email } = req.user;
+        const userIdentifier = (name || fullName || email || userId).toLowerCase();
 
         let query = "";
         let params = [];
 
-        // Determine identifier consistently with creation
-        const userIdentifier = name || fullName || email || userId;
-
         if (role === "Adviser") {
             query = `
-        SELECT * FROM tasks
-        WHERE LOWER(assignedTo) = LOWER(?) 
-           OR LOWER(assignedBy) = LOWER(?)
-        ORDER BY dueDate ASC
+        SELECT t.*, COALESCE(c.caseReference, 'N/A') AS caseReference, c.name AS clientName
+        FROM tasks t
+        LEFT JOIN clients c ON t.clientId = c.id
+        WHERE LOWER(t.assignedTo) = ? OR LOWER(t.assignedBy) = ?
+        ORDER BY t.dueDate ASC
       `;
             params = [userIdentifier, userIdentifier];
-        }
-
-        // Admins see all
-        else if (role === "Admin" || role === "Super Admin" || role === "Marketing") {
-            query = "SELECT * FROM tasks ORDER BY dueDate ASC";
-        }
-
-        // Fallback for unknown role
-        else {
+        } else if (role === "Admin" || role === "Super Admin" || role === "Marketing") {
             query = `
-        SELECT * FROM tasks
-        WHERE LOWER(assignedTo) = LOWER(?)
-           OR LOWER(assignedBy) = LOWER(?)
-        ORDER BY dueDate ASC
+        SELECT t.*, COALESCE(c.caseReference, 'N/A') AS caseReference, c.name AS clientName
+        FROM tasks t
+        LEFT JOIN clients c ON t.clientId = c.id
+        ORDER BY t.dueDate ASC
+      `;
+        } else {
+            // fallback: same as Adviser
+            query = `
+        SELECT t.*, COALESCE(c.caseReference, 'N/A') AS caseReference, c.name AS clientName
+        FROM tasks t
+        LEFT JOIN clients c ON t.clientId = c.id
+        WHERE LOWER(t.assignedTo) = ? OR LOWER(t.assignedBy) = ?
+        ORDER BY t.dueDate ASC
       `;
             params = [userIdentifier, userIdentifier];
         }
@@ -49,6 +94,8 @@ router.get("/", protect, async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 });
+
+
 
 // 🟩 Create new task
 router.post("/", protect, async (req, res) => {
@@ -128,12 +175,12 @@ router.put("/:id", protect, async (req, res) => {
             (userId || "").toString(),
         ].filter(Boolean).map(v => v.toLowerCase());
 
-        if (role === "Adviser") {
-            const creatorValue = (existing.assignedBy || "").toString().toLowerCase();
-            if (!currentUserIdentifiers.includes(creatorValue)) {
-                return res.status(403).json({ message: "You can only update tasks you created" });
-            }
-        }
+        // if (role === "Adviser") {
+        //     const creatorValue = (existing.assignedBy || "").toString().toLowerCase();
+        //     if (!currentUserIdentifiers.includes(creatorValue)) {
+        //         return res.status(403).json({ message: "You can only update tasks you created" });
+        //     }
+        // }
 
         // 3) Prepare updated fields (preserve existing values when incoming values are undefined)
         const title = incomingTitle !== undefined ? incomingTitle : existing.title;
@@ -185,6 +232,38 @@ router.put("/:id", protect, async (req, res) => {
         res.json(updatedRows[0]);
     } catch (error) {
         console.error("❌ Failed to update task:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+
+// GET /clients/:id/case-reference
+router.get("/clients/:id/case-reference", protect, async (req, res) => {
+    const { id: clientId } = req.params;
+    const { role, id: userId } = req.user;
+
+    try {
+        const [rows] = await db.query(
+            `
+      SELECT id, name, caseReference
+      FROM clients
+      WHERE id = ?
+      LIMIT 1
+      `,
+            [clientId]
+        );
+
+        if (!rows || rows.length === 0) {
+            return res.status(404).json({ message: "Client not found" });
+        }
+
+        res.json({
+            id: rows[0].id,
+            name: rows[0].name,
+            caseReference: rows[0].caseReference,
+        });
+    } catch (error) {
+        console.error("❌ Failed to fetch client case reference:", error);
         res.status(500).json({ message: "Server error" });
     }
 });

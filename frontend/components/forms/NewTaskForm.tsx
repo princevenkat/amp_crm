@@ -59,17 +59,25 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
     }
   }, [initialData, currentUser]);
 
-  // ✅ Pre-fill case reference + client name when editing
+  // Pre-fill client info when editing a task
   useEffect(() => {
-    if (initialData?.clientId && clients.length > 0) {
-      const client = clients.find(c => c.id === initialData.clientId);
-      if (client) {
-        setClientId(client.id);
-        setSearchTerm(`${client.name} (${client.caseReference || 'N/A'})`);
-        setStatus(client.caseStatus?.trim() as Task['status'] || 'Enquiry');
-      }
+    if (!initialData) return;
+
+    const client = clients.find(c => c.id === initialData.clientId);
+
+    if (client) {
+      setClientId(client.id);
+      setSearchTerm(`${client.name} (${client.caseReference || 'N/A'})`);
+      setStatus(client.caseStatus?.trim() as Task['status'] || initialData.status || 'Enquiry');
+    } else if (initialData.clientId) {
+      // Fallback: use data from initialData
+      setClientId(initialData.clientId);
+      setSearchTerm(`${initialData.clientName || 'Unknown Client'} (${initialData.caseReference || 'N/A'})`);
+      setStatus(initialData.status || 'Enquiry');
     }
   }, [initialData, clients]);
+  console.log(initialData);
+
 
 
   // 🧩 Filter + handleClientSelect same as before ...
@@ -189,12 +197,12 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
 
           {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
 
-          {clientId && (
+          {/* {clientId && (
             <p className="text-xs text-gray-500 mt-1">
-              Selected Client: {clients.find(c => c.id === clientId)?.name} (
-              {clients.find(c => c.id === clientId)?.caseReference})
+              Selected Client: {clients.find(c => c.id === clientId)?.name || 'Unknown Client'} (
+              {clients.find(c => c.id === clientId)?.caseReference || 'N/A'})
             </p>
-          )}
+          )} */}
         </div>
 
       )}
@@ -348,7 +356,7 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
       </div>
 
       {/* 🟩 Assigned By */}
-      <div>
+      {/* <div>
         <label className="block text-sm font-medium mb-1">Assigned By</label>
         <input
           type="text"
@@ -356,6 +364,22 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
           readOnly
           className="w-full border border-gray-300 rounded-md p-2 bg-gray-100 text-gray-600 cursor-not-allowed"
         />
+      </div> */}
+
+      {/* Assigned By */}
+      <div>
+        <label className="block text-sm font-medium mb-1">Assigned By</label>
+        <select
+          value={assignedBy}
+          onChange={e => setAssignedBy(e.target.value)}
+          className="w-full border border-gray-300 rounded-md p-2"
+        >
+          {teamMembers.map(member => (
+            <option key={member.id} value={member.name}>
+              {member.name}
+            </option>
+          ))}
+        </select>
       </div>
 
 

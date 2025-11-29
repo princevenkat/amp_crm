@@ -28,18 +28,18 @@ const ApplicantFormFields: React.FC<{ applicantIndex: number; applicantData: App
   };
 
   const formFields: { name: keyof Applicant; label: string; type: string; required: boolean; fullWidth?: boolean }[] = [
-    { name: 'title', label: 'Title', type: 'select', required: true },
+    { name: 'title', label: 'Title', type: 'select', required: false },
     { name: 'firstName', label: 'First Name', type: 'text', required: true },
     { name: 'middleName', label: 'Middle Name', type: 'text', required: false },
     { name: 'surname', label: 'Surname', type: 'text', required: true },
-    { name: 'gender', label: 'Gender', type: 'select-gender', required: true },
-    { name: 'dob', label: 'Date of Birth', type: 'date', required: true },
+    { name: 'gender', label: 'Gender', type: 'select-gender', required: false },
+    { name: 'dob', label: 'Date of Birth', type: 'date', required: false },
     { name: 'homeTelephone', label: 'Home Telephone', type: 'tel', required: false },
-    { name: 'mobileNumber', label: 'Mobile Number', type: 'tel', required: true },
-    { name: 'currentAddress', label: 'Current Address', type: 'text', required: true, fullWidth: true },
-    { name: 'email', label: 'Email Address', type: 'email', required: true },
-    { name: 'noOfDependents', label: 'No Of Dependents', type: 'number', required: true },
-    { name: 'nationality', label: 'Nationality', type: 'text', required: true },
+    { name: 'mobileNumber', label: 'Mobile Number', type: 'tel', required: false },
+    { name: 'currentAddress', label: 'Current Address', type: 'text', required: false, fullWidth: true },
+    { name: 'email', label: 'Email Address', type: 'email', required: false },
+    { name: 'noOfDependents', label: 'No Of Dependents', type: 'number', required: false },
+    { name: 'nationality', label: 'Nationality', type: 'text', required: false },
   ];
 
   return (

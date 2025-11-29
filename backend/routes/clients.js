@@ -566,6 +566,8 @@ router.get('/', protect, async (req, res) => {
                 ORDER BY createdDate DESC
             `, [user.id, user.id]);
         }
+
+
         else {
             // 🚫 No valid role
             return res.status(403).json({ message: 'Unauthorized role' });
@@ -586,7 +588,8 @@ router.get('/', protect, async (req, res) => {
 router.post('/', protect, async (req, res) => {
     const clientData = req.body;
     const newId = `cli-${uuidv4()}`;
-    const avatar = `https://picsum.photos/seed/${clientData.name.split(' ')[0]}/100/100`;
+    // const avatar = `https://picsum.photos/seed/${clientData.name.split(' ')[0]}/100/100`;
+    const avatar = ``;
     const connection = await db.getConnection();
 
     const createdBy = req.user.id;
@@ -738,6 +741,7 @@ router.put('/:id', protect, async (req, res) => {
 
         // 🧩 3️⃣ Otherwise do full merge update (for full client edit)
         const merged = { ...current, ...updates };
+
         const clientFields = getClientDataAsArray(merged);
         await connection.query(
             `UPDATE clients SET ${ALL_CLIENT_FIELDS_FOR_UPDATE} WHERE id = ?`,
@@ -836,41 +840,79 @@ router.put('/:id', protect, async (req, res) => {
             );
         }
 
+        // // --- protection details ---
+        // await connection.query('DELETE FROM protection_details WHERE clientId = ?', [id]);
+        // if (merged.productDetails?.protection) {
+        //     const p = merged.productDetails.protection;
+
+        //     // 🔧 Ensure dateOnRisk is in "YYYY-MM-DD" format
+        //     let formattedDateOnRisk = null;
+        //     if (p.dateOnRisk) {
+        //         // Handle both ISO strings and plain dates safely
+        //         const date = new Date(p.dateOnRisk);
+        //         if (!isNaN(date.getTime())) {
+        //             formattedDateOnRisk = date.toISOString().split('T')[0];
+        //         }
+        //     }
+
+        //     // Prepare JSON for storage
+        //     const protectionJson = JSON.stringify({
+        //         ...p,
+        //         dateOnRisk: formattedDateOnRisk
+        //     });
+
+
+        //     await connection.query(
+        //         `INSERT INTO protection_details 
+        //   (clientId, typeOfInsurance, provider, providerReference, amountAssured, term, premium, dateOnRisk, commission, advisor, protection_json) 
+        //   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        //         [
+        //             id,
+        //             p.typeOfInsurance || '',
+        //             p.provider || '',
+        //             p.providerReference || '',
+        //             p.amountAssured || 0,
+        //             p.term || '',
+        //             p.premium || 0,
+        //             formattedDateOnRisk,
+        //             p.commission || 0,
+        //             p.advisor || '',
+        //             protectionJson
+        //         ]
+        //     );
+        // }
+
         // --- protection details ---
         await connection.query('DELETE FROM protection_details WHERE clientId = ?', [id]);
-        if (merged.productDetails?.protection) {
-            const p = merged.productDetails.protection;
 
-            // 🔧 Ensure dateOnRisk is in "YYYY-MM-DD" format
+        const protections = merged.productDetails?.protections || [];
+
+        for (const p of protections) {
+            // skip empty objects
+            if (!p) continue;
+
+            // Format dateOnRisk safely
             let formattedDateOnRisk = null;
             if (p.dateOnRisk) {
-                // Handle both ISO strings and plain dates safely
                 const date = new Date(p.dateOnRisk);
                 if (!isNaN(date.getTime())) {
                     formattedDateOnRisk = date.toISOString().split('T')[0];
                 }
             }
 
-
+            // Prepare JSON for storage
+            const protectionJson = JSON.stringify(merged.productDetails.protections || []);
 
             await connection.query(
                 `INSERT INTO protection_details 
-          (clientId, typeOfInsurance, provider, providerReference, amountAssured, term, premium, dateOnRisk, commission, advisor) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [
-                    id,
-                    p.typeOfInsurance || '',
-                    p.provider || '',
-                    p.providerReference || '',
-                    p.amountAssured || 0,
-                    p.term || '',
-                    p.premium || 0,
-                    formattedDateOnRisk,
-                    p.commission || 0,
-                    p.advisor || '',
-                ]
+     (clientId, protection_json)
+     VALUES (?, ?) 
+     ON DUPLICATE KEY UPDATE protection_json = VALUES(protection_json)`,
+                [id, protectionJson]
             );
         }
+
+
 
 
         // --- Building & Content details ---
@@ -976,5 +1018,326 @@ router.delete('/:id', protect, async (req, res) => {
         connection.release();
     }
 });
+
+
+
+// router.post("/:id/duplicate", protect, async (req, res) => {
+//     const { id } = req.params;
+
+//     try {
+//         // 1️⃣ Fetch original client
+//         const [[clientRows]] = await db.query("SELECT * FROM clients WHERE id = ?", [id]);
+//         if (!clientRows) {
+//             return res.status(404).json({ message: "Client not found" });
+//         }
+
+//         const oldClient = clientRows;
+
+//         // 2️⃣ Create new client ID
+//         const newClientId = `cli-${uuidv4()}`;
+
+//         // 3️⃣ Insert new CLIENT (only basic fields)
+//         await db.query(
+//             `INSERT INTO clients 
+//             (id, name, email, phone, applicationType, status, caseStatus, primaryAdvisor, admin, createdDate)
+//             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+//             [
+//                 newClientId,
+//                 oldClient.name,
+//                 oldClient.email,
+//                 oldClient.phone,
+//                 oldClient.applicationType,
+//                 "Active",                     // reset status
+//                 "Initial Enquiry",                     // reset case status
+//                 oldClient.primaryAdvisor,
+//                 oldClient.admin
+//             ]
+//         );
+
+//         // 4️⃣ Fetch applicants of original client
+//         const [applicants] = await db.query(
+//             "SELECT * FROM applicants WHERE clientId = ?",
+//             [id]
+//         );
+
+//         // 5️⃣ Duplicate all applicants
+//         for (const app of applicants) {
+//             const newApplicantId = uuidv4();
+//             await db.query(
+//                 `INSERT INTO applicants 
+//                 (id, clientId, firstName, lastName, email, phone, dob, nationality, gender, maritalStatus)
+//                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+//                 [
+//                     newApplicantId,
+//                     newClientId,
+//                     app.firstName,
+//                     app.lastName,
+//                     app.email,
+//                     app.phone,
+//                     app.dob,
+//                     app.nationality,
+//                     app.gender,
+//                     app.maritalStatus
+//                 ]
+//             );
+//         }
+
+//         res.json({
+//             message: "Client duplicated successfully (applicants copied, rest left empty).",
+//             newClientId,
+//         });
+
+//     } catch (err) {
+//         console.error("❌ Duplicate client error:", err);
+//         res.status(500).json({ message: "Error duplicating client." });
+//     }
+// });
+
+
+// router.post("/:id/duplicate", protect, async (req, res) => {
+//     const { id } = req.params;
+
+//     try {
+//         // 1️⃣ Fetch original client
+//         const [[oldClient]] = await db.query(
+//             "SELECT * FROM clients WHERE id = ?",
+//             [id]
+//         );
+//         if (!oldClient) {
+//             return res.status(404).json({ message: "Client not found" });
+//         }
+
+//         // 2️⃣ Generate new Client ID
+//         const newClientId = `cli-${uuidv4()}`;
+
+//         // 3️⃣ INSERT NEW CLIENT FIRST
+//         await db.query(
+//             `INSERT INTO clients 
+//             (id, name, email, phone, applicationType, status, caseStatus, primaryAdvisor, admin, createdDate)
+//             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+//             [
+//                 newClientId,
+//                 oldClient.name,
+//                 oldClient.email,
+//                 oldClient.phone,
+//                 oldClient.applicationType,
+//                 "Active",            // reset status
+//                 "Initial Enquiry",   // reset case status
+//                 oldClient.primaryAdvisor,
+//                 oldClient.admin
+//             ]
+//         );
+
+//         // 4️⃣ Fetch all original applicants
+//         const [applicants] = await db.query(
+//             "SELECT * FROM applicants WHERE clientId = ?",
+//             [id]
+//         );
+
+//         // 5️⃣ Duplicate each applicant
+//         for (const app of applicants) {
+//             await db.query(
+//                 `INSERT INTO applicants 
+//                 (
+//                     clientId,
+//                     title,
+//                     firstName,
+//                     middleName,
+//                     surname,
+//                     gender,
+//                     dob,
+//                     homeTelephone,
+//                     mobileNumber,
+//                     email,
+//                     currentAddress,
+//                     noOfDependents,
+//                     nationality,
+//                     introducer
+//                 )
+//                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+//                 [
+//                     newClientId,
+//                     app.title,
+//                     app.firstName,
+//                     app.middleName,
+//                     app.surname,
+//                     app.gender,
+//                     app.dob,
+//                     app.homeTelephone,
+//                     app.mobileNumber,
+//                     app.email,
+//                     app.currentAddress,
+//                     app.noOfDependents,
+//                     app.nationality,
+//                     app.introducer
+//                 ]
+//             );
+//         }
+
+//         res.json({
+//             message: "Client duplicated successfully.",
+//             newClientId
+//         });
+
+//     } catch (err) {
+//         console.error("❌ Duplicate client error:", err);
+//         res.status(500).json({ message: "Error duplicating client." });
+//     }
+// });
+
+
+
+router.post("/:id/duplicate", protect, async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // 1️⃣ Fetch original client
+        const [[oldClient]] = await db.query(
+            "SELECT * FROM clients WHERE id = ?",
+            [id]
+        );
+
+        if (!oldClient) {
+            return res.status(404).json({ message: "Client not found" });
+        }
+        // 2️⃣ Generate new Client ID
+        const newClientId = `cli-${uuidv4()}`;
+
+
+        // Get prefix from old client's caseReference
+        const oldCaseRef = oldClient.caseReference; // e.g. "ENQ-608273"
+        const prefix = oldCaseRef.split('-')[0];    // "ENQ"
+
+        // Generate a unique new caseReference
+        const newCaseReference = `${prefix}-${Math.floor(100000 + Math.random() * 900000)}`; // "ENQ-1701162185423"
+
+        // Insert duplicated client
+        await db.query(
+            `INSERT INTO clients 
+    (id, name, email, phone, applicationType, status, caseStatus, primaryAdvisor, admin, caseReference, createdDate)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+            [
+                newClientId,
+                oldClient.name,
+                oldClient.email,
+                oldClient.phone,
+                oldClient.applicationType,
+                "Active",            // reset status
+                "Initial Enquiry",   // reset case status
+                oldClient.primaryAdvisor,
+                oldClient.admin,
+                newCaseReference,
+            ]
+        );
+
+        // 5️⃣ Duplicate applicants
+        const [applicants] = await db.query(
+            "SELECT * FROM applicants WHERE clientId = ?",
+            [id]
+        );
+
+        for (const app of applicants) {
+            await db.query(
+                `INSERT INTO applicants 
+          (clientId, title, firstName, middleName, surname, gender, dob, homeTelephone, mobileNumber, email, currentAddress, noOfDependents, nationality, introducer)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    newClientId,
+                    app.title,
+                    app.firstName,
+                    app.middleName,
+                    app.surname,
+                    app.gender,
+                    app.dob,
+                    app.homeTelephone,
+                    app.mobileNumber,
+                    app.email,
+                    app.currentAddress,
+                    app.noOfDependents,
+                    app.nationality,
+                    app.introducer
+                ]
+            );
+        }
+
+        res.json({
+            message: "Client duplicated successfully.",
+            newClientId,
+            newCaseReference
+        });
+
+    } catch (err) {
+        console.error("❌ Duplicate client error:", err);
+        res.status(500).json({ message: "Error duplicating client." });
+    }
+});
+
+
+// router.post("/:id/duplicate", protect, async (req, res) => {
+//     const { id } = req.params;
+
+//     try {
+//         const [[oldClient]] = await db.query("SELECT * FROM clients WHERE id = ?", [id]);
+
+//         if (!oldClient) return res.status(404).json({ message: "Client not found" });
+
+//         const newClientId = `cli-${uuidv4()}`;
+//         const oldCaseRef = oldClient.caseReference;
+//         const prefix = oldCaseRef.split("-")[0];
+//         const newCaseReference = `${prefix}-${Date.now()}`;
+
+
+//         await db.query(
+//             `INSERT INTO clients 
+//        (id, name, email, phone, applicationType, status, caseStatus, primaryAdvisor, admin, caseReference, createdDate,  createdBy)
+//        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(),  ?)`,
+//             [
+//                 newClientId,
+//                 oldClient.name,
+//                 oldClient.email,
+//                 oldClient.phone,
+//                 oldClient.applicationType,
+//                 "Active",
+//                 "Initial Enquiry",
+//                 oldClient.primaryAdvisor,
+//                 oldClient.admin,
+//                 newCaseReference,
+//                 req.user.id,
+//             ]
+//         );
+
+//         // Duplicate applicants
+//         const [applicants] = await db.query("SELECT * FROM applicants WHERE clientId = ?", [id]);
+//         for (const app of applicants) {
+//             await db.query(
+//                 `INSERT INTO applicants 
+//          (clientId, title, firstName, middleName, surname, gender, dob, homeTelephone, mobileNumber, email, currentAddress, noOfDependents, nationality, introducer)
+//          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+//                 [
+//                     newClientId,
+//                     app.title,
+//                     app.firstName,
+//                     app.middleName,
+//                     app.surname,
+//                     app.gender,
+//                     app.dob,
+//                     app.homeTelephone,
+//                     app.mobileNumber,
+//                     app.email,
+//                     app.currentAddress,
+//                     app.noOfDependents,
+//                     app.nationality,
+//                     app.introducer,
+//                 ]
+//             );
+//         }
+
+//         res.json({ message: "Client duplicated successfully.", newClientId, newCaseReference });
+//     } catch (err) {
+//         console.error("❌ Duplicate client error:", err);
+//         res.status(500).json({ message: "Error duplicating client." });
+//     }
+// });
+
 
 export default router;

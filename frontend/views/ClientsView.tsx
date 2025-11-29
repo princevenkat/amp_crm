@@ -2,12 +2,13 @@ import React, { useState, useMemo, useContext, useRef, useEffect } from 'react';
 import type { Client, Contact, Task, Applicant, PropertyDetails, ProductDetails, BusinessWrittenType, ProfessionalContact, EstateAgentContact, LimitedCompanyDetails, Document, CaseStatus, Note, TeamMember } from '../types';
 import { DataContext } from '../contexts/DataContext';
 import { Card, CardHeader, CardContent } from '../components/ui/Card';
+import DuplicateButton from '../components/duplicateClient';
 import { Tabs } from '../components/ui/Tabs';
 import { Modal } from '../components/ui/Modal';
 import { NewClientForm } from '../components/forms/NewClientForm';
 import { NewTaskForm } from '../components/forms/NewTaskForm';
 import { PlusIcon, SearchIcon, MinusIcon, EditIcon } from '../components/ui/Icons';
-import { ContactType, TaskStatus, UserRole } from '../types';
+import { ContactType, TaskStatus, UserRole, ProtectionItem } from '../types';
 
 import { formatCurrency } from "@/utils/formatCurrency";
 
@@ -15,6 +16,10 @@ import { toast, Toaster, ToastBar } from 'react-hot-toast';
 import { TrashIcon } from '@heroicons/react/24/solid';
 import ProfessionalContactField from '@/components/ProfessionalContactField';
 import { NewContactForm } from '@/components/forms/NewContactForm';
+
+import { businessWrittenDisplayMap } from "../constants";
+
+import { useNavigate } from "react-router-dom";
 
 const emptyApplicant: Applicant = {
     title: '', firstName: '', middleName: '', surname: '', gender: '', dob: '',
@@ -421,6 +426,13 @@ const FormSection: React.FC<{ title: string; children: React.ReactNode }> = ({ t
     </div>
 );
 
+const FormSectionFull: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+    <div className="mt-6">
+        <h4 className="text-md font-semibold text-text-primary border-b pb-2 mb-4">{title}</h4>
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-x-8 gap-y-4 text-sm">{children}</div>
+    </div>
+);
+
 const FormSectionNew: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
     <div className="mt-6">
         {title && (
@@ -496,26 +508,58 @@ const ProductView: React.FC<{
     const showBuildingContent = businessWritten === 'Building & Content';
 
 
+
+    const protections =
+        Array.isArray(productDetails.protections)
+            ? productDetails.protections
+            : Array.isArray(productDetails.protection_json)
+                ? productDetails.protection_json
+                : Array.isArray(productDetails.protection?.protection_json)
+                    ? productDetails.protection.protection_json
+                    : [];
+
+    //console.log("FULL PRODUCT DETAILS ->", JSON.stringify(productDetails, null, 2));
+    // console.log("full productDetails: ", protections);
+
+
     return (
         <div className="text-sm">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <label className="font-semibold text-text-secondary">Business Written</label>
                     {isEditing ? (
+                        // <select
+                        //     value={productDetails.businessWritten}
+                        //     onChange={(e) => onChange('businessWritten', e.target.value as BusinessWrittenType)}
+                        //     className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100"
+                        //     disabled={!isEditing}
+                        // >
+                        //     <option value="">Select...</option>
+                        //     <option>Mortgage Only</option>
+                        //     <option>Protection Only</option>
+                        //     <option>Building & Content</option>
+                        //     <option>Mortgage & Protection</option>
+                        // </select>
                         <select
                             value={productDetails.businessWritten}
-                            onChange={(e) => onChange('businessWritten', e.target.value as BusinessWrittenType)}
+                            onChange={(e) =>
+                                onChange('businessWritten', e.target.value as BusinessWrittenType)
+                            }
                             className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100"
                             disabled={!isEditing}
                         >
                             <option value="">Select...</option>
-                            <option>Mortgage Only</option>
-                            <option>Protection Only</option>
-                            <option>Building & Content</option>
-                            <option>Mortgage & Protection</option>
+                            <option value="Mortgage Only">Mortgage Only</option>
+                            <option value="Protection Only">Protection Only</option>
+                            <option value="Building & Content">Bridge Loan</option>
+                            <option value="Mortgage & Protection">Commercial Loan</option>
                         </select>
                     ) : (
-                        <p className="py-2">{productDetails.businessWritten}</p>
+                        <p className="py-2">
+                            {/* {productDetails.businessWritten} */}
+                            {businessWrittenDisplayMap[productDetails.businessWritten]}
+
+                        </p>
                     )}
                 </div>
             </div>
@@ -858,126 +902,444 @@ const ProductView: React.FC<{
                 </FormSection>
             )}
 
+
+
             {showProtection && (
-                <FormSection title="Protection">
-                    <div>
-                        <label className="font-semibold text-text-secondary">Protection Advisor</label>
-                        {isEditing ? (
-                            <select disabled={!isEditing} value={productDetails.protection?.advisor || ''} onChange={(e) => onSubFieldChange('protection', 'advisor', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100">
-                                <option value="">Select...</option>
-                                {advisors.map(name => <option key={name} value={name}>{name}</option>)}
-                            </select>
-                        ) : (
-                            <p className="py-2">{productDetails.protection?.advisor || 'Not Assigned'}</p>
-                        )}
-                    </div>
-                    <div>
-                        <label className="font-semibold text-text-secondary">Type of Insurance</label>
-                        {isEditing ? (
-                            <select disabled={!isEditing} value={productDetails.protection?.typeOfInsurance || ''} onChange={(e) => onSubFieldChange('protection', 'typeOfInsurance', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100">
-                                <option value="">Select...</option>
-                                <option>Level term</option>
-                                <option>Decreasing term</option>
-                                <option>Increasing term</option>
-                                <option>CIC</option>
-                                <option>Income protection</option>
-                                <option>FIB</option>
-                            </select>
-                        ) : (
-                            <p className="py-2">{productDetails.protection?.typeOfInsurance}</p>
-                        )}
-                    </div>
-                    {/* <div>
-                        <label className="font-semibold text-text-secondary">Provider</label>
-                        {isEditing ? (
-                            <input disabled={!isEditing} type="text" value={productDetails.protection?.provider || ''} onChange={(e) => onSubFieldChange('protection', 'provider', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
-                        ) : (
-                            <p className="py-2">{productDetails.protection?.provider}</p>
-                        )}
-                    </div> */}
-                    <div>
-                        <label className="font-semibold text-text-secondary">Provider</label>
-
-                        {isEditing ? (
-                            <select
-                                disabled={!isEditing}
-                                value={productDetails.protection?.provider || ''}
-                                onChange={(e) => {
-                                    const selected = providers.find(l => l.id === e.target.value);
-                                    if (selected) {
-                                        onSubFieldChange('protection', 'provider', selected.id);
-                                        onSubFieldChange('protection', 'lenderName', selected.name); // optional
-                                        // Do NOT update lenderReference here
-                                    }
-                                }}
-                                className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100"
-                            >
-                                <option value="">Select Provider...</option>
-                                {providers.map(l => (
-                                    // <option key={l.id} value={l.id}>{l.name} ({l.company})</option>
-                                    <option key={l.id} value={l.id}>{l.company}</option>
-                                ))}
-                            </select>
-                        ) : (
-                            <p className="py-2">{providers.find(l => l.id === productDetails.protection?.provider)?.company || 'Not Assigned'}</p>
-                        )}
-                    </div>
+                <FormSectionFull title="Protection">
 
 
-                    <div>
-                        <label className="font-semibold text-text-secondary">Provider Reference</label>
-                        {isEditing ? (
-                            <input disabled={!isEditing} type="text" value={productDetails.protection?.providerReference || ''} onChange={(e) => onSubFieldChange('protection', 'providerReference', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
-                        ) : (
-                            <p className="py-2">{productDetails.protection?.providerReference}</p>
-                        )}
-                    </div>
-                    <div>
-                        <label className="font-semibold text-text-secondary">Amount Assured</label>
-                        {isEditing ? (
-                            <input disabled={!isEditing} type="number" value={productDetails.protection?.amountAssured || ''} onChange={(e) => onSubFieldChange('protection', 'amountAssured', Number(e.target.value))} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
-                        ) : (
-                            <p className="py-2">{productDetails.protection?.amountAssured}</p>
-                        )}
-                    </div>
-                    <div>
-                        <label className="font-semibold text-text-secondary">Term</label>
-                        {isEditing ? (
-                            <input disabled={!isEditing} type="text" value={productDetails.protection?.term || ''} onChange={(e) => onSubFieldChange('protection', 'term', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
-                        ) : (
-                            <p className="py-2">{productDetails.protection?.term}</p>
-                        )}
-                    </div>
-                    <div>
-                        <label className="font-semibold text-text-secondary">Premium</label>
-                        {isEditing ? (
-                            <input disabled={!isEditing} type="number" value={productDetails.protection?.premium || ''} onChange={(e) => onSubFieldChange('protection', 'premium', Number(e.target.value))} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
-                        ) : (
-                            <p className="py-2">{productDetails.protection?.premium}</p>
-                        )}
-                    </div>
-                    <div>
-                        <label className="font-semibold text-text-secondary">Date on Risk</label>
-                        {isEditing ? (
 
-                            <input disabled={!isEditing} type="date" value={productDetails.protection?.dateOnRisk || ''} onChange={(e) => onSubFieldChange('protection', 'dateOnRisk', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
-                        ) : (
-                            <p className="py-2">{productDetails.protection?.dateOnRisk}</p>
-                        )}
+                    <div className="grid grid-cols-1 md:grid-cols-1 gap-x-8 gap-y-4 text-sm">
+                        {/* LOOP MULTIPLE PROTECTIONS */}
+                        {protections.map((prot, index) => (
+                            <div key={prot._id} className="border  rounded-lg mb-4 bg-gray-50 overflow-hidden">
+                                <div className="flex justify-between items-center bg-[#002d62]  px-3 py-2">
+                                    <h3 className="font-bold  text-white">Protection #{index + 1}</h3>
+                                    {isEditing && (
+                                        <button
+                                            className="text-[#002d62] text-xs font-semibold px-3 py-1 rounded-full uppercase bg-white"
+                                            onClick={() => {
+                                                const updated = protections.filter(p => p._id !== prot._id);
+                                                onChange("protections", updated);
+                                            }}
+                                        >
+                                            Remove
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5">
+
+                                    {/* ADVISOR */}
+                                    <div className="">
+                                        <label className="font-semibold">Protection Advisor</label>
+                                        {isEditing ? (
+                                            <select
+                                                value={prot.advisor}
+                                                onChange={e => {
+                                                    const updated = [...protections];
+                                                    updated[index] = { ...prot, advisor: e.target.value };
+                                                    onChange("protections", updated);
+                                                }}
+                                                className="w-full mt-1 p-2 border rounded-md"
+                                            >
+                                                <option value="">Select...</option>
+                                                {advisors.map(name => (
+                                                    <option key={name} value={name}>{name}</option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <p>{prot.advisor || "Not Assigned"}</p>
+                                        )}
+                                    </div>
+
+                                    {/* POLICY TYPE */}
+                                    <div className="">
+                                        <label className="font-semibold">Policy Type</label>
+                                        {isEditing ? (
+                                            <select
+                                                value={prot.policyType}
+                                                onChange={e => {
+                                                    const updated = [...protections];
+                                                    updated[index] = { ...prot, policyType: e.target.value as ProtectionItem["policyType"] };
+                                                    onChange("protections", updated);
+                                                }}
+                                                className="w-full mt-1 p-2 border rounded-md"
+                                            >
+                                                <option value="">Select...</option>
+                                                <option>Critical Illness</option>
+                                                <option>Family Income Benefit</option>
+                                                <option>Income Protection</option>
+                                                <option>Life and Critical Illness</option>
+                                                <option>Life Cover</option>
+                                                <option>Life or Critical Illness</option>
+                                                <option>Mortgage Cover</option>
+                                                <option>Whole of Life</option>
+                                                <option>Building only</option>
+                                                <option>Contents only</option>
+                                                <option>Building & contents</option>
+                                            </select>
+                                        ) : (
+                                            <p>{prot.policyType}</p>
+                                        )}
+                                    </div>
+
+                                    {/* SINGLE/JOINT */}
+                                    <div className="">
+                                        <label className="font-semibold">Single/Joint</label>
+                                        {isEditing ? (
+                                            <select
+                                                value={prot.singleOrJoint}
+                                                onChange={e => {
+                                                    const updated = [...protections];
+                                                    updated[index] = { ...prot, singleOrJoint: e.target.value as ProtectionItem["singleOrJoint"] };
+                                                    onChange("protections", updated);
+                                                }}
+                                                className="w-full mt-1 p-2 border rounded-md"
+                                            >
+                                                <option value="">Select...</option>
+                                                <option>Single</option>
+                                                <option>Joint</option>
+                                            </select>
+                                        ) : (
+                                            <p>{prot.singleOrJoint}</p>
+                                        )}
+                                    </div>
+
+                                    {/* PREMIUM PERIOD */}
+                                    <div className="">
+                                        <label className="font-semibold">Premium Period</label>
+                                        {isEditing ? (
+                                            <select
+                                                value={prot.premiumPeriod}
+                                                onChange={e => {
+                                                    const updated = [...protections];
+                                                    updated[index] = { ...prot, premiumPeriod: e.target.value as ProtectionItem["premiumPeriod"] };
+                                                    onChange("protections", updated);
+                                                }}
+                                                className="w-full mt-1 p-2 border rounded-md"
+                                            >
+                                                <option value="">Select...</option>
+                                                <option>Guaranteed</option>
+                                                <option>Reviewable</option>
+                                            </select>
+                                        ) : (
+                                            <p>{prot.premiumPeriod}</p>
+                                        )}
+                                    </div>
+
+                                    {/* PRODUCT TYPE */}
+                                    <div className="">
+                                        <label className="font-semibold">Product Type</label>
+                                        {isEditing ? (
+                                            <select
+                                                value={prot.productType}
+                                                onChange={e => {
+                                                    const updated = [...protections];
+                                                    updated[index] = { ...prot, productType: e.target.value as ProtectionItem["productType"] };
+                                                    onChange("protections", updated);
+                                                }}
+                                                className="w-full mt-1 p-2 border rounded-md"
+                                            >
+                                                <option value="">Select...</option>
+                                                <option>Renewable</option>
+                                                <option>Convertible</option>
+                                            </select>
+                                        ) : (
+                                            <p>{prot.productType}</p>
+                                        )}
+                                    </div>
+
+                                    {/* PROTECTION BASIS */}
+                                    <div className="">
+                                        <label className="font-semibold">Protection Basis</label>
+                                        {isEditing ? (
+                                            <select
+                                                value={prot.protectionBasis}
+                                                onChange={e => {
+                                                    const updated = [...protections];
+                                                    updated[index] = { ...prot, protectionBasis: e.target.value as ProtectionItem["protectionBasis"] };
+                                                    onChange("protections", updated);
+                                                }}
+                                                className="w-full mt-1 p-2 border rounded-md"
+                                            >
+                                                <option value="">Select...</option>
+                                                <option>Level</option>
+                                                <option>Increasing</option>
+                                                <option>Decreasing</option>
+                                            </select>
+                                        ) : (
+                                            <p>{prot.protectionBasis}</p>
+                                        )}
+                                    </div>
+
+                                    {/* PRODUCT STATUS */}
+                                    <div className="">
+                                        <label className="font-semibold">Product Status</label>
+                                        {isEditing ? (
+                                            <select
+                                                value={prot.productStatus}
+                                                onChange={e => {
+                                                    const updated = [...protections];
+                                                    updated[index] = { ...prot, productStatus: e.target.value as ProtectionItem["productStatus"] };
+                                                    onChange("protections", updated);
+                                                }}
+                                                className="w-full mt-1 p-2 border rounded-md"
+                                            >
+                                                <option value="">Select...</option>
+                                                <option>Cancelled</option>
+                                                <option>Declined</option>
+                                                <option>Deferred</option>
+                                                <option>Lapsed</option>
+                                                <option>Live</option>
+                                                <option>Matured</option>
+                                                <option>NTU</option>
+                                                <option>Paid Up</option>
+                                                <option>Pending</option>
+                                                <option>Replaced</option>
+                                                <option>Retain</option>
+                                                <option>Surrendered</option>
+                                                <option>Underwriting</option>
+                                            </select>
+                                        ) : (
+                                            <p>
+                                                <span
+                                                    className={`px-2 py-[2px] rounded-sm  text-xs font-medium ${{
+                                                        Cancelled: "bg-red-500 text-white",
+                                                        Declined: "bg-gray-500 text-white",
+                                                        Deferred: "bg-yellow-500 text-black",
+                                                        Lapsed: "bg-orange-500 text-white",
+                                                        Live: "bg-green-500 text-white",
+                                                        Matured: "bg-blue-500 text-white",
+                                                        NTU: "bg-purple-500 text-white",
+                                                        "Paid Up": "bg-indigo-500 text-white",
+                                                        Pending: "bg-yellow-400 text-black",
+                                                        Replaced: "bg-gray-400 text-white",
+                                                        Retain: "bg-teal-500 text-white",
+                                                        Surrendered: "bg-pink-500 text-white",
+                                                        Underwriting: "bg-purple-400 text-white",
+                                                    }[prot.productStatus] || "bg-gray-300 text-white"
+                                                        }`}
+                                                >
+                                                    {prot.productStatus || "N/A"}
+                                                </span>
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* TYPE OF INSURANCE */}
+                                    {/* <div className="mt-2">
+                                    <label className="font-semibold">Type of Insurance</label>
+                                    {isEditing ? (
+                                        <select
+                                            value={prot.typeOfInsurance}
+                                            onChange={e => {
+                                                const updated = [...protections];
+                                                updated[index] = { ...prot, typeOfInsurance: e.target.value };
+                                                onChange("protections", updated);
+                                            }}
+                                            className="w-full mt-1 p-2 border rounded-md"
+                                        >
+                                            <option value="">Select...</option>
+                                            <option>Level term</option>
+                                            <option>Decreasing term</option>
+                                            <option>Increasing term</option>
+                                            <option>CIC</option>
+                                            <option>Income protection</option>
+                                            <option>FIB</option>
+                                        </select>
+                                    ) : (
+                                        <p>{prot.typeOfInsurance}</p>
+                                    )}
+                                </div> */}
+
+                                    {/* PROVIDER */}
+                                    <div className="">
+                                        <label className="font-semibold">Provider</label>
+                                        {isEditing ? (
+                                            <select
+                                                value={prot.provider}
+                                                onChange={e => {
+                                                    const selected = providers.find(p => p.id === e.target.value);
+                                                    const updated = [...protections];
+                                                    updated[index] = {
+                                                        ...prot,
+                                                        provider: selected?.id || "",
+                                                        providerName: selected?.company || ""
+                                                    };
+                                                    onChange("protections", updated);
+                                                }}
+                                                className="w-full mt-1 p-2 border rounded-md"
+                                            >
+                                                <option value="">Select Provider...</option>
+                                                {providers.map(p => (
+                                                    <option key={p.id} value={p.id}>{p.company}</option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <p>{providers.find(p => p.id === prot.provider)?.company || "Not Assigned"}</p>
+                                        )}
+                                    </div>
+
+                                    {/* PROVIDER REFERENCE */}
+                                    <div className="">
+                                        <label className="font-semibold">Provider Reference</label>
+                                        {isEditing ? (
+                                            <input
+                                                type="text"
+                                                value={prot.providerReference}
+                                                onChange={e => {
+                                                    const updated = [...protections];
+                                                    updated[index] = { ...prot, providerReference: e.target.value };
+                                                    onChange("protections", updated);
+                                                }}
+                                                className="w-full mt-1 p-2 border rounded-md"
+                                            />
+                                        ) : (
+                                            <p>{prot.providerReference}</p>
+                                        )}
+                                    </div>
+
+                                    {/* AMOUNT ASSURED */}
+                                    <div className="">
+                                        <label className="font-semibold">Amount Assured</label>
+                                        {isEditing ? (
+                                            <input
+                                                type="number"
+                                                value={prot.amountAssured}
+                                                onChange={e => {
+                                                    const updated = [...protections];
+                                                    updated[index] = { ...prot, amountAssured: Number(e.target.value) };
+                                                    onChange("protections", updated);
+                                                }}
+                                                className="w-full mt-1 p-2 border rounded-md"
+                                            />
+                                        ) : (
+                                            <p>{prot.amountAssured}</p>
+                                        )}
+                                    </div>
+
+                                    {/* TERM */}
+                                    <div className="">
+                                        <label className="font-semibold">Term</label>
+                                        {isEditing ? (
+                                            <input
+                                                type="text"
+                                                value={prot.term}
+                                                onChange={e => {
+                                                    const updated = [...protections];
+                                                    updated[index] = { ...prot, term: e.target.value };
+                                                    onChange("protections", updated);
+                                                }}
+                                                className="w-full mt-1 p-2 border rounded-md"
+                                            />
+                                        ) : (
+                                            <p>{prot.term}</p>
+                                        )}
+                                    </div>
+
+                                    {/* PREMIUM */}
+                                    <div className="">
+                                        <label className="font-semibold">Premium</label>
+                                        {isEditing ? (
+                                            <input
+                                                type="number"
+                                                value={prot.premium}
+                                                onChange={e => {
+                                                    const updated = [...protections];
+                                                    updated[index] = { ...prot, premium: Number(e.target.value) };
+                                                    onChange("protections", updated);
+                                                }}
+                                                className="w-full mt-1 p-2 border rounded-md"
+                                            />
+                                        ) : (
+                                            <p>{prot.premium}</p>
+                                        )}
+                                    </div>
+
+                                    {/* DATE ON RISK */}
+                                    <div className="">
+                                        <label className="font-semibold">Date on Risk</label>
+                                        {isEditing ? (
+                                            <input
+                                                type="date"
+                                                value={prot.dateOnRisk}
+                                                onChange={e => {
+                                                    const updated = [...protections];
+                                                    updated[index] = { ...prot, dateOnRisk: e.target.value };
+                                                    onChange("protections", updated);
+                                                }}
+                                                className="w-full mt-1 p-2 border rounded-md"
+                                            />
+                                        ) : (
+                                            <p>{prot.dateOnRisk}</p>
+                                        )}
+                                    </div>
+
+                                    {/* COMMISSION */}
+                                    <div className="">
+                                        <label className="font-semibold">Commission</label>
+                                        {isEditing ? (
+                                            <input
+                                                type="number"
+                                                value={prot.commission}
+                                                onChange={e => {
+                                                    const updated = [...protections];
+                                                    updated[index] = { ...prot, commission: Number(e.target.value) };
+                                                    onChange("protections", updated);
+                                                }}
+                                                className="w-full mt-1 p-2 border rounded-md"
+                                            />
+                                        ) : (
+                                            <p>{prot.commission}</p>
+                                        )}
+                                    </div>
+
+                                </div>
+
+
+
+                            </div>
+                        ))}
                     </div>
-                    <div>
-                        <label className="font-semibold text-text-secondary">Commission</label>
-                        {isEditing ? (
-                            <input disabled={!isEditing} type="number" value={productDetails.protection?.commission || ''} onChange={(e) => onSubFieldChange('protection', 'commission', Number(e.target.value))} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
-                        ) : (
-                            <p className="py-2">{productDetails.protection?.commission}</p>
-                        )}
-                    </div>
-                </FormSection>
+
+
+                    {/* ADD NEW PROTECTION */}
+                    {isEditing && (
+                        <button
+                            className="px-3 py-2 bg-primary text-white rounded-md mb-3 max-w-fit"
+                            onClick={() => {
+                                const newProt: ProtectionItem = {
+                                    _id: crypto.randomUUID(),
+                                    advisor: "",
+                                    typeOfInsurance: "",
+                                    provider: "",
+                                    providerReference: "",
+                                    amountAssured: 0,
+                                    term: "",
+                                    premium: 0,
+                                    dateOnRisk: "",
+                                    commission: 0,
+
+                                    policyType: "Life Cover",
+                                    singleOrJoint: "Single",
+                                    premiumPeriod: "Guaranteed",
+                                    productType: "Renewable",
+                                    protectionBasis: "Level",
+                                    productStatus: "Live"
+                                };
+                                onChange("protections", [...protections, newProt]);
+                            }}
+                        >
+                            + Add Protection
+                        </button>
+                    )}
+                </FormSectionFull>
             )}
 
-            {showBuildingContent && (
 
+
+            {showBuildingContent && (
                 <FormSection title="Building & Content">
                     <div>
                         <label className="font-semibold text-text-secondary">Protection Advisor</label>
@@ -1083,137 +1445,10 @@ const ProductView: React.FC<{
                         )}
                     </div>
                 </FormSection>
-
-
             )}
 
-            {/* <FormSectionNew title="Professional Contacts">
 
-                <ProfessionalContactField
-                    label="Solicitor"
-                    contact={productDetails.solicitor}
-                    contacts={solicitors}
-                    isEditing={isEditing}
-                    onChange={(field, value) => onSubFieldChange("solicitor", field, value)}
-                />
-
-                <ProfessionalContactField
-                    label="Accountant"
-                    contact={productDetails.accountant}
-                    contacts={accountants}
-                    isEditing={isEditing}
-                    onChange={(field, value) => onSubFieldChange("accountant", field, value)}
-                />
-
-                <ProfessionalContactField
-                    label="Surveyor"
-                    contact={productDetails.surveyor}
-                    contacts={surveyors}
-                    isEditing={isEditing}
-                    onChange={(field, value) => onSubFieldChange("surveyor", field, value)}
-                />
-
-                <ProfessionalContactField
-                    label="Estate Agent"
-                    contact={productDetails.estateAgent}
-                    contacts={estateAgents}
-                    isEditing={isEditing}
-                    onChange={(field, value) => onSubFieldChange("estateAgent", field, value)}
-                />
-            </FormSectionNew> */}
-
-            {/* <FormSection title="Limited Company Details">
-                <div>
-                    <label className="font-semibold text-text-secondary">Company Name</label>
-
-                    {isEditing ? (
-                        <input disabled={!isEditing} type="text" value={productDetails.limitedCompany?.name || ''} onChange={(e) => onSubFieldChange('limitedCompany', 'name', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
-                    ) : (
-                        <p className="py-2">
-                            {productDetails.limitedCompany?.name || ''}
-                        </p>
-                    )}
-                </div>
-                <div>
-                    <label className="font-semibold text-text-secondary">Registration Number</label>
-                    {isEditing ? (
-                        <input disabled={!isEditing} type="text" value={productDetails.limitedCompany?.registrationNumber || ''} onChange={(e) => onSubFieldChange('limitedCompany', 'registrationNumber', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
-                    ) : (
-                        <p className="py-2">
-                            {productDetails.limitedCompany?.registrationNumber || ''}
-                        </p>
-                    )}
-                </div>
-                <div>
-                    <label className="font-semibold text-text-secondary">Company Address</label>
-                    {isEditing ? (
-                        <input disabled={!isEditing} type="text" value={productDetails.limitedCompany?.address || ''} onChange={(e) => onSubFieldChange('limitedCompany', 'address', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
-                    ) : (
-                        <p className="py-2">
-                            {productDetails.limitedCompany?.address || ''}
-                        </p>
-                    )}
-                </div>
-                <div>
-                    <label className="font-semibold text-text-secondary">Date Established</label>
-                    {isEditing ? (
-                        <input disabled={!isEditing} type="date" value={productDetails.limitedCompany?.dateEstablished || ''} onChange={(e) => onSubFieldChange('limitedCompany', 'dateEstablished', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
-                    ) : (
-                        <p className="py-2">
-                            {productDetails.limitedCompany?.dateEstablished || ''}
-                        </p>
-                    )}
-                </div>
-                <div className="col-span-2 space-y-2">
-                    <label className="font-semibold text-text-secondary">Directors</label>
-                    {directors.map((director, index) => (
-                        <div key={index} className="flex items-center gap-2">
-                            {isEditing ? (
-                                <input
-                                    disabled={!isEditing}
-                                    type="text"
-                                    placeholder={`Director ${index + 1} Name`}
-                                    value={director}
-                                    onChange={(e) => handleDirectorChange(index, e.target.value)}
-                                    className="w-full p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100"
-                                />
-                            ) : (
-                                <p>
-                                    {director}
-                                </p>
-                            )}
-                            {isEditing && directors.length > 1 && (
-                                <button type="button" onClick={() => removeDirector(index)} className="text-danger p-1 rounded-full hover:bg-danger/10">
-                                    {MinusIcon}
-                                </button>
-                            )}
-
-                        </div>
-                    ))}
-                    {isEditing && <button type="button" onClick={addDirector} className="text-sm text-secondary mt-2 flex items-center gap-1">{PlusIcon} Add director</button>}
-                </div>
-                <div>
-                    <label className="font-semibold text-text-secondary">Phone</label>
-                    {isEditing ? (
-                        <input disabled={!isEditing} type="tel" value={productDetails.limitedCompany?.phone || ''} onChange={(e) => onSubFieldChange('limitedCompany', 'phone', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
-                    ) : (
-                        <p className="py-2">
-                            {productDetails.limitedCompany?.phone || ''}
-                        </p>
-                    )}
-                </div>
-                <div>
-                    <label className="font-semibold text-text-secondary">Email</label>
-                    {isEditing ? (
-                        <input disabled={!isEditing} type="email" value={productDetails.limitedCompany?.email || ''} onChange={(e) => onSubFieldChange('limitedCompany', 'email', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
-                    ) : (
-                        <p className="py-2">
-                            {productDetails.limitedCompany?.email || ''}
-                        </p>
-                    )}
-                </div>
-            </FormSection> */}
-        </div>
+        </div >
     );
 };
 
@@ -1875,10 +2110,8 @@ export const CaseWorkerView: React.FC<CaseWorkerViewProps> = ({
 };
 
 
-
-
 const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ client, onBack }) => {
-    const { tasks, contacts, addTask, addContact, updateClient, deleteClient, updateTask, deleteTask, currentUser, teamMembers } = useContext(DataContext);
+    const { tasks, contacts, addTask, addContact, updateClient, deleteClient, updateTask, deleteTask, currentUser, teamMembers, duplicateClient } = useContext(DataContext);
 
     const [isEditing, setIsEditing] = useState(false);
     const [editedClient, setEditedClient] = useState<Client>(client);
@@ -1886,7 +2119,7 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
     const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
 
 
-
+    const navigate = useNavigate();
 
     // useEffect(() => {
     //     setEditedClient(client);
@@ -2239,6 +2472,8 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
         },
     ];
 
+
+
     return (
         <div className="p-4 sm:p-8">
             <Modal title={taskToEdit ? "Edit Task" : "Create New Task"} isOpen={isTaskModalOpen} onClose={handleCloseTaskModal}>
@@ -2293,10 +2528,14 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                                 onChange={handleGeneralChange}
                                 className="bg-surface border border-gray-300 rounded-md p-1 text-sm ml-1"
                             >
+                                {/* 👇 Placeholder option */}
+                                <option value="" disabled>
+                                    Please select advisor
+                                </option>
                                 {advisors.map(a => <option key={a} value={a}>{a}</option>)}
                             </select>
                         ) : (
-                            editedClient.primaryAdvisor
+                            editedClient.primaryAdvisor || " — "
                         )}
                     </p>
 
@@ -2314,10 +2553,14 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                                 onChange={handleGeneralChange}
                                 className="bg-surface border border-gray-300 rounded-md p-1 text-sm ml-1"
                             >
+                                {/* 👇 Placeholder option */}
+                                <option value="" disabled>
+                                    Please select admin
+                                </option>
                                 {admins.map(a => <option key={a} value={a}>{a}</option>)}
                             </select>
                         ) : (
-                            editedClient.admin
+                            editedClient.admin || " — "
                         )}
                     </p>
 
@@ -2335,6 +2578,15 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                     </>
                 ) : (
                     <>
+                        <DuplicateButton
+                            clientId={client.id}
+                            onDuplicate={(newId) => {
+                                console.log("New client created with ID:", newId);
+                                // Optionally navigate to the new client's profile
+                                // navigate(`/clients/${newId}`);
+                                window.location.reload();
+                            }}
+                        />
                         {canDelete && (
                             <button onClick={handleDelete} className="bg-danger/10 hover:bg-danger/20 text-danger font-semibold py-2 px-4 rounded-md">Delete Client</button>
                         )}
@@ -2418,6 +2670,7 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
         </div>
     );
 };
+
 
 const CreateClientView: React.FC<{ onSubmit: (client: Omit<Client, 'id' | 'avatar'>) => void; onCancel: () => void; }> = ({ onSubmit, onCancel }) => {
     return (
@@ -2588,7 +2841,11 @@ export const ClientsView: React.FC = () => {
                                         </span>
                                     ) : 'N/A'}
                                 </td>
-                                <td className="px-6 py-4">{client.productDetails?.businessWritten || 'N/A'}</td>
+                                <td className="px-6 py-4">
+                                    {businessWrittenDisplayMap[client.productDetails?.businessWritten || 'N/A']}
+                                    {/* {client.productDetails?.businessWritten || 'N/A'} */}
+
+                                </td>
                                 <td className="px-6 py-4">
                                     {client.lastContacted
                                         ? new Date(client.lastContacted).toLocaleDateString("en-GB", {

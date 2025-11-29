@@ -53,3 +53,10 @@ export const NAV_SECTIONS: NavItem[][] = [
     { id: View.Settings, label: "Settings", icon: SettingsIcon },
   ],
 ];
+
+export const businessWrittenDisplayMap: Record<string, string> = {
+  "Mortgage Only": "Mortgage Only",
+  "Protection Only": "Protection Only",
+  "Building & Content": "Bridge Loan",
+  "Mortgage & Protection": "Commercial Loan",
+};

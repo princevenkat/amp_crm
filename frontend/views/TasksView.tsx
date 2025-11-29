@@ -43,6 +43,14 @@ const TaskCard: React.FC<{ task: Task; onEdit: (task: Task) => void }> = ({ task
 
     const borderColorClass = getTaskBorderColorClass(task.dueDate, task.status);
 
+
+    const clientFromList = task.clientId ? clients.find(c => c.id === task.clientId) : null;
+    const clientName = clientFromList?.name || task.clientName || 'Unknown Client';
+    const caseRef = clientFromList?.caseReference || task.caseReference || 'N/A';
+    const caseStatus = clientFromList?.caseStatus || 'N/A';
+
+    console.log(client);
+
     return (
         <div className={`bg-surface p-4 rounded-lg shadow-sm mb-3 border-l-4 ${borderColorClass} relative group`}>
             <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -64,13 +72,20 @@ const TaskCard: React.FC<{ task: Task; onEdit: (task: Task) => void }> = ({ task
 
             <p className="font-semibold text-text-primary pr-12">{task.title}</p>
 
-            {client && (
+            {/* {client && (
                 <div className="text-xs text-secondary font-medium mt-1">
                     <span>{client.name}</span>
                     <span className="mx-2">|</span>
                     <span>Ref: {client.caseReference}</span>
                 </div>
-            )}
+            )} */}
+
+            <div className="text-xs text-secondary font-medium mt-1">
+                <span>{clientName}</span>
+                <span className="mx-2">|</span>
+                <span>Ref: {caseRef}</span>
+            </div>
+
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-4 gap-y-2 mt-3 text-xs text-text-secondary border-t pt-2">
                 <div>

@@ -173,3 +173,46 @@ export const updateLedgerEntry = (id: string, data: Partial<LedgerEntry>) =>
   apiRequest<LedgerEntry>(`/ledger/${id}`, "PUT", data);
 export const deleteLedgerEntry = (id: string) =>
   apiRequest<void>(`/ledger/${id}`, "DELETE");
+
+// export const duplicateClient = (client: Client) => {
+//   const { id, avatar, ...data } = client; // Exclude id/avatar
+//   return createClient(data);
+// };
+
+// export const duplicateClient = async (client: Client) => {
+//   try {
+//     // Call the new backend duplicate endpoint
+//     const newClient = await apiRequest<Client>(
+//       `/clients/${client.id}/duplicate`,
+//       "POST"
+//     );
+
+//     // Update context state
+//     return newClient;
+//   } catch (error) {
+//     console.error("Failed to duplicate client:", error);
+//     throw error;
+//   }
+// };
+export const duplicateClient = async (clientId: string) => {
+  const response = await fetch(
+    `${API_BASE_URL}/clients/${clientId}/duplicate`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}));
+    throw new Error(errData.message || "Failed to duplicate client");
+  }
+
+  return response.json() as Promise<{
+    newClientId: string;
+    newCaseReference: string;
+  }>;
+};
