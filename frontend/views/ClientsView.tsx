@@ -1127,32 +1127,6 @@ const ProductView: React.FC<{
                                         )}
                                     </div>
 
-                                    {/* TYPE OF INSURANCE */}
-                                    {/* <div className="mt-2">
-                                    <label className="font-semibold">Type of Insurance</label>
-                                    {isEditing ? (
-                                        <select
-                                            value={prot.typeOfInsurance}
-                                            onChange={e => {
-                                                const updated = [...protections];
-                                                updated[index] = { ...prot, typeOfInsurance: e.target.value };
-                                                onChange("protections", updated);
-                                            }}
-                                            className="w-full mt-1 p-2 border rounded-md"
-                                        >
-                                            <option value="">Select...</option>
-                                            <option>Level term</option>
-                                            <option>Decreasing term</option>
-                                            <option>Increasing term</option>
-                                            <option>CIC</option>
-                                            <option>Income protection</option>
-                                            <option>FIB</option>
-                                        </select>
-                                    ) : (
-                                        <p>{prot.typeOfInsurance}</p>
-                                    )}
-                                </div> */}
-
                                     {/* PROVIDER */}
                                     <div className="">
                                         <label className="font-semibold">Provider</label>

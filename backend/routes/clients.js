@@ -567,7 +567,6 @@ router.get('/', protect, async (req, res) => {
             `, [user.id, user.id]);
         }
 
-
         else {
             // 🚫 No valid role
             return res.status(403).json({ message: 'Unauthorized role' });

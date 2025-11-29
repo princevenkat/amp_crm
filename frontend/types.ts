@@ -184,6 +184,7 @@ export interface LimitedCompanyDetails {
 }
 
 // PROTECTION DATAS
+
 export type PolicyType =
   | "Critical Illness"
   | "Family Income Benefit"
