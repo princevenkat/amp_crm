@@ -913,7 +913,19 @@ router.put('/:id', protect, async (req, res) => {
 
         // --- protection details ---
         if (merged.productDetails?.protections?.length) {
-            const protectionJson = JSON.stringify(merged.productDetails.protections || []);
+
+            const protectionsArray = (merged.productDetails?.protections || []).map(p => {
+                if (typeof p === 'string') {
+                    try {
+                        return JSON.parse(p);
+                    } catch (err) {
+                        console.warn("Skipping invalid protection JSON string", p);
+                        return {};
+                    }
+                }
+                return p; // already an object
+            });
+            const protectionJson = JSON.stringify(protectionsArray);
 
             await connection.query(
                 `INSERT INTO protection_details (clientId, protection_json)
@@ -921,6 +933,16 @@ router.put('/:id', protect, async (req, res) => {
      ON DUPLICATE KEY UPDATE protection_json = VALUES(protection_json)`,
                 [id, protectionJson]
             );
+
+
+            //         const protectionJson = JSON.stringify(merged.productDetails.protections || []);
+
+            //         await connection.query(
+            //             `INSERT INTO protection_details (clientId, protection_json)
+            //  VALUES (?, ?)
+            //  ON DUPLICATE KEY UPDATE protection_json = VALUES(protection_json)`,
+            //             [id, protectionJson]
+            //         );
         }
 
 
