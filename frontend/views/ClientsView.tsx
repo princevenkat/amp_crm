@@ -511,54 +511,37 @@ const ProductView: React.FC<{
 
     let protections: ProtectionItem[] = [];
 
-    // 1️⃣ If `protections` exists
+    // If protections is already an array
     if (Array.isArray(productDetails.protections)) {
-        protections = productDetails.protections.map(item => {
-            if (typeof item === 'string') {
-                try {
-                    return JSON.parse(item); // parse stringified JSON
-                } catch (err) {
-                    console.error("Failed to parse nested protection JSON:", err);
-                    return null;
-                }
+        protections = productDetails.protections.flatMap(item => {
+            // Handle nested array or stringified JSON
+            if (Array.isArray(item)) return item;
+            if (typeof item === "string") {
+                try { return [JSON.parse(item)]; } catch { return []; }
             }
-            return item;
-        }).filter(Boolean); // remove nulls
+            return [item];
+        });
     }
-    // 2️⃣ If backend sent `protection_json` as string
+    // If backend sent protection_json
     else if (productDetails.protection_json) {
         try {
             let parsed = JSON.parse(productDetails.protection_json);
-
-            // If parsed is an array of strings, parse each
-            if (Array.isArray(parsed)) {
-                protections = parsed.map(item => {
-                    if (typeof item === 'string') {
-                        try {
-                            return JSON.parse(item);
-                        } catch (err) {
-                            console.error("Failed to parse nested protection_json item:", err);
-                            return null;
-                        }
-                    }
-                    return item;
-                }).filter(Boolean);
-            } else {
-                protections = [parsed];
-            }
+            protections = Array.isArray(parsed[0]) ? parsed.flat() : parsed;
         } catch (err) {
             console.error("Failed to parse protection_json:", err);
         }
     }
-    // 3️⃣ Fallback: nested `protection.protection_json`
+    // Nested fallback
     else if (productDetails.protection?.protection_json) {
         try {
             let parsed = JSON.parse(productDetails.protection.protection_json);
-            protections = Array.isArray(parsed) ? parsed : [parsed];
+            protections = Array.isArray(parsed[0]) ? parsed.flat() : parsed;
         } catch (err) {
-            console.error("Failed to parse nested protection.protection_json:", err);
+            console.error("Failed to parse nested protection_json:", err);
         }
     }
+
+
 
     console.log("full productDetails:", protections);
 
