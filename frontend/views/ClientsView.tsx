@@ -532,7 +532,7 @@ const ProductView: React.FC<{
         }
     }
 
-    // console.log("full productDetails:", protections);
+    console.log("full productDetails:", protections);
 
 
 
