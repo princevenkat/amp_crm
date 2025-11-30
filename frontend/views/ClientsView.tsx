@@ -511,26 +511,28 @@ const ProductView: React.FC<{
 
     let protections: ProtectionItem[] = [];
 
-    // If protections array exists
-    if (Array.isArray(productDetails.protections)) {
-        protections = productDetails.protections;
-    }
-    // If backend sent JSON string
-    else if (productDetails.protection_json) {
-        try {
-            protections = JSON.parse(productDetails.protection_json);
-        } catch (err) {
-            console.error("Failed to parse protection JSON:", err);
+    // Utility to safely parse string to array
+    const safeParseProtections = (input: any) => {
+        if (!input) return [];
+        if (Array.isArray(input)) return input;
+        if (typeof input === 'string') {
+            try {
+                const parsed = JSON.parse(input);
+                // If nested string, parse again
+                if (typeof parsed === 'string') return JSON.parse(parsed);
+                return parsed;
+            } catch (err) {
+                console.error("Failed to parse protections JSON:", err);
+                return [];
+            }
         }
-    }
-    // Optional: nested protection_json
-    else if (productDetails.protection?.protection_json) {
-        try {
-            protections = JSON.parse(productDetails.protection.protection_json);
-        } catch (err) {
-            console.error("Failed to parse nested protection JSON:", err);
-        }
-    }
+        return [];
+    };
+
+    // Try all possible fields
+    protections = safeParseProtections(productDetails.protections)
+        .concat(safeParseProtections(productDetails.protection_json))
+        .concat(safeParseProtections(productDetails.protection?.protection_json));
 
     console.log("full productDetails:", protections);
 
