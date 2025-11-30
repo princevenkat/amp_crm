@@ -340,6 +340,7 @@ const hydrateClient = async (clientRow) => {
        FROM contacts 
        WHERE id IN (?, ?, ?, ?)`,
             [
+                clientRow.provider_id,
                 clientRow.solicitor_id,
                 clientRow.accountant_id,
                 clientRow.surveyor_id,
@@ -356,6 +357,7 @@ const hydrateClient = async (clientRow) => {
     }
 
     // Find each contact by ID
+    const provider = getContact(clientRow.provider_id);
     const solicitor = getContact(clientRow.solicitor_id);
     const accountant = getContact(clientRow.accountant_id);
     const surveyor = getContact(clientRow.surveyor_id);
@@ -399,6 +401,30 @@ const hydrateClient = async (clientRow) => {
     } catch (err) {
         console.error("Failed to parse caseWorker JSON:", err);
         caseWorker = null;
+    }
+
+    // --- PROTECTIONS (JSON array) ---
+    // let protections = [];
+    // try {
+    //     if (protectionRows.length > 0 && protectionRows[0].protection_json) {
+    //         protections = JSON.parse(protectionRows[0].protection_json);
+    //     }
+    // } catch (err) {
+    //     console.error("Failed to parse protections JSON:", err);
+    //     protections = [];
+    // }
+
+    let protections = [];
+    try {
+        if (
+            protectionRows.length > 0 &&
+            protectionRows[0].protection_json &&
+            protectionRows[0].protection_json !== "null"
+        ) {
+            protections = JSON.parse(protectionRows[0].protection_json);
+        }
+    } catch (err) {
+        console.error("Failed to parse protection JSON:", err);
     }
 
     // Re-nest flattened properties back into objects
@@ -463,12 +489,13 @@ const hydrateClient = async (clientRow) => {
                     return Array.isArray(f) ? f : [];
                 })(),
             },
+            provider,
             solicitor,
             accountant,
             surveyor,
             estateAgent,
             limitedCompany,
-            protection: protectionRows[0] || null,
+            protections,
             bandc: bcRows[0] || null,
         }
     };
@@ -488,7 +515,7 @@ const ALL_CLIENT_FIELDS_FOR_UPDATE = `
   isExLocal = ?, bedrooms = ?, livingRooms = ?, kitchens = ?, bathrooms = ?, separateToilets = ?,
   hasGarageOrParking = ?, flatsInBlock = ?, storeysInBlock = ?, floorOfFlat = ?, leaseRemaining = ?,
   groundRent = ?, serviceCharge = ?, businessWritten = ?, mortgageFees = ?,
-  provider_id = ?,solicitor_id = ?, accountant_id = ?, surveyor_id = ?, estate_agent_id = ?, introducer = ?
+  provider_id = ?, solicitor_id = ?, accountant_id = ?, surveyor_id = ?, estate_agent_id = ?, introducer = ?
 `;
 
 const toMySQLDateTime = (isoDate) => {
@@ -709,7 +736,11 @@ router.post('/', protect, async (req, res) => {
 // Update a client (including converting to client)
 router.put('/:id', protect, async (req, res) => {
     const { id } = req.params;
+
+
     const updates = req.body;
+    delete updates.id;
+
     const connection = await db.getConnection();
 
     try {

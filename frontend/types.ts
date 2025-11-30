@@ -221,25 +221,76 @@ export type ProductStatus =
   | "Surrendered"
   | "Underwriting";
 
+// export interface ProtectionItem {
+//   _id: string;
+//   advisor: string;
+//   typeOfInsurance?: string;
+//   provider: string;
+//   providerName?: string;
+//   providerReference: string;
+//   amountAssured: number;
+//   term: string;
+//   premium: number;
+//   dateOnRisk: string;
+//   commission: number;
+
+//   policyType: string;
+//   singleOrJoint: string;
+//   premiumPeriod: string;
+//   productType: string;
+//   protectionBasis: string;
+//   productStatus: string;
+// }
+
 export interface ProtectionItem {
   _id: string;
   advisor: string;
-  typeOfInsurance?: string;
+
+  policyType:
+    | "Critical Illness"
+    | "Family Income Benefit"
+    | "Income Protection"
+    | "Life and Critical Illness"
+    | "Life Cover"
+    | "Life or Critical Illness"
+    | "Mortgage Cover"
+    | "Whole of Life"
+    | "Building only"
+    | "Contents only"
+    | "Building & contents";
+
+  singleOrJoint: "Single" | "Joint";
+
+  premiumPeriod: "Guaranteed" | "Reviewable";
+
+  productType: "Renewable" | "Convertible";
+
+  protectionBasis: "Level" | "Increasing" | "Decreasing";
+
+  productStatus:
+    | "Cancelled"
+    | "Declined"
+    | "Deferred"
+    | "Lapsed"
+    | "Live"
+    | "Matured"
+    | "NTU"
+    | "Paid Up"
+    | "Pending"
+    | "Replaced"
+    | "Retain"
+    | "Surrendered"
+    | "Underwriting";
+
   provider: string;
   providerName?: string;
   providerReference: string;
+
   amountAssured: number;
   term: string;
   premium: number;
   dateOnRisk: string;
   commission: number;
-
-  policyType: string;
-  singleOrJoint: string;
-  premiumPeriod: string;
-  productType: string;
-  protectionBasis: string;
-  productStatus: string;
 }
 
 export interface ProductDetails {

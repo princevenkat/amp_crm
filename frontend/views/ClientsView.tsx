@@ -1286,7 +1286,7 @@ const ProductView: React.FC<{
                                 const newProt: ProtectionItem = {
                                     _id: crypto.randomUUID(),
                                     advisor: "",
-                                    typeOfInsurance: "",
+                                    // typeOfInsurance: "",
                                     provider: "",
                                     providerReference: "",
                                     amountAssured: 0,
