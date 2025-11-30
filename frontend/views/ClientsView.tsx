@@ -2098,19 +2098,42 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
     // useEffect(() => {
     //     setEditedClient(client);
     // }, [client]);
+
+    // useEffect(() => {
+    //     // Fetch the full hydrated client (includes applicants, notes, etc.)
+    //     const fetchClient = async () => {
+    //         try {
+    //             const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/clients/${client.id}`);
+    //             const data = await res.json();
+    //             setEditedClient(data);
+    //         } catch (err) {
+    //             console.error("Error fetching full client:", err);
+    //         }
+    //     };
+
+    //     if (client?.id) fetchClient();
+    // }, [client?.id]);
     useEffect(() => {
-        // Fetch the full hydrated client (includes applicants, notes, etc.)
         const fetchClient = async () => {
             try {
-                const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/clients/${client.id}`);
+                const token = localStorage.getItem("token"); // or wherever you store it
+                const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/clients/${client.id}`, {
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    }
+                });
+
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+
                 const data = await res.json();
                 setEditedClient(data);
             } catch (err) {
                 console.error("Error fetching full client:", err);
             }
         };
-
-        if (client?.id) fetchClient();
     }, [client?.id]);
 
     const handleGeneralChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -2210,6 +2233,7 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
             // Handle automated contact creation
             const professionals: { data?: ProfessionalContact, type: ContactType }[] = [
                 { data: finalClient.productDetails?.solicitor, type: ContactType.Solicitor },
+                { data: finalClient.productDetails?.provider, type: ContactType.Provider },
                 { data: finalClient.productDetails?.accountant, type: ContactType.Accountant },
                 { data: finalClient.productDetails?.surveyor, type: ContactType.Surveyor }
             ];

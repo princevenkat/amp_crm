@@ -224,21 +224,22 @@ export type ProductStatus =
 export interface ProtectionItem {
   _id: string;
   advisor: string;
-  typeOfInsurance: string;
+  typeOfInsurance?: string;
   provider: string;
+  providerName?: string;
   providerReference: string;
   amountAssured: number;
   term: string;
   premium: number;
   dateOnRisk: string;
   commission: number;
-  // New fields
-  policyType: PolicyType;
-  singleOrJoint: SingleOrJoint;
-  premiumPeriod: PremiumPeriod;
-  productType: ProductType;
-  protectionBasis: ProtectionBasis;
-  productStatus: ProductStatus;
+
+  policyType: string;
+  singleOrJoint: string;
+  premiumPeriod: string;
+  productType: string;
+  protectionBasis: string;
+  productStatus: string;
 }
 
 export interface ProductDetails {

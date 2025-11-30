@@ -488,7 +488,7 @@ const ALL_CLIENT_FIELDS_FOR_UPDATE = `
   isExLocal = ?, bedrooms = ?, livingRooms = ?, kitchens = ?, bathrooms = ?, separateToilets = ?,
   hasGarageOrParking = ?, flatsInBlock = ?, storeysInBlock = ?, floorOfFlat = ?, leaseRemaining = ?,
   groundRent = ?, serviceCharge = ?, businessWritten = ?, mortgageFees = ?,
-  solicitor_id = ?, accountant_id = ?, surveyor_id = ?, estate_agent_id = ?, introducer = ?
+  provider_id = ?,solicitor_id = ?, accountant_id = ?, surveyor_id = ?, estate_agent_id = ?, introducer = ?
 `;
 
 const toMySQLDateTime = (isoDate) => {
@@ -538,6 +538,7 @@ const getClientDataAsArray = (clientData) => [
     clientData.property?.serviceCharge,
     clientData.productDetails?.businessWritten,
     JSON.stringify(clientData.productDetails?.mortgage?.fees || []),
+    clientData.productDetails?.provider?.id || null,
     clientData.productDetails?.solicitor?.id || null,
     clientData.productDetails?.accountant?.id || null,
     clientData.productDetails?.surveyor?.id || null,
@@ -630,6 +631,7 @@ router.post('/', protect, async (req, res) => {
             hasGarageOrParking: clientData.property?.hasGarageOrParking,
             businessWritten: clientData.productDetails?.businessWritten,
             mortgageFees: JSON.stringify(clientData.productDetails?.mortgage?.fees || []), // 🟢 add this line           
+            provider_id: clientData.productDetails?.provider?.id || null,
             solicitor_id: clientData.productDetails?.solicitor?.id || null,
             accountant_id: clientData.productDetails?.accountant?.id || null,
             surveyor_id: clientData.productDetails?.surveyor?.id || null,
