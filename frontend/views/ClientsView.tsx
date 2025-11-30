@@ -523,14 +523,13 @@ const ProductView: React.FC<{
                 }
             }
             return item;
-        }).filter(Boolean); // remove nulls
+        }).filter(Boolean);
     }
     // 2️⃣ If backend sent `protection_json` as string
     else if (productDetails.protection_json) {
         try {
             let parsed = JSON.parse(productDetails.protection_json);
 
-            // If parsed is an array of strings, parse each
             if (Array.isArray(parsed)) {
                 protections = parsed.map(item => {
                     if (typeof item === 'string') {
@@ -559,6 +558,12 @@ const ProductView: React.FC<{
             console.error("Failed to parse nested protection.protection_json:", err);
         }
     }
+
+    // ✅ Unwrap extra array if needed
+    if (Array.isArray(protections) && protections.length === 1 && Array.isArray(protections[0])) {
+        protections = protections[0];
+    }
+
 
     console.log("full productDetails:", protections);
 
