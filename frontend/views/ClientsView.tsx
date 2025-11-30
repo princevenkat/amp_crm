@@ -509,69 +509,78 @@ const ProductView: React.FC<{
 
 
 
+    // let protections: ProtectionItem[] = [];
+
+    // // 1️⃣ If `protections` exists
+    // if (Array.isArray(productDetails.protections)) {
+    //     protections = productDetails.protections.map(item => {
+    //         if (typeof item === 'string') {
+    //             try {
+    //                 return JSON.parse(item); // parse stringified JSON
+    //             } catch (err) {
+    //                 console.error("Failed to parse nested protection JSON:", err);
+    //                 return null;
+    //             }
+    //         }
+    //         return item;
+    //     }).filter(Boolean); // remove nulls
+    // }
+    // // 2️⃣ If backend sent `protection_json` as string
+    // else if (productDetails.protection_json) {
+    //     try {
+    //         let parsed = JSON.parse(productDetails.protection_json);
+
+    //         // If parsed is an array of strings, parse each
+    //         if (Array.isArray(parsed)) {
+    //             protections = parsed.map(item => {
+    //                 if (typeof item === 'string') {
+    //                     try {
+    //                         return JSON.parse(item);
+    //                     } catch (err) {
+    //                         console.error("Failed to parse nested protection_json item:", err);
+    //                         return null;
+    //                     }
+    //                 }
+    //                 return item;
+    //             }).filter(Boolean);
+    //         } else {
+    //             protections = [parsed];
+    //         }
+    //     } catch (err) {
+    //         console.error("Failed to parse protection_json:", err);
+    //     }
+    // }
+    // // 3️⃣ Fallback: nested `protection.protection_json`
+    // else if (productDetails.protection?.protection_json) {
+    //     try {
+    //         let parsed = JSON.parse(productDetails.protection.protection_json);
+    //         protections = Array.isArray(parsed) ? parsed : [parsed];
+    //     } catch (err) {
+    //         console.error("Failed to parse nested protection.protection_json:", err);
+    //     }
+    // }
+
+    // console.log("full productDetails:", protections);
+
+
+
     let protections: ProtectionItem[] = [];
 
-    // 1️⃣ If `protections` exists
+    // If protections is nested
     if (Array.isArray(productDetails.protections)) {
-        protections = productDetails.protections.map(item => {
-            if (typeof item === 'string') {
-                try {
-                    return JSON.parse(item); // parse stringified JSON
-                } catch (err) {
-                    console.error("Failed to parse nested protection JSON:", err);
-                    return null;
-                }
-            }
-            return item;
-        }).filter(Boolean); // remove nulls
+        protections = productDetails.protections.flat();
     }
-    // 2️⃣ If backend sent `protection_json` as string
+    // If backend sent string JSON
     else if (productDetails.protection_json) {
         try {
-            let parsed = JSON.parse(productDetails.protection_json);
-
-            // If parsed is an array of strings, parse each
-            if (Array.isArray(parsed)) {
-                protections = parsed.map(item => {
-                    if (typeof item === 'string') {
-                        try {
-                            return JSON.parse(item);
-                        } catch (err) {
-                            console.error("Failed to parse nested protection_json item:", err);
-                            return null;
-                        }
-                    }
-                    return item;
-                }).filter(Boolean);
-            } else {
-                protections = [parsed];
-            }
+            protections = JSON.parse(productDetails.protection_json);
+            if (Array.isArray(protections[0])) protections = protections.flat();
         } catch (err) {
             console.error("Failed to parse protection_json:", err);
         }
     }
-    // 3️⃣ Fallback: nested `protection.protection_json`
-    else if (productDetails.protection?.protection_json) {
-        try {
-            let parsed = JSON.parse(productDetails.protection.protection_json);
-            protections = Array.isArray(parsed) ? parsed : [parsed];
-        } catch (err) {
-            console.error("Failed to parse nested protection.protection_json:", err);
-        }
-    }
-    // Nested fallback
-    else if (productDetails.protection?.protection_json) {
-        try {
-            let parsed = JSON.parse(productDetails.protection.protection_json);
-            protections = Array.isArray(parsed[0]) ? parsed.flat() : parsed;
-        } catch (err) {
-            console.error("Failed to parse nested protection_json:", err);
-        }
-    }
 
-    console.log("full productDetails:", protections);
-
-
+    console.log("Normalized protections:", protections);
 
 
     return (
