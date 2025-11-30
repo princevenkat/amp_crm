@@ -8,26 +8,35 @@ const router = express.Router();
 
 
 // 🟩 GET all contacts (role-based)
+// router.get('/', protect, async (req, res) => {
+//     try {
+//         const userId = req.user.id;
+//         const userRole = req.user.role;
+
+//         let query, params;
+
+//         if (userRole === 'Admin' || userRole === 'Super Admin' || userRole === 'Marketing') {
+//             // Admin: see all contacts
+//             query = 'SELECT * FROM contacts ORDER BY name ASC';
+//             params = [];
+//         } else if (userRole === 'Adviser') {
+//             // Advisor: see only their own contacts
+//             query = 'SELECT * FROM contacts WHERE createdBy = ? ORDER BY name ASC';
+//             params = [userId];
+//         } else {
+//             return res.status(403).json({ message: 'Unauthorized role' });
+//         }
+
+//         const [contacts] = await db.query(query, params);
+//         res.json(contacts);
+//     } catch (error) {
+//         console.error("Failed to get contacts:", error);
+//         res.status(500).json({ message: "Server error" });
+//     }
+// });
 router.get('/', protect, async (req, res) => {
     try {
-        const userId = req.user.id;
-        const userRole = req.user.role;
-
-        let query, params;
-
-        if (userRole === 'Admin' || userRole === 'Super Admin' || userRole === 'Marketing') {
-            // Admin: see all contacts
-            query = 'SELECT * FROM contacts ORDER BY name ASC';
-            params = [];
-        } else if (userRole === 'Adviser') {
-            // Advisor: see only their own contacts
-            query = 'SELECT * FROM contacts WHERE createdBy = ? ORDER BY name ASC';
-            params = [userId];
-        } else {
-            return res.status(403).json({ message: 'Unauthorized role' });
-        }
-
-        const [contacts] = await db.query(query, params);
+        const [contacts] = await db.query('SELECT * FROM contacts ORDER BY name ASC');
         res.json(contacts);
     } catch (error) {
         console.error("Failed to get contacts:", error);

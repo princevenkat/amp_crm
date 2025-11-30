@@ -453,7 +453,7 @@ const ProductView: React.FC<{
     advisors: string[];
 }> = ({ productDetails, propertyValue, isEditing, onChange, onSubFieldChange, advisors }) => {
 
-    //console.log('Product Details Limited Company:', productDetails);
+    // console.log('Product Details Limited Company:', productDetails);
     // console.log('Product Details:', productDetails);
 
     const { getContactsByType } = useContext(DataContext)
@@ -509,17 +509,31 @@ const ProductView: React.FC<{
 
 
 
-    const protections =
-        Array.isArray(productDetails.protections)
-            ? productDetails.protections
-            : Array.isArray(productDetails.protection_json)
-                ? productDetails.protection_json
-                : Array.isArray(productDetails.protection?.protection_json)
-                    ? productDetails.protection.protection_json
-                    : [];
+    let protections: ProtectionItem[] = [];
 
-    //console.log("FULL PRODUCT DETAILS ->", JSON.stringify(productDetails, null, 2));
-    // console.log("full productDetails: ", protections);
+    // If protections array exists
+    if (Array.isArray(productDetails.protections)) {
+        protections = productDetails.protections;
+    }
+    // If backend sent JSON string
+    else if (productDetails.protection_json) {
+        try {
+            protections = JSON.parse(productDetails.protection_json);
+        } catch (err) {
+            console.error("Failed to parse protection JSON:", err);
+        }
+    }
+    // Optional: nested protection_json
+    else if (productDetails.protection?.protection_json) {
+        try {
+            protections = JSON.parse(productDetails.protection.protection_json);
+        } catch (err) {
+            console.error("Failed to parse nested protection JSON:", err);
+        }
+    }
+
+    // console.log("full productDetails:", protections);
+
 
 
     return (
@@ -906,9 +920,6 @@ const ProductView: React.FC<{
 
             {showProtection && (
                 <FormSectionFull title="Protection">
-
-
-
                     <div className="grid grid-cols-1 md:grid-cols-1 gap-x-8 gap-y-4 text-sm">
                         {/* LOOP MULTIPLE PROTECTIONS */}
                         {protections.map((prot, index) => (
@@ -1593,7 +1604,7 @@ const DocumentsView: React.FC<{ client: Client }> = ({ client }) => {
         if (!file) return;
 
         const token = localStorage.getItem('authToken');
-        //console.log('Token from localStorage:', token);
+        // console.log('Token from localStorage:', token);
         if (!token) {
             alert('You must be logged in to upload documents.');
             return;
@@ -2085,7 +2096,7 @@ export const CaseWorkerView: React.FC<CaseWorkerViewProps> = ({
 
 
 const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ client, onBack }) => {
-    const { tasks, contacts, addTask, addContact, updateClient, deleteClient, updateTask, deleteTask, currentUser, teamMembers, duplicateClient } = useContext(DataContext);
+    const { tasks, contacts, addTask, addContact, updateClient, deleteClient, updateTask, deleteTask, currentUser, teamMembers } = useContext(DataContext);
 
     const [isEditing, setIsEditing] = useState(false);
     const [editedClient, setEditedClient] = useState<Client>(client);
@@ -2579,7 +2590,7 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                         <DuplicateButton
                             clientId={client.id}
                             onDuplicate={(newId) => {
-                                console.log("New client created with ID:", newId);
+                                // console.log("New client created with ID:", newId);
                                 // Optionally navigate to the new client's profile
                                 // navigate(`/clients/${newId}`);
                                 window.location.reload();

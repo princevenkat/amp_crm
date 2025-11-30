@@ -296,7 +296,7 @@ export interface ProtectionItem {
 export interface ProductDetails {
   businessWritten: BusinessWrittenType;
   mortgage?: MortgageDetails;
-  protection?: ProtectionDetails;
+  // protection?: ProtectionDetails;
   protections?: ProtectionItem[];
   bandc?: BandCDetails;
   solicitor?: ProfessionalContact;
