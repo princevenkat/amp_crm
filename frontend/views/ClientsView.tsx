@@ -559,6 +559,15 @@ const ProductView: React.FC<{
             console.error("Failed to parse nested protection.protection_json:", err);
         }
     }
+    // Nested fallback
+    else if (productDetails.protection?.protection_json) {
+        try {
+            let parsed = JSON.parse(productDetails.protection.protection_json);
+            protections = Array.isArray(parsed[0]) ? parsed.flat() : parsed;
+        } catch (err) {
+            console.error("Failed to parse nested protection_json:", err);
+        }
+    }
 
     console.log("full productDetails:", protections);
 
