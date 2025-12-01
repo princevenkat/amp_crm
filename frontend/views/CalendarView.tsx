@@ -85,7 +85,7 @@ const CalendarDay: React.FC<{
     tasks: Task[];
     onTaskClick: (task: Task) => void;
     onAddTask: (date: Date) => void;   // 👈 New prop
-}> = ({ day, date, isCurrentMonth, isToday, tasks, onTaskClick, onAddTask }) => {
+}> = ({ day, date, isCurrentMonth, isToday, tasks, onTaskClick, onAddTask, task, }) => {
     const dayClasses = `border-t border-r border-gray-200 p-2 h-24 md:h-28 relative flex flex-col ${isCurrentMonth ? 'bg-surface' : 'bg-gray-50'}`;
     const dayNumberClasses = `text-sm ${isToday ? 'bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center font-bold' : (isCurrentMonth ? 'text-text-primary' : 'text-text-secondary/50')}`;
 
@@ -120,7 +120,7 @@ const CalendarDay: React.FC<{
     );
 };
 export const CalendarView: React.FC = () => {
-    const { tasks, addTask, updateTask, deleteTask, clients, setCurrentView, setSelectedClientIdForNav, setSelectedTaskIdForNav } = useContext(DataContext);
+    const { tasks, task, addTask, updateTask, deleteTask, clients, currentUser, setCurrentView, setSelectedClientIdForNav, setSelectedTaskIdForNav } = useContext(DataContext);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -129,6 +129,16 @@ export const CalendarView: React.FC = () => {
     const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
     const [newTaskDate, setNewTaskDate] = useState<Date | null>(null);
     const [isEditingTask, setIsEditingTask] = useState(false);
+
+
+
+    // const client = task.clientId ? clients.find(c => c.id === task.clientId) : null;
+    // const clientFromList = task.clientId ? clients.find(c => c.id === task.clientId) : null;
+    // const clientName = clientFromList?.name || task.clientName || 'Unknown Client';
+    // const caseReference = clientFromList?.caseReference || task.caseReference || 'N/A';
+
+
+
 
 
 
@@ -150,32 +160,66 @@ export const CalendarView: React.FC = () => {
     //     return results.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
     // }, [searchTerm, tasks, clients]);
 
+    // const searchResults = useMemo(() => {
+    //     if (!searchTerm.trim()) {
+    //         return [];
+    //     }
+
+    //     const lowercasedFilter = searchTerm.toLowerCase();
+
+    //     const results = tasks.filter(task => {
+    //         const client = task.clientId
+    //             ? clients.find(c => c.id === task.clientId)
+    //             : null;
+
+    //         if (!client) return false;
+
+    //         const clientNameMatch = client.name.toLowerCase().includes(lowercasedFilter);
+    //         const caseRefMatch = client.caseReference
+    //             ? client.caseReference.toLowerCase().includes(lowercasedFilter)
+    //             : false;
+
+    //         return clientNameMatch || caseRefMatch;
+
+    //     });
+
+    //     return results.sort(
+    //         (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+    //     );
+    // }, [searchTerm, tasks, clients]);
+
     const searchResults = useMemo(() => {
-        if (!searchTerm.trim()) {
-            return [];
-        }
+        if (!searchTerm.trim()) return [];
 
-        const lowercasedFilter = searchTerm.toLowerCase();
+        const lower = searchTerm.toLowerCase();
 
-        const results = tasks.filter(task => {
-            const client = task.clientId
-                ? clients.find(c => c.id === task.clientId)
-                : null;
+        return tasks
+            .filter(task => {
+                const client = clients.find(c => c.id === task.clientId);
 
-            if (!client) return false;
+                const clientName = client?.name?.toLowerCase() || "";
+                const caseRef = client?.caseReference?.toLowerCase() || "";
+                const taskTitle = task.title?.toLowerCase() || "";
+                const taskDesc = task.description?.toLowerCase() || "";
 
-            const clientNameMatch = client.name.toLowerCase().includes(lowercasedFilter);
-            const caseRefMatch = client.caseReference
-                ? client.caseReference.toLowerCase().includes(lowercasedFilter)
-                : false;
-
-            return clientNameMatch || caseRefMatch;
-        });
-
-        return results.sort(
-            (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
-        );
+                return (
+                    clientName.includes(lower) ||
+                    caseRef.includes(lower) ||
+                    taskTitle.includes(lower) ||
+                    taskDesc.includes(lower)
+                );
+            })
+            .sort(
+                (a, b) =>
+                    new Date(a.dueDate).getTime() -
+                    new Date(b.dueDate).getTime()
+            );
     }, [searchTerm, tasks, clients]);
+
+
+
+
+
 
 
     const handleTaskClick = (task: Task) => {
@@ -252,6 +296,56 @@ export const CalendarView: React.FC = () => {
         ? clients.find(c => c.id === selectedTask.clientId)
         : null;
 
+
+
+    // Pre-group tasks by caseReference
+
+
+    // const tasksByCase = useMemo(() => {
+    //     const map: Record<string, typeof tasks> = {};
+
+    //     tasks.forEach(task => {
+    //         if (!task.caseReference) return; // skip tasks without caseReference
+
+    //         if (!map[task.caseReference]) map[task.caseReference] = [];
+    //         map[task.caseReference].push(task);
+    //     });
+
+    //     // Sort tasks within each case by dueDate
+    //     Object.values(map).forEach(taskList =>
+    //         taskList.sort(
+    //             (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+    //         )
+    //     );
+
+    //     return map;
+    // }, [tasks]);
+
+    type TaskType = Task; // or import Task if already typed
+
+    const tasksByCase: Record<string, TaskType[]> = useMemo(() => {
+        const map: Record<string, TaskType[]> = {};
+
+        tasks.forEach(task => {
+            if (!task.caseReference) return; // skip tasks without caseReference
+            if (!map[task.caseReference]) map[task.caseReference] = [];
+            map[task.caseReference].push(task);
+        });
+
+        // Sort tasks within each case by dueDate
+        Object.values(map).forEach(taskList =>
+            taskList.sort(
+                (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+            )
+        );
+
+        return map;
+    }, [tasks]);
+
+
+    console.log(tasksByCase);
+
+    //console.log(tasks[1].caseReference);
 
     return (
         <div className="p-4 sm:p-8">
@@ -392,15 +486,15 @@ export const CalendarView: React.FC = () => {
                     </div>
 
                     <div className="mt-4 space-y-2 max-h-[70vh] overflow-y-auto  
-                    [&::-webkit-scrollbar]:w-1.5
-  [&::-webkit-scrollbar]:h-1.5
-  [&::-webkit-scrollbar-track]:bg-transparent
-  [&::-webkit-scrollbar-thumb]:bg-black/20
-  [&::-webkit-scrollbar-thumb]:rounded-full
-  hover:[&::-webkit-scrollbar-thumb]:bg-black/30
-  scrollbar-thin
-  scrollbar-thumb-rounded-full
-  scrollbar-track-transparent                    
+                        [&::-webkit-scrollbar]:w-1.5
+                        [&::-webkit-scrollbar]:h-1.5
+                        [&::-webkit-scrollbar-track]:bg-transparent
+                        [&::-webkit-scrollbar-thumb]:bg-black/20
+                        [&::-webkit-scrollbar-thumb]:rounded-full
+                        hover:[&::-webkit-scrollbar-thumb]:bg-black/30
+                        scrollbar-thin
+                        scrollbar-thumb-rounded-full
+                        scrollbar-track-transparent                    
                     ">
                         {searchTerm.trim() ? (
                             <>
@@ -457,58 +551,54 @@ export const CalendarView: React.FC = () => {
                                     All Client Tasks
                                 </h3>
 
-                                {clients
-                                    .filter(c => tasks.some(t => t.clientId === c.id)) // ✅ Only clients with tasks
-                                    .map(client => (
-                                        <div key={client.id}>
-                                            <p className="font-semibold text-sm text-text-primary mb-1 mt-3">
-                                                {client.name}
-                                                {client.caseReference && (
-                                                    <span className="text-xs text-secondary ml-1">
-                                                        ({client.caseReference})
-                                                    </span>
-                                                )}
-                                            </p>
+                                {Object.entries(tasksByCase).map(([caseRef, caseTasks]) => (
+                                    <div key={caseRef}>
+                                        <p className="font-semibold text-sm text-text-primary mb-1 mt-3 flex px-2">
+                                            {caseTasks[0]?.clientName && (
+                                                <div className="text-md">
+                                                    {caseTasks[0].clientName}
+                                                </div>
+                                            )}
+                                            <div className="ml-auto text-[10px] text-primary ml-1">({caseRef})</div>
 
-                                            {tasks
-                                                .filter(t => t.clientId === client.id)
-                                                .sort(
-                                                    (a, b) =>
-                                                        new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
-                                                )
-                                                .map(task => {
-                                                    const taskDate = new Date(task.dueDate);
-                                                    return (
-                                                        <div
-                                                            key={task.id}
-                                                            onClick={() => handleSearchResultClick(task)}
-                                                            className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 cursor-pointer border mb-2"
+                                        </p>
+
+                                        {caseTasks.map(task => {
+                                            const taskDate = new Date(task.dueDate);
+                                            return (
+                                                <div
+                                                    key={task.id}
+                                                    onClick={() => handleSearchResultClick(task)}
+                                                    className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 cursor-pointer border mb-2"
+                                                >
+                                                    <div className="text-center flex-shrink-0 w-12">
+                                                        <p className="text-xs text-text-secondary">
+                                                            {taskDate.toLocaleString('default', { month: 'short' })}
+                                                        </p>
+                                                        <p className="text-lg font-bold text-text-primary">
+                                                            {taskDate.getDate()}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <p className="font-semibold text-sm text-text-primary leading-tight">
+                                                            {task.title}
+                                                        </p>
+                                                        <p
+                                                            className={`text-xs mt-1 font-semibold ${getStatusBadgeColorClass(
+                                                                task.status
+                                                            )} px-1.5 py-0.5 rounded-full inline-block`}
                                                         >
-                                                            <div className="text-center flex-shrink-0 w-12">
-                                                                <p className="text-xs text-text-secondary">
-                                                                    {taskDate.toLocaleString('default', { month: 'short' })}
-                                                                </p>
-                                                                <p className="text-lg font-bold text-text-primary">
-                                                                    {taskDate.getDate()}
-                                                                </p>
-                                                            </div>
-                                                            <div className="flex-1">
-                                                                <p className="font-semibold text-sm text-text-primary leading-tight">
-                                                                    {task.title}
-                                                                </p>
-                                                                <p
-                                                                    className={`text-xs mt-1 font-semibold ${getStatusBadgeColorClass(
-                                                                        task.status
-                                                                    )} px-1.5 py-0.5 rounded-full inline-block`}
-                                                                >
-                                                                    {task.status}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                        </div>
-                                    ))}
+                                                            {task.status}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ))}
+
+
+
                             </>
                         )}
                     </div>

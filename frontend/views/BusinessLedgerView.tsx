@@ -285,7 +285,7 @@ export const BusinessLedgerView: React.FC = () => {
                 </button>
             </div>
 
-            <div class="flex gap-10 justify-between items-center">
+            <div className="flex gap-10 justify-between items-center">
                 <div className="flex flex-wrap gap-2 mb-4">
                     <input
                         type="number"

@@ -151,7 +151,7 @@ const Sidebar: React.FC<{
                         </Fragment>
                     ))}
                 </nav>
-                <div class="text-center text-white/75 text-xs py-5">
+                <div className="text-center text-white/75 text-xs py-5">
                     <div>© {currentYear} - Advance Mortgages.</div>
                     <div>by <a href="https://amigosoft.in/" target="_blank"> Amigosoft </a> All rights reserved </div>
                 </div>

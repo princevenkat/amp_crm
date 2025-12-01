@@ -524,7 +524,6 @@ export interface DataContextType {
   //   entryId: string,
   //   updatedData: Partial<PasswordEntry>
   // ) => Promise<void>;
-
   passwords: PasswordEntry[];
   addPasswordEntry: (entry: Omit<PasswordEntry, "id">) => Promise<void>;
   fetchPasswords: () => Promise<void>;
@@ -533,7 +532,6 @@ export interface DataContextType {
     updatedData: Partial<PasswordEntry>
   ) => Promise<void>;
   deletePasswordEntry: (entryId: string) => Promise<boolean>;
-
   teamMembers: TeamMember[];
   addTeamMember: (member: Omit<TeamMember, "id" | "avatar">) => Promise<void>;
   updateTeamMember: (

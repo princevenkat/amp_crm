@@ -40,7 +40,7 @@ const ProfessionalContactField: React.FC<ProfessionalContactFieldProps> = ({
                             {selected && (
                                 <a
                                     onClick={() => openContactModal(selected)} // open with data
-                                    class="px-2 py-0 uppercase text-[11px] font-bold text-gray-700 rounded-full
+                                    className="px-2 py-0 uppercase text-[11px] font-bold text-gray-700 rounded-full
                 bg-white shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_2px_6px_rgba(0,0,0,0.12)]
                 hover:bg-gray-50 active:scale-95 transition
                 border border-gray-200 inline-flex items-center gap-1 cursor-pointer"
@@ -131,7 +131,7 @@ const ProfessionalContactField: React.FC<ProfessionalContactFieldProps> = ({
                                     <a
 
                                         onClick={() => openContactModal(selected)} // open with data
-                                        class="px-2 py-1 uppercase text-xs font-bold text-gray-700 rounded-full
+                                        className="px-2 py-1 uppercase text-xs font-bold text-gray-700 rounded-full
            bg-white shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_2px_6px_rgba(0,0,0,0.12)]
            hover:bg-gray-50 active:scale-95 transition
            border border-gray-200 inline-flex items-center gap-1 cursor-pointer"
