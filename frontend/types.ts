@@ -202,7 +202,7 @@ export type SingleOrJoint = "Single" | "Joint";
 
 export type PremiumPeriod = "Guaranteed" | "Reviewable";
 
-export type ProductType = "Renewable" | "Convertible";
+export type ProductType = "Term" | "Renewable" | "Convertible";
 
 export type ProtectionBasis = "Level" | "Increasing" | "Decreasing";
 
@@ -263,7 +263,7 @@ export interface ProtectionItem {
 
   premiumPeriod: "Guaranteed" | "Reviewable";
 
-  productType: "Renewable" | "Convertible";
+  productType: "Term" | "Renewable" | "Convertible";
 
   protectionBasis: "Level" | "Increasing" | "Decreasing";
 

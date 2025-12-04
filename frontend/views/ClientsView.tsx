@@ -1087,6 +1087,7 @@ const ProductView: React.FC<{
                                                 className="w-full mt-1 p-2 border rounded-md"
                                             >
                                                 <option value="">Select...</option>
+                                                <option>Term</option>
                                                 <option>Renewable</option>
                                                 <option>Convertible</option>
                                             </select>
