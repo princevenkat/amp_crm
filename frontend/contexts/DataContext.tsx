@@ -46,6 +46,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
 
+
+
     const [selectedClientIdForNav, setSelectedClientIdForNav] = useState<string | null>(null);
     const [selectedTaskIdForNav, setSelectedTaskIdForNav] = useState<string | null>(null);
 
@@ -399,6 +401,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return newClient;
     };
 
+    // 👇 Add this inside DataProvider
+    const loadClients = async () => {
+        try {
+            const data = await api.getClients();
+            setClients(data || []);
+        } catch (err) {
+            console.error("Failed to reload clients:", err);
+        }
+    };
 
     const value: DataContextType = {
         clients,
@@ -449,6 +460,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         contactModalOpen,
         contactModalData,
         duplicateClient,
+        loadClients,
     };
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

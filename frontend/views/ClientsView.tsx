@@ -565,7 +565,7 @@ const ProductView: React.FC<{
     }
 
 
-    console.log("full productDetails:", protections);
+    // console.log("full productDetails:", protections);
 
 
 
@@ -693,7 +693,7 @@ const ProductView: React.FC<{
                         <label className="font-semibold text-text-secondary">Lender</label>
                         <input disabled={!isEditing} type="text" value={productDetails.mortgage?.lender || ''} onChange={(e) => onSubFieldChange('mortgage', 'lender', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
                     </div> */}
-                    <div>
+                    {/* <div>
                         <label className="font-semibold text-text-secondary">Lender</label>
                         {isEditing ? (
                             // <select
@@ -736,7 +736,7 @@ const ProductView: React.FC<{
                         ) : (
                             <p className="py-2">{lenders.find(l => l.id === productDetails.mortgage?.lender)?.name || 'Not Assigned'}</p>
                         )}
-                    </div>
+                    </div> */}
                     <div>
                         <label className="font-semibold text-text-secondary">Lender Reference</label>
 
@@ -1222,20 +1222,23 @@ const ProductView: React.FC<{
                                     {/* AMOUNT ASSURED */}
                                     <div className="">
                                         <label className="font-semibold">Amount Assured</label>
-                                        {isEditing ? (
-                                            <input
-                                                type="number"
-                                                value={prot.amountAssured}
-                                                onChange={e => {
-                                                    const updated = [...protections];
-                                                    updated[index] = { ...prot, amountAssured: Number(e.target.value) };
-                                                    onChange("protections", updated);
-                                                }}
-                                                className="w-full mt-1 p-2 border rounded-md"
-                                            />
-                                        ) : (
-                                            <p>{prot.amountAssured}</p>
-                                        )}
+                                        <div className="relative">
+                                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-600">£</span>
+                                            {isEditing ? (
+                                                <input
+                                                    type="number"
+                                                    value={prot.amountAssured}
+                                                    onChange={e => {
+                                                        const updated = [...protections];
+                                                        updated[index] = { ...prot, amountAssured: Number(e.target.value) };
+                                                        onChange("protections", updated);
+                                                    }}
+                                                    className="w-full p-2 pl-5 border rounded-md"
+                                                />
+                                            ) : (
+                                                <p className="w-full p-2 pl-5">{prot.amountAssured}</p>
+                                            )}
+                                        </div>
                                     </div>
 
                                     {/* TERM */}
@@ -1260,20 +1263,23 @@ const ProductView: React.FC<{
                                     {/* PREMIUM */}
                                     <div className="">
                                         <label className="font-semibold">Premium</label>
-                                        {isEditing ? (
-                                            <input
-                                                type="number"
-                                                value={prot.premium}
-                                                onChange={e => {
-                                                    const updated = [...protections];
-                                                    updated[index] = { ...prot, premium: Number(e.target.value) };
-                                                    onChange("protections", updated);
-                                                }}
-                                                className="w-full mt-1 p-2 border rounded-md"
-                                            />
-                                        ) : (
-                                            <p>{prot.premium}</p>
-                                        )}
+                                        <div className="relative">
+                                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-600">£</span>
+                                            {isEditing ? (
+                                                <input
+                                                    type="number"
+                                                    value={prot.premium}
+                                                    onChange={e => {
+                                                        const updated = [...protections];
+                                                        updated[index] = { ...prot, premium: Number(e.target.value) };
+                                                        onChange("protections", updated);
+                                                    }}
+                                                    className="w-full p-2 pl-5 border rounded-md"
+                                                />
+                                            ) : (
+                                                <p className="w-full p-2 pl-5">{prot.premium}</p>
+                                            )}
+                                        </div>
                                     </div>
 
                                     {/* DATE ON RISK */}
@@ -1802,12 +1808,25 @@ const AssociatedContactsEditor: React.FC<{
     productDetails?: ProductDetails;
     isEditing: boolean;
     onChange: (
-        contactType: 'lender' | 'provider' | 'solicitor' | 'accountant' | 'surveyor' | 'estateagent',
+        contactType: 'lender' | 'provider' | 'solicitor' | 'accountant' | 'surveyor' | 'estateAgent',
         field: keyof ProfessionalContact,
         value: string
     ) => void;
     contactsDirectory: ProfessionalContact[];
 }> = ({ productDetails, isEditing, onChange }) => {
+
+    //console.log(productDetails);
+
+    const businessWritten = productDetails.businessWritten;
+
+    // const showMortgage = businessWritten === 'Mortgage Only';
+    // const showProtection = businessWritten === 'Protection Only' || businessWritten === 'Mortgage & Protection';
+    // const showBuildingContent = businessWritten === 'Protection Only' || businessWritten === 'Mortgage & Protection' || businessWritten === 'Building & Content';
+    // const showMortgageProtection = businessWritten === 'Protection Only' || businessWritten === 'Mortgage & Protection' || businessWritten === 'Building & Content';
+
+    // Determine which sections should show
+    const showMortgage = businessWritten === 'Mortgage Only' || businessWritten === 'Mortgage & Protection';
+
 
     const {
         getContactsByType,
@@ -1818,6 +1837,7 @@ const AssociatedContactsEditor: React.FC<{
         updateContact,
     } = useContext(DataContext);
 
+    const lenders = getContactsByType(ContactType.Lender);
     const solicitors = getContactsByType(ContactType.Solicitor);
     const providers = getContactsByType(ContactType.Provider);
     const accountants = getContactsByType(ContactType.Accountant);
@@ -1849,6 +1869,14 @@ const AssociatedContactsEditor: React.FC<{
             </Modal>
 
             <ProfessionalContactField
+                label="Lender"
+                contact={productDetails.lender}
+                contacts={lenders}
+                isEditing={isEditing}
+                onChange={(field, value) => onChange("lender", field, value)}
+            />
+
+            <ProfessionalContactField
                 label="Solicitor"
                 contact={productDetails.solicitor}
                 contacts={solicitors}
@@ -1856,13 +1884,14 @@ const AssociatedContactsEditor: React.FC<{
                 onChange={(field, value) => onChange("solicitor", field, value)}
             />
 
-            <ProfessionalContactField
+            {showMortgage && <ProfessionalContactField
                 label="Provider"
                 contact={productDetails.provider}
                 contacts={providers}
                 isEditing={isEditing}
                 onChange={(field, value) => onChange("provider", field, value)}
-            />
+            />}
+
 
             <ProfessionalContactField
                 label="Accountant"
@@ -2129,8 +2158,9 @@ export const CaseWorkerView: React.FC<CaseWorkerViewProps> = ({
 };
 
 
+
 const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ client, onBack }) => {
-    const { tasks, contacts, addTask, addContact, updateClient, deleteClient, updateTask, deleteTask, currentUser, teamMembers } = useContext(DataContext);
+    const { tasks, contacts, addTask, addContact, updateClient, deleteClient, updateTask, deleteTask, currentUser, teamMembers, loadClients } = useContext(DataContext);
 
     const [isEditing, setIsEditing] = useState(false);
     const [editedClient, setEditedClient] = useState<Client>(client);
@@ -2185,6 +2215,29 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
         const { name, value } = e.target;
         setEditedClient(prev => ({ ...prev, [name]: value }));
     };
+
+    const handleGeneralChangeNe = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+
+        if (name === 'primaryAdvisorId') {
+            const selected = cadvisors.find(a => a.id === value);
+            setEditedClient(prev => ({
+                ...prev,
+                primaryAdvisor_id: value,
+                primaryAdvisor: selected?.name || ""
+            }));
+        } else if (name === 'adminId') {
+            const selected = cadmins.find(a => a.id === value);
+            setEditedClient(prev => ({
+                ...prev,
+                admin_id: value,
+                admin: selected?.name || ""
+            }));
+        } else {
+            setEditedClient(prev => ({ ...prev, [name]: value }));
+        }
+    };
+
 
     const handleNumApplicantsChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const newNum = parseInt(e.target.value, 10);
@@ -2257,6 +2310,13 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
             };
             const finalClient = { ...editedClient, ...updatedCoreDetails };
 
+
+            // 🔹 Log primaryAdvisor before sending to API
+            console.log("Final client being sent to API:", {
+                primaryAdvisor_id: finalClient.primaryAdvisor_id,
+                primaryAdvisor: finalClient.primaryAdvisor,
+            });
+
             // Handle automated task creation for renewal reminder
             const originalMortgage = client.productDetails?.mortgage;
             const editedMortgage = finalClient.productDetails?.mortgage;
@@ -2305,6 +2365,9 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
 
             // ⭐ SUCCESS TOAST
             toast.success(`Client "${finalClient.name}" (${finalClient.caseReference}) updated successfully!`);
+            // 🔹 Move back to Leads/Clients view
+            onBack();
+            loadClients();
 
 
         } catch (error) {
@@ -2316,6 +2379,8 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
 
 
     };
+
+
 
     const handleCancel = () => {
         setEditedClient(client);
@@ -2397,7 +2462,16 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
     const advisors = useMemo(() => teamMembers.filter(m => m.role === UserRole.Adviser).map(m => m.name), [teamMembers]);
     const admins = useMemo(() => teamMembers.filter(m => m.role === UserRole.Admin).map(m => m.name), [teamMembers]);
 
-    const caseStatuses: CaseStatus[] = ['Initial Enquiry', 'AIP', 'FMA Submitted', 'Offered', 'Completed', 'Renewal', ''];
+    const cadvisors = useMemo(
+        () => teamMembers.filter(m => m.role === UserRole.Adviser).map(m => ({ id: m.id, name: m.name })),
+        [teamMembers]
+    );
+    const cadmins = useMemo(
+        () => teamMembers.filter(m => m.role === UserRole.Admin).map(m => ({ id: m.id, name: m.name })),
+        [teamMembers]
+    );
+
+    const caseStatuses: CaseStatus[] = ['Initial Enquiry', 'AIP', 'FMA Submitted', 'Offered', 'Completed', 'Renewal', 'On Risk', 'Others'];
     const clientStatuses: Client['status'][] = ['Active', 'Lead', 'Archived'];
 
     //const canDelete = currentUser && [UserRole.Admin, UserRole.SuperAdmin].includes(currentUser.role);
@@ -2407,6 +2481,8 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
     const allApplicants = useMemo(() => {
         return editedClient?.applicants ?? [];
     }, [editedClient?.applicants]);
+
+    console.log(editedClient);
 
     const tabs = [
         {
@@ -2516,6 +2592,17 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
     ];
 
 
+    const caseStatusColors: Record<string, string> = {
+        'Initial Enquiry': 'bg-blue-500 text-white',
+        'AIP': 'bg-yellow-400 text-black',
+        'FMA Submitted': 'bg-purple-500 text-white',
+        'Offered': 'bg-orange-500 text-white',
+        'Completed': 'bg-green-500 text-white',
+        'Renewal': 'bg-gray-600 text-white',
+        'On Risk': 'bg-red-500 text-white',
+        'Othes': 'bg-gray-500 text-black',
+    };
+
 
     return (
         <div className="p-4 sm:p-8">
@@ -2540,9 +2627,10 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                                     {editedClient.status}
                                 </span>
                                 {editedClient.caseStatus && (
-                                    <span className="px-3 py-1 text-sm rounded-full inline-block bg-accent/20 text-accent">
-                                        {editedClient.caseStatus}
-                                    </span>
+                                    <span className={`px-3 py-1 text-sm rounded-full inline-block ${caseStatusColors[editedClient.caseStatus] || 'bg-gray-200 text-black'}`}>{editedClient.caseStatus}</span>
+                                    // <span className="px-3 py-1 text-sm rounded-full inline-block bg-accent/20 text-accent">
+                                    //     {editedClient.caseStatus}
+                                    // </span>
                                 )}
                             </div>
                         ) : (
@@ -2551,7 +2639,7 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                                     {clientStatuses.map(s => <option key={s} value={s}>{s}</option>)}
                                 </select>
                                 <select name="caseStatus" value={editedClient.caseStatus} onChange={handleGeneralChange} className="bg-surface border border-gray-300 rounded-md p-1 text-sm">
-                                    {caseStatuses.map(s => <option key={s} value={s}>{s || 'None'}</option>)}
+                                    {caseStatuses.map(s => <option key={s} value={s}>{s}</option>)}
                                 </select>
                             </div>
                         )}
@@ -2566,41 +2654,30 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                         <strong>Primary Advisor:</strong>
                         {isEditing ? (
                             <select
-                                name="primaryAdvisor"
-                                value={editedClient.primaryAdvisor}
-                                onChange={handleGeneralChange}
+                                name="primaryAdvisorId"
+                                value={editedClient.primaryAdvisor_id || ""}
+                                onChange={handleGeneralChangeNe}
                                 className="bg-surface border border-gray-300 rounded-md p-1 text-sm ml-1"
                             >
-                                {/* 👇 Placeholder option */}
-                                <option value="" disabled>
-                                    Please select advisor
-                                </option>
-                                {advisors.map(a => <option key={a} value={a}>{a}</option>)}
+                                <option value="" disabled>Please select advisor</option>
+                                {cadvisors.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                             </select>
                         ) : (
                             editedClient.primaryAdvisor || " — "
                         )}
                     </p>
 
-                    {/* Show all advisors below */}
-                    {/* <p className="text-xs text-gray-500 ml-1">
-                        All Advisors: {advisors.join(", ") || "—"}
-                    </p> */}
-
                     <p className="text-text-secondary">
                         <strong>Admin:</strong>
                         {isEditing ? (
                             <select
-                                name="admin"
-                                value={editedClient.admin}
-                                onChange={handleGeneralChange}
+                                name="adminId"
+                                value={editedClient.admin_id || ""}
+                                onChange={handleGeneralChangeNe}
                                 className="bg-surface border border-gray-300 rounded-md p-1 text-sm ml-1"
                             >
-                                {/* 👇 Placeholder option */}
-                                <option value="" disabled>
-                                    Please select admin
-                                </option>
-                                {admins.map(a => <option key={a} value={a}>{a}</option>)}
+                                <option value="" disabled>Please select admin</option>
+                                {cadmins.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                             </select>
                         ) : (
                             editedClient.admin || " — "
@@ -2800,7 +2877,9 @@ export const ClientsView: React.FC = () => {
         'FMA Submitted': 'bg-purple-500 text-white',
         'Offered': 'bg-orange-500 text-white',
         'Completed': 'bg-green-500 text-white',
-        'Renewal': 'bg-red-500 text-white',
+        'Renewal': 'bg-gray-600 text-white',
+        'On Risk': 'bg-red-500 text-white',
+        'Othes': 'bg-gray-500 text-black',
     };
 
     return (
@@ -2841,6 +2920,8 @@ export const ClientsView: React.FC = () => {
                             <option value="Offered">Offered</option>
                             <option value="Completed">Completed</option>
                             <option value="Renewal">Renewal</option>
+                            <option value="Renewal">On Risk</option>
+                            <option value="Renewal">Others</option>
                         </select>
                     </div>
                 </div>

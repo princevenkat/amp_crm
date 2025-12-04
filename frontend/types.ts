@@ -299,6 +299,7 @@ export interface ProductDetails {
   // protection?: ProtectionDetails;
   protections?: ProtectionItem[];
   bandc?: BandCDetails;
+  lender?: ProfessionalContact;
   solicitor?: ProfessionalContact;
   provider?: ProfessionalContact;
   accountant?: ProfessionalContact;
@@ -331,6 +332,8 @@ export type CaseStatus =
   | "Offered"
   | "Completed"
   | "Renewal"
+  | "On Risk"
+  | "Others"
   | "";
 
 export interface Client {
@@ -559,4 +562,5 @@ export interface DataContextType {
   contactModalOpen: boolean;
   contactModalData: Contact | null;
   duplicateClient: (client: Client) => Promise<Client>;
+  loadClients: () => Promise<void>;
 }

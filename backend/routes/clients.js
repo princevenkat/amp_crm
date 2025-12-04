@@ -315,6 +315,20 @@ const formatDateForInput = (date) => {
 };
 
 
+const toMySQLDateTime = (isoDate) => {
+    if (!isoDate) return null;
+    const d = new Date(isoDate);
+    if (isNaN(d)) return null;
+    return d.toISOString().slice(0, 19).replace('T', ' ');
+};
+const toMySQLDate = (dateStr) => {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    if (isNaN(d)) return null;
+    return d.toISOString().slice(0, 10); // "YYYY-MM-DD"
+};
+
+
 // Helper to reconstruct the full client object from DB rows
 const hydrateClient = async (clientRow) => {
     if (!clientRow) return null;
@@ -338,8 +352,9 @@ const hydrateClient = async (clientRow) => {
         db.query(
             `SELECT id, name, email, phone, company, address, type 
        FROM contacts 
-       WHERE id IN (?, ?, ?, ?)`,
+       WHERE id IN (?, ?, ?, ?, ?, ?)`,
             [
+                clientRow.lender_id,
                 clientRow.provider_id,
                 clientRow.solicitor_id,
                 clientRow.accountant_id,
@@ -357,6 +372,7 @@ const hydrateClient = async (clientRow) => {
     }
 
     // Find each contact by ID
+    const lender = getContact(clientRow.lender_id);
     const provider = getContact(clientRow.provider_id);
     const solicitor = getContact(clientRow.solicitor_id);
     const accountant = getContact(clientRow.accountant_id);
@@ -431,7 +447,9 @@ const hydrateClient = async (clientRow) => {
         phone: clientRow.phone,
         caseReference: clientRow.caseReference,
         primaryAdvisor: clientRow.primaryAdvisor,
+        primaryAdvisor_id: clientRow.primaryAdvisor_id || null,
         admin: clientRow.admin,
+        admin_id: clientRow.admin_id || null,
         applicationType: clientRow.applicationType,
         status: clientRow.status,
         caseStatus: clientRow.caseStatus,
@@ -485,6 +503,7 @@ const hydrateClient = async (clientRow) => {
                     return Array.isArray(f) ? f : [];
                 })(),
             },
+            lender,
             provider,
             solicitor,
             accountant,
@@ -506,29 +525,17 @@ const hydrateClient = async (clientRow) => {
 
 };
 
-
 const ALL_CLIENT_FIELDS_FOR_UPDATE = `
-  name = ?, email = ?, phone = ?, caseReference = ?, primaryAdvisor = ?, admin = ?,
+  name = ?, email = ?, phone = ?, caseReference = ?, primaryAdvisor = ?, primaryAdvisor_id = ?, admin = ?, admin_id = ?,
   applicationType = ?, status = ?, caseStatus = ?, lastContacted = ?, value = ?, productType = ?,
   propertyAddress = ?, propertyValue = ?, purchasePrice = ?, dateOfPurchase = ?, yearBuilt = ?, propertyTypeProp = ?,
   isExLocal = ?, bedrooms = ?, livingRooms = ?, kitchens = ?, bathrooms = ?, separateToilets = ?,
   hasGarageOrParking = ?, flatsInBlock = ?, storeysInBlock = ?, floorOfFlat = ?, leaseRemaining = ?,
   groundRent = ?, serviceCharge = ?, businessWritten = ?, mortgageFees = ?,
-  provider_id = ?, solicitor_id = ?, accountant_id = ?, surveyor_id = ?, estate_agent_id = ?, introducer = ?
+  lender_id = ?, provider_id = ?, solicitor_id = ?, accountant_id = ?, surveyor_id = ?, estate_agent_id = ?, introducer = ?
 `;
 
-const toMySQLDateTime = (isoDate) => {
-    if (!isoDate) return null;
-    const d = new Date(isoDate);
-    if (isNaN(d)) return null;
-    return d.toISOString().slice(0, 19).replace('T', ' ');
-};
-const toMySQLDate = (dateStr) => {
-    if (!dateStr) return null;
-    const d = new Date(dateStr);
-    if (isNaN(d)) return null;
-    return d.toISOString().slice(0, 10); // "YYYY-MM-DD"
-};
+
 
 const getClientDataAsArray = (clientData) => [
     clientData.name,
@@ -536,7 +543,9 @@ const getClientDataAsArray = (clientData) => [
     clientData.phone,
     clientData.caseReference,
     clientData.primaryAdvisor,
+    clientData.primaryAdvisor_id || null,
     clientData.admin,
+    clientData.admin_id || null,
     clientData.applicationType,
     clientData.status,
     clientData.caseStatus,
@@ -564,6 +573,7 @@ const getClientDataAsArray = (clientData) => [
     clientData.property?.serviceCharge,
     clientData.productDetails?.businessWritten,
     JSON.stringify(clientData.productDetails?.mortgage?.fees || []),
+    clientData.productDetails?.lender?.id || null,
     clientData.productDetails?.provider?.id || null,
     clientData.productDetails?.solicitor?.id || null,
     clientData.productDetails?.accountant?.id || null,
@@ -571,165 +581,6 @@ const getClientDataAsArray = (clientData) => [
     clientData.productDetails?.estateAgent?.id || null,
     clientData.introducer || null,
 ];
-
-
-router.get('/', protect, async (req, res) => {
-    try {
-        const user = req.user; // populated from JWT by protect middleware
-        let clientRows = [];
-
-        if (user.role === 'Admin' || user.role === 'Super Admin' || user.role === 'Marketing') {
-            // 🟢 Admin sees all clients
-            [clientRows] = await db.query(`
-                SELECT * FROM clients 
-                ORDER BY createdDate DESC
-            `);
-        }
-        else if (user.role === 'Advisor' || user.role === 'Adviser') {
-            // 🟠 Advisor sees only their own or assigned clients
-            [clientRows] = await db.query(`
-                SELECT * FROM clients
-                WHERE primaryAdvisor = ? OR createdBy = ?
-                ORDER BY createdDate DESC
-            `, [user.id, user.id]);
-        }
-
-        else {
-            // 🚫 No valid role
-            return res.status(403).json({ message: 'Unauthorized role' });
-        }
-
-        // Hydrate the client data (attach applicants, documents, etc.)
-        const hydratedClients = await Promise.all(clientRows.map(hydrateClient));
-
-        res.json(hydratedClients);
-    } catch (error) {
-        console.error("Failed to get clients:", error);
-        res.status(500).json({ message: "Server error getting clients" });
-    }
-});
-
-
-// Create a new client
-router.post('/', protect, async (req, res) => {
-    const clientData = req.body;
-    const newId = `cli-${uuidv4()}`;
-    // const avatar = `https://picsum.photos/seed/${clientData.name.split(' ')[0]}/100/100`;
-    const avatar = ``;
-    const connection = await db.getConnection();
-
-    const createdBy = req.user.id;
-
-
-    try {
-        await connection.beginTransaction();
-
-        // Flattened client data for insertion
-        const clientInsertData = {
-            id: newId,
-            avatar,
-            createdBy,
-            createdDate: clientData.createdDate,
-            name: clientData.name,
-            email: clientData.email,
-            phone: clientData.phone,
-            caseReference: clientData.caseReference,
-            primaryAdvisor: clientData.primaryAdvisor,
-            admin: clientData.admin,
-            applicationType: clientData.applicationType,
-            status: clientData.status,
-            caseStatus: clientData.caseStatus,
-            lastContacted: clientData.lastContacted,
-            value: clientData.value,
-            productType: clientData.product?.type,
-            propertyAddress: clientData.property?.address,
-            propertyValue: clientData.property?.propertyValue,
-            purchasePrice: clientData.property?.purchasePrice,
-            dateOfPurchase: clientData.property?.dateOfPurchase || null,
-            yearBuilt: clientData.property?.yearBuilt || null,
-            propertyTypeProp: clientData.property?.propertyType || null, // Aliased field
-            isExLocal: clientData.property?.isExLocal,
-            bedrooms: clientData.property?.bedrooms,
-            livingRooms: clientData.property?.livingRooms,
-            kitchens: clientData.property?.kitchens,
-            bathrooms: clientData.property?.bathrooms,
-            separateToilets: clientData.property?.separateToilets,
-            hasGarageOrParking: clientData.property?.hasGarageOrParking,
-            businessWritten: clientData.productDetails?.businessWritten,
-            mortgageFees: JSON.stringify(clientData.productDetails?.mortgage?.fees || []), // 🟢 add this line           
-            provider_id: clientData.productDetails?.provider?.id || null,
-            solicitor_id: clientData.productDetails?.solicitor?.id || null,
-            accountant_id: clientData.productDetails?.accountant?.id || null,
-            surveyor_id: clientData.productDetails?.surveyor?.id || null,
-            estate_agent_id: clientData.productDetails?.estateAgent?.id || null,
-            introducer: clientData.introducer,
-        };
-
-        const columns = Object.keys(clientInsertData).join(', ');
-        const placeholders = Object.keys(clientInsertData).map(() => '?').join(', ');
-        const values = Object.values(clientInsertData);
-
-        await connection.query(`INSERT INTO clients (${columns}) VALUES (${placeholders})`, values);
-
-
-        // 2. Insert applicants
-        // if (clientData.applicants && clientData.applicants.length > 0) {
-        //     for (const app of clientData.applicants) {
-        //         // await connection.query(
-        //         //     `INSERT INTO applicants (clientId, title, firstName, middleName, surname, gender, dob, homeTelephone, mobileNumber, email, currentAddress, noOfDependents, nationality) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        //         //     [newId, app.title, app.firstName, app.middleName, app.surname, app.gender, app.dob, app.homeTelephone, app.mobileNumber, app.email, app.currentAddress, app.noOfDependents, app.nationality]
-        //         // );
-
-        //         const dob = applicant.dob;
-        //         await connection.query(
-        //             `INSERT INTO applicants (clientId, title, firstName, middleName, surname, gender, dob, homeTelephone, mobileNumber, email, currentAddress, noOfDependents, nationality) 
-        //         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        //             [id, app.title, app.firstName, app.middleName, app.surname, app.gender, dob, app.homeTelephone, app.mobileNumber, app.email, app.currentAddress, app.noOfDependents, app.nationality]
-        //         );
-        //     }
-        // }
-
-
-        if (clientData.applicants && clientData.applicants.length > 0) {
-            for (const app of clientData.applicants) {
-                const dob = app.dob || null;
-                await connection.query(
-                    `INSERT INTO applicants 
-            (clientId, title, firstName, middleName, surname, gender, dob, homeTelephone, mobileNumber, email, currentAddress, noOfDependents, nationality, introducer) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [newId, app.title, app.firstName, app.middleName, app.surname, app.gender, dob, app.homeTelephone, app.mobileNumber, app.email, app.currentAddress, app.noOfDependents, app.nationality, app.introducer]
-                );
-            }
-        }
-
-        //await connection.commit();
-
-        // 🔹 Sync Ledger Entries (inside same transaction)
-        // await syncLedgerFromFees(connection, clientData);
-        // ✅ Commit once — includes both client + ledger inserts
-
-        // // ✅ Re-fetch the full client from DB (with mortgageFees loaded)
-        // const [freshClientRows] = await connection.query('SELECT * FROM clients WHERE id = ?', [newId]);
-        // const freshClient = await hydrateClient(freshClientRows[0]);
-
-        // // ✅ Now sync ledger with actual fees
-        // await syncLedgerFromFees(connection, freshClient);
-        await connection.commit();
-
-        const [newClientRow] = await db.query('SELECT * FROM clients WHERE id = ?', [newId]);
-        const newClient = await hydrateClient(newClientRow[0]);
-        res.status(201).json(newClient);
-    } catch (error) {
-        await connection.rollback();
-        console.error("Failed to create client:", error);
-        res.status(500).json({ message: "Server error during client creation." });
-    } finally {
-        connection.release();
-    }
-});
-
-
-
 
 
 // Update a client (including converting to client)
@@ -752,7 +603,7 @@ router.put('/:id', protect, async (req, res) => {
         const current = rows[0];
 
         // 🧩 2️⃣ Simple field-only update (like { status: 'Pipeline' })
-        const simpleFields = ['status', 'caseStatus', 'primaryAdvisor', 'admin'];
+        const simpleFields = ['status', 'caseStatus', 'primaryAdvisor', 'primaryAdvisor_id', 'admin', 'admin_id'];
         const isSimpleUpdate = Object.keys(updates).every((key) => simpleFields.includes(key));
 
         if (isSimpleUpdate) {
@@ -768,8 +619,28 @@ router.put('/:id', protect, async (req, res) => {
             return res.json(updatedClient);
         }
 
+
+
         // 🧩 3️⃣ Otherwise do full merge update (for full client edit)
-        const merged = { ...current, ...updates };
+
+
+        const merged = {
+            ...current, ...updates,
+            primaryAdvisor_id: updates.hasOwnProperty('primaryAdvisor_id') ? updates.primaryAdvisor_id : current.primaryAdvisor_id,
+            admin_id: updates.hasOwnProperty('admin_id') ? updates.admin_id : current.admin_id,
+        };
+
+
+
+        console.log('Merged update:', {
+            primaryAdvisor: merged.primaryAdvisor,
+            primaryAdvisor_id: merged.primaryAdvisor_id,
+            admin: merged.admin,
+            admin_id: merged.admin_id,
+        });
+
+
+
 
         const clientFields = getClientDataAsArray(merged);
         await connection.query(
@@ -869,47 +740,6 @@ router.put('/:id', protect, async (req, res) => {
             );
         }
 
-        // // --- protection details ---
-        // await connection.query('DELETE FROM protection_details WHERE clientId = ?', [id]);
-        // if (merged.productDetails?.protection) {
-        //     const p = merged.productDetails.protection;
-
-        //     // 🔧 Ensure dateOnRisk is in "YYYY-MM-DD" format
-        //     let formattedDateOnRisk = null;
-        //     if (p.dateOnRisk) {
-        //         // Handle both ISO strings and plain dates safely
-        //         const date = new Date(p.dateOnRisk);
-        //         if (!isNaN(date.getTime())) {
-        //             formattedDateOnRisk = date.toISOString().split('T')[0];
-        //         }
-        //     }
-
-        //     // Prepare JSON for storage
-        //     const protectionJson = JSON.stringify({
-        //         ...p,
-        //         dateOnRisk: formattedDateOnRisk
-        //     });
-
-
-        //     await connection.query(
-        //         `INSERT INTO protection_details 
-        //   (clientId, typeOfInsurance, provider, providerReference, amountAssured, term, premium, dateOnRisk, commission, advisor, protection_json) 
-        //   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        //         [
-        //             id,
-        //             p.typeOfInsurance || '',
-        //             p.provider || '',
-        //             p.providerReference || '',
-        //             p.amountAssured || 0,
-        //             p.term || '',
-        //             p.premium || 0,
-        //             formattedDateOnRisk,
-        //             p.commission || 0,
-        //             p.advisor || '',
-        //             protectionJson
-        //         ]
-        //     );
-        // }
 
         // --- protection details ---
         if (merged.productDetails?.protections?.length) {
@@ -934,15 +764,6 @@ router.put('/:id', protect, async (req, res) => {
                 [id, protectionJson]
             );
 
-
-            //         const protectionJson = JSON.stringify(merged.productDetails.protections || []);
-
-            //         await connection.query(
-            //             `INSERT INTO protection_details (clientId, protection_json)
-            //  VALUES (?, ?)
-            //  ON DUPLICATE KEY UPDATE protection_json = VALUES(protection_json)`,
-            //             [id, protectionJson]
-            //         );
         }
 
 
@@ -1021,6 +842,178 @@ router.put('/:id', protect, async (req, res) => {
 
 
 
+router.get('/', protect, async (req, res) => {
+    try {
+        const user = req.user; // populated from JWT by protect middleware
+        let clientRows = [];
+
+        if (user.role === 'Admin' || user.role === 'Super Admin' || user.role === 'Marketing') {
+            // 🟢 Admin sees all clients
+            [clientRows] = await db.query(`
+                SELECT * FROM clients 
+                ORDER BY createdDate DESC
+            `);
+        }
+        // else if (user.role === 'Advisor' || user.role === 'Adviser') {
+        //     // 🟠 Advisor sees only their own or assigned clients
+        //     [clientRows] = await db.query(`
+        //         SELECT * FROM clients
+        //         WHERE primaryAdvisor = ? OR createdBy = ?
+        //         ORDER BY createdDate DESC
+        //     `, [user.id, user.id]);
+        // }
+        else if (user.role === 'Advisor' || user.role === 'Adviser') {
+            [clientRows] = await db.query(`
+        SELECT * FROM clients
+        WHERE primaryAdvisor_id = ? 
+        ORDER BY createdDate DESC
+    `, [user.id]);
+        }
+
+        else {
+            // 🚫 No valid role
+            return res.status(403).json({ message: 'Unauthorized role' });
+        }
+
+        // Hydrate the client data (attach applicants, documents, etc.)
+        const hydratedClients = await Promise.all(clientRows.map(hydrateClient));
+
+        res.json(hydratedClients);
+    } catch (error) {
+        console.error("Failed to get clients:", error);
+        res.status(500).json({ message: "Server error getting clients" });
+    }
+});
+
+
+// Create a new client
+router.post('/', protect, async (req, res) => {
+    const clientData = req.body;
+    const newId = `cli-${uuidv4()}`;
+    // const avatar = `https://picsum.photos/seed/${clientData.name.split(' ')[0]}/100/100`;
+    const avatar = ``;
+    const connection = await db.getConnection();
+
+    const createdBy = req.user.id;
+
+
+    try {
+        await connection.beginTransaction();
+
+        // Flattened client data for insertion
+        const clientInsertData = {
+            id: newId,
+            avatar,
+            createdBy,
+            createdDate: clientData.createdDate,
+            name: clientData.name,
+            email: clientData.email,
+            phone: clientData.phone,
+            caseReference: clientData.caseReference,
+            primaryAdvisor: clientData.primaryAdvisor,
+            primaryAdvisor_id: clientData.primaryAdvisor_id,
+            admin: clientData.admin,
+            admin_id: clientData.admin_id,
+            applicationType: clientData.applicationType,
+            status: clientData.status,
+            caseStatus: clientData.caseStatus,
+            lastContacted: clientData.lastContacted,
+            value: clientData.value,
+            productType: clientData.product?.type,
+            propertyAddress: clientData.property?.address,
+            propertyValue: clientData.property?.propertyValue,
+            purchasePrice: clientData.property?.purchasePrice,
+            dateOfPurchase: clientData.property?.dateOfPurchase || null,
+            yearBuilt: clientData.property?.yearBuilt || null,
+            propertyTypeProp: clientData.property?.propertyType || null, // Aliased field
+            isExLocal: clientData.property?.isExLocal,
+            bedrooms: clientData.property?.bedrooms,
+            livingRooms: clientData.property?.livingRooms,
+            kitchens: clientData.property?.kitchens,
+            bathrooms: clientData.property?.bathrooms,
+            separateToilets: clientData.property?.separateToilets,
+            hasGarageOrParking: clientData.property?.hasGarageOrParking,
+            businessWritten: clientData.productDetails?.businessWritten,
+            mortgageFees: JSON.stringify(clientData.productDetails?.mortgage?.fees || []), // 🟢 add this line           
+            lender_id: clientData.productDetails?.lender?.id || null,
+            provider_id: clientData.productDetails?.provider?.id || null,
+            solicitor_id: clientData.productDetails?.solicitor?.id || null,
+            accountant_id: clientData.productDetails?.accountant?.id || null,
+            surveyor_id: clientData.productDetails?.surveyor?.id || null,
+            estate_agent_id: clientData.productDetails?.estateAgent?.id || null,
+            introducer: clientData.introducer,
+        };
+
+        const columns = Object.keys(clientInsertData).join(', ');
+        const placeholders = Object.keys(clientInsertData).map(() => '?').join(', ');
+        const values = Object.values(clientInsertData);
+
+        await connection.query(`INSERT INTO clients (${columns}) VALUES (${placeholders})`, values);
+
+
+        // 2. Insert applicants
+        // if (clientData.applicants && clientData.applicants.length > 0) {
+        //     for (const app of clientData.applicants) {
+        //         // await connection.query(
+        //         //     `INSERT INTO applicants (clientId, title, firstName, middleName, surname, gender, dob, homeTelephone, mobileNumber, email, currentAddress, noOfDependents, nationality) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        //         //     [newId, app.title, app.firstName, app.middleName, app.surname, app.gender, app.dob, app.homeTelephone, app.mobileNumber, app.email, app.currentAddress, app.noOfDependents, app.nationality]
+        //         // );
+
+        //         const dob = applicant.dob;
+        //         await connection.query(
+        //             `INSERT INTO applicants (clientId, title, firstName, middleName, surname, gender, dob, homeTelephone, mobileNumber, email, currentAddress, noOfDependents, nationality) 
+        //         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        //             [id, app.title, app.firstName, app.middleName, app.surname, app.gender, dob, app.homeTelephone, app.mobileNumber, app.email, app.currentAddress, app.noOfDependents, app.nationality]
+        //         );
+        //     }
+        // }
+
+
+        if (clientData.applicants && clientData.applicants.length > 0) {
+            for (const app of clientData.applicants) {
+                const dob = app.dob || null;
+                await connection.query(
+                    `INSERT INTO applicants 
+            (clientId, title, firstName, middleName, surname, gender, dob, homeTelephone, mobileNumber, email, currentAddress, noOfDependents, nationality, introducer) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [newId, app.title, app.firstName, app.middleName, app.surname, app.gender, dob, app.homeTelephone, app.mobileNumber, app.email, app.currentAddress, app.noOfDependents, app.nationality, app.introducer]
+                );
+            }
+        }
+
+        //await connection.commit();
+
+        // 🔹 Sync Ledger Entries (inside same transaction)
+        // await syncLedgerFromFees(connection, clientData);
+        // ✅ Commit once — includes both client + ledger inserts
+
+        // // ✅ Re-fetch the full client from DB (with mortgageFees loaded)
+        // const [freshClientRows] = await connection.query('SELECT * FROM clients WHERE id = ?', [newId]);
+        // const freshClient = await hydrateClient(freshClientRows[0]);
+
+        // // ✅ Now sync ledger with actual fees
+        // await syncLedgerFromFees(connection, freshClient);
+        await connection.commit();
+
+        const [newClientRow] = await db.query('SELECT * FROM clients WHERE id = ?', [newId]);
+        const newClient = await hydrateClient(newClientRow[0]);
+        res.status(201).json(newClient);
+    } catch (error) {
+        await connection.rollback();
+        console.error("Failed to create client:", error);
+        res.status(500).json({ message: "Server error during client creation." });
+    } finally {
+        connection.release();
+    }
+});
+
+
+
+
+
+
+
+
 
 router.delete('/:id', protect, async (req, res) => {
     const { id } = req.params;
@@ -1080,21 +1073,45 @@ router.post("/:id/duplicate", protect, async (req, res) => {
         const newCaseReference = `${prefix}-${Math.floor(100000 + Math.random() * 900000)}`; // "ENQ-1701162185423"
 
         // Insert duplicated client
+        //         await db.query(
+        //             `INSERT INTO clients 
+        //    (id, name, email, phone, applicationType, status, caseStatus, primaryAdvisor, admin, caseReference, createdDate, createdBy)
+        //    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
+        //   `,
+        //             [
+        //                 newClientId,
+        //                 oldClient.name,
+        //                 oldClient.email,
+        //                 oldClient.phone,
+        //                 oldClient.applicationType,
+        //                 "Active",
+        //                 "Initial Enquiry",
+        //                 req.user.name,     // adviser = current user
+        //                 oldClient.admin,
+        //                 newCaseReference,
+        //                 req.user.id      // createdBy = current user
+        //             ]
+        //         );
+
         await db.query(
             `INSERT INTO clients 
-    (id, name, email, phone, applicationType, status, caseStatus, primaryAdvisor, admin, caseReference, createdDate)
-   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+    (id, name, email, phone, applicationType, status, caseStatus, primaryAdvisor, primaryAdvisor_id, admin, admin_id, caseReference, createdDate, createdBy)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
+    `,
             [
                 newClientId,
                 oldClient.name,
                 oldClient.email,
                 oldClient.phone,
                 oldClient.applicationType,
-                "Active",            // reset status
-                "Initial Enquiry",   // reset case status
-                oldClient.primaryAdvisor,
+                "Active",
+                "Initial Enquiry",
+                req.user.name,
+                req.user.id,           // ✔ adviser = current user (ID)
                 oldClient.admin,
+                oldClient.admin_id,    // ✔ keep original admin ID
                 newCaseReference,
+                req.user.id            // ✔ creator = current user
             ]
         );
 

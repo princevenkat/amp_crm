@@ -33,3 +33,4 @@ Thumbs.db
 
 # --- Others ---
 *.local
+frontend/views/ClientsView1.tsx
