@@ -205,7 +205,7 @@ export const AppointmentsView: React.FC = () => {
                                     </td>
 
                                     <td className="p-2 border">
-                                        {a.date
+                                        {/* {a.date
                                             ? new Date(a.date).toLocaleString([], {
                                                 year: "numeric",
                                                 month: "2-digit",
@@ -213,6 +213,14 @@ export const AppointmentsView: React.FC = () => {
                                                 hour: "2-digit",
                                                 minute: "2-digit",
                                             })
+                                            : "—"} */}
+                                        {a.date
+                                            ? (() => {
+                                                const dt = new Date(a.date);
+                                                const formattedDate = dt.toLocaleDateString('en-GB'); // DD/MM/YYYY
+                                                const formattedTime = dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                                                return `${formattedDate} ${formattedTime}`;
+                                            })()
                                             : "—"}
                                     </td>
 

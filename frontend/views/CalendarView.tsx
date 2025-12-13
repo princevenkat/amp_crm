@@ -1,11 +1,13 @@
 import React, { useState, useContext, useMemo } from 'react';
 import { DataContext } from '../contexts/DataContext';
 import { ChevronLeftIcon, ChevronRightIcon, SearchIcon } from '../components/ui/Icons';
-import type { Task } from '../types';
+import type { Task, Appointment } from '../types';
 import { Modal } from '../components/ui/Modal';
 import { View, TaskStatus } from '../types';
 import { NewTaskForm } from '../components/forms/NewTaskForm';
 import { TrashIcon } from '@heroicons/react/16/solid';
+import { AppointmentForm } from '@/components/AppointmentForm';
+import { splitDateTime } from '../utils/dateUtils';
 
 
 // Helper to get color classes for task status badges
@@ -83,11 +85,15 @@ const CalendarDay: React.FC<{
     isCurrentMonth: boolean;
     isToday: boolean;
     tasks: Task[];
+    appointments: Appointment[];
     onTaskClick: (task: Task) => void;
+    onAppointmentClick: (appt: Appointment) => void;
     onAddTask: (date: Date) => void;   // 👈 New prop
-}> = ({ day, date, isCurrentMonth, isToday, tasks, onTaskClick, onAddTask, task, }) => {
+}> = ({ day, date, isCurrentMonth, isToday, tasks, appointments, onTaskClick, onAppointmentClick, onAddTask, task, }) => {
     const dayClasses = `border-t border-r border-gray-200 p-2 h-24 md:h-28 relative flex flex-col ${isCurrentMonth ? 'bg-surface' : 'bg-gray-50'}`;
     const dayNumberClasses = `text-sm ${isToday ? 'bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center font-bold' : (isCurrentMonth ? 'text-text-primary' : 'text-text-secondary/50')}`;
+
+
 
     return (
         <div className={`group ${dayClasses}`}>
@@ -115,12 +121,36 @@ const CalendarDay: React.FC<{
                         {task.title}
                     </div>
                 ))}
+
+                {/* Appointments */}
+                {appointments.map(appt => {
+                    const { date, time } = splitDateTime(appt.date);
+
+                    // Format date as DD/MM/YYYY
+                    const formattedDate = new Date(date).toLocaleDateString('en-GB');
+
+                    return (
+                        <div
+                            key={appt.id}
+                            className="p-1 rounded-md truncate cursor-pointer bg-orange-100 text-orange-800 hover:bg-orange-200"
+                            onClick={() => onAppointmentClick(appt)}
+                            title={appt.title}
+                        >
+                            📅 <span className="font-semibold">{appt.title}</span>
+                            <br />
+                            <span className="text-xs text-gray-600">
+                                {formattedDate} {time}
+                            </span>
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );
 };
 export const CalendarView: React.FC = () => {
-    const { tasks, task, addTask, updateTask, deleteTask, clients, currentUser, setCurrentView, setSelectedClientIdForNav, setSelectedTaskIdForNav } = useContext(DataContext);
+    const { tasks, task, addTask, updateTask, deleteTask, clients, currentUser, setCurrentView, setSelectedClientIdForNav, setSelectedTaskIdForNav, appointments, teamMembers, updateAppointment,     // ✅ ADD THIS
+        deleteAppointment } = useContext(DataContext);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -137,6 +167,8 @@ export const CalendarView: React.FC = () => {
     // const clientName = clientFromList?.name || task.clientName || 'Unknown Client';
     // const caseReference = clientFromList?.caseReference || task.caseReference || 'N/A';
 
+    const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+    const [isEditingAppointment, setIsEditingAppointment] = useState(false);
 
 
 
@@ -298,6 +330,8 @@ export const CalendarView: React.FC = () => {
 
 
 
+
+
     // Pre-group tasks by caseReference
 
 
@@ -343,9 +377,31 @@ export const CalendarView: React.FC = () => {
     }, [tasks]);
 
 
+
+
+
+
     // console.log(tasksByCase);
 
     //console.log(tasks[1].caseReference);
+
+
+    const calendarEvents = useMemo(() => {
+        return appointments.map(a => ({
+            id: a.id,
+            title: a.title,
+            start: a.time
+                ? `${a.date.split("T")[0]}T${a.time}`
+                : a.date,
+            extendedProps: a,
+        }));
+    }, [appointments]);
+
+
+
+    // function splitDateTime(date: any): { dateTime: any; } {
+    //     throw new Error('Function not implemented.');
+    // }
 
     return (
         <div className="p-4 sm:p-8">
@@ -660,6 +716,17 @@ export const CalendarView: React.FC = () => {
                                             taskDate.getMonth() === date.getMonth() &&
                                             taskDate.getDate() === date.getDate();
                                     });
+
+
+                                    const appointmentsForDay = appointments.filter(a => {
+                                        const d = new Date(a.date);
+                                        return (
+                                            d.getFullYear() === date.getFullYear() &&
+                                            d.getMonth() === date.getMonth() &&
+                                            d.getDate() === date.getDate()
+                                        );
+                                    });
+
                                     return (
                                         <CalendarDay
                                             key={index}
@@ -668,8 +735,15 @@ export const CalendarView: React.FC = () => {
                                             isCurrentMonth={date.getMonth() === month}
                                             isToday={date.toDateString() === today.toDateString()}
                                             tasks={tasksForDay}
+                                            appointments={appointmentsForDay}
                                             onTaskClick={handleTaskClick}
+                                            onAppointmentClick={(appt) => {
+                                                setSelectedAppointment(appt);
+                                                setIsEditingAppointment(false);
+                                                // open appointment modal if needed
+                                            }}
                                             onAddTask={handleAddTaskForDate}
+                                            events={calendarEvents}
                                         />
                                     );
                                 })}
@@ -707,6 +781,80 @@ export const CalendarView: React.FC = () => {
 
                 />
             </Modal>
+
+
+
+            {selectedAppointment && (
+                <Modal
+                    isOpen={!!selectedAppointment}
+                    onClose={() => {
+                        setIsEditingAppointment(false);
+                        setSelectedAppointment(null);
+                    }}
+                    title={isEditingAppointment ? "Edit Appointment" : "Appointment Details"}
+                >
+                    {isEditingAppointment ? (
+                        <AppointmentForm
+                            appointment={selectedAppointment}
+                            clients={clients}
+                            teamMembers={teamMembers}
+                            onUpdate={async (id, data) => {
+                                await updateAppointment(id, data);
+                                setIsEditingAppointment(false);
+                                setSelectedAppointment(null);
+                            }}
+                            onClose={() => setIsEditingAppointment(false)}
+                        />
+                    ) : (
+                        <div className="space-y-3">
+                            <h3 className="text-lg font-bold">{selectedAppointment.title}</h3>
+
+                            <p className="text-sm text-gray-700">
+                                <strong>Date:</strong> {splitDateTime(selectedAppointment.date).date}{" "}
+                                <strong>Time:</strong> {splitDateTime(selectedAppointment.date).time}
+                            </p>
+
+                            <p className="text-sm">
+                                <strong>Client:</strong>{" "}
+                                {clients.find(c => c.id === selectedAppointment.clientId)?.name || "—"}
+                            </p>
+
+                            <p className="text-sm">
+                                <strong>Assigned To:</strong>{" "}
+                                {teamMembers.find(t => t.id === selectedAppointment.assignedTo)?.name || "—"}
+                            </p>
+
+                            {selectedAppointment.description && (
+                                <p className="text-sm text-gray-600">
+                                    {selectedAppointment.description}
+                                </p>
+                            )}
+
+                            <div className="flex justify-end gap-3 pt-4 border-t">
+                                <button
+                                    onClick={() => setIsEditingAppointment(true)}
+                                    className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-md"
+                                >
+                                    Edit
+                                </button>
+
+                                <button
+                                    onClick={() => {
+                                        if (window.confirm("Delete this appointment?")) {
+                                            deleteAppointment(selectedAppointment.id);
+                                            setSelectedAppointment(null);
+                                        }
+                                    }}
+                                    className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md"
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </Modal>
+            )}
+
         </div>
 
     );
