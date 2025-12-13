@@ -716,8 +716,8 @@ router.put('/:id', protect, async (req, res) => {
             const m = merged.productDetails.mortgage;
             await connection.query(
                 `INSERT INTO mortgage_details 
-          (clientId, mortgageType, dateOfFma, dateOffered, lender, lenderReference, propertyValue,  mortgageLoanAmount, brokerFees, procurationFees, rate, productType, productTerm, rateExpiry, renewalReminderDate, mortgageTerm, advisor)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (clientId, mortgageType, dateOfFma, dateOffered, lender, lenderReference, propertyValue,  mortgageLoanAmount, brokerFees, procurationFees, rate, productType, repaymentType, productTerm, rateExpiry, renewalReminderDate, mortgageTerm, advisor)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     id,
                     m.mortgageType || '',
@@ -731,6 +731,7 @@ router.put('/:id', protect, async (req, res) => {
                     m.procurationFees || 0,
                     m.rate || 0,
                     m.productType || '',
+                    m.repaymentType || '',
                     m.productTerm || '',
                     toMySQLDate(m.rateExpiry),
                     toMySQLDate(m.renewalReminderDate),

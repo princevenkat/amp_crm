@@ -7,6 +7,7 @@ import { initializeDatabase } from './db.js';
 import authRoutes from './routes/auth.js';
 import clientRoutes from './routes/clients.js';
 import taskRoutes from './routes/tasks.js';
+import appointmentRoutes from './routes/appointments.js';
 import contactRoutes from './routes/contacts.js';
 import teamRoutes from './routes/team.js';
 import passwordRoutes from './routes/passwords.js';
@@ -46,6 +47,7 @@ const startServer = async () => {
     app.use('/uploads', express.static(path.join(process.cwd(), 'backend/uploads')));
 
     app.use('/api/tasks', taskRoutes);
+    app.use("/api/appointments", appointmentRoutes);
     app.use('/api/contacts', contactRoutes);
     app.use('/api/team', teamRoutes);
     app.use('/api/passwords', passwordRoutes);

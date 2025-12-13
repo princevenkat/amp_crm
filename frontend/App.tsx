@@ -29,16 +29,21 @@ import { NotificationBell } from './components/NotificationBell';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ResetPasswordView } from "./views/ResetPasswordView";
 
+import { TaskReminderPopup } from './components/TaskReminderPopup';
+import { AppointmentsView } from './views/AppointmentsView';
+import { AppointmentReminderPopup } from "./components/AppointmentReminderPopup";
+
+
 
 const ADVISER_VIEWS = [
     View.Dashboard, View.Deals, View.Leads, View.Contacts, View.Tasks, View.Calendar,
-    View.PasswordManager, View.Settings
+    View.PasswordManager, View.Appointment, View.Settings
 ];
 const ADMIN_VIEWS = [...ADVISER_VIEWS, View.Team];
 
 
 const MARKETING_VIEWS = [
-    View.Tasks, View.Calendar, View.Settings
+    View.Tasks, View.Calendar, View.Appointment, View.Settings
 ];
 
 const hasAccess = (view: View, role: UserRole): boolean => {
@@ -116,12 +121,12 @@ const Sidebar: React.FC<{
             {/* Sidebar */}
             < aside className={`w-64 bg-sidebar flex flex-col fixed h-full border-r border-gray-700 z-30 transform transition-transform lg:transform-none ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
                 <div className="flex items-center px-4 py-4 gap-3 bg-white rounded-br-2xl mb-3 ">
-
-                    <img
-                        src="/logo.png"
-                        alt="Advance Mortgages & Protection Logo"
-                        className="h-50 object-contain"
-                    />
+                    <a href="/">
+                        <img
+                            src="/logo.png"
+                            alt="Advance Mortgages & Protection Logo"
+                            className="h-50 object-contain"
+                        /></a>
                     {/* <span className="text-white text-sm uppercase font-bold">Advance Mortgages & Protection</span> */}
 
 
@@ -204,49 +209,204 @@ const Navbar: React.FC<{ onLogout: () => void; onMenuClick: () => void; }> = ({ 
     )
 };
 
+// const App: React.FC = () => {
+//     const { currentView, setCurrentView, currentUser, login, logout, loading } = useContext(DataContext);
+//     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+//     const renderView = () => {
+//         if (!currentUser || !hasAccess(currentView, currentUser.role)) {
+//             return <AccessDenied />;
+//         }
+//         switch (currentView) {
+//             case View.Dashboard: return <DashboardView />;
+//             case View.Leads: return <ClientsView />;
+//             case View.Contacts: return <ContactsView />;
+//             case View.Deals: return <DealsView />;
+//             case View.Tasks: return <TasksView />;
+//             case View.Calendar: return <CalendarView />;
+//             case View.EmailTemplates: return <EmailTemplatesView />;
+//             case View.Proposals: return <ProposalsView />;
+//             // case View.AiAssistant: return <AiAssistantView />;
+//             case View.Team: return <TeamView />;
+//             case View.Settings: return <AdminView />;
+//             case View.PasswordManager: return <PasswordManagerView />;
+//             case View.BusinessLedger: return <BusinessLedgerView />;
+//             default: return <DashboardView />;
+//         }
+//     };
+
+//     useEffect(() => {
+//         if (!currentUser) return;
+
+//         // Only set default if currentView is not yet set
+//         if (!currentView) {
+//             if (currentUser.role === UserRole.Marketing) {
+//                 setCurrentView(View.Tasks);
+//             } else {
+//                 setCurrentView(View.Dashboard);
+//             }
+//         }
+//     }, [currentUser, currentView, setCurrentView]);
+
+
+//     const handleSetView = useCallback((view: View) => {
+//         setCurrentView(view);
+//         setIsSidebarOpen(false); // Close sidebar on nav item click
+//     }, [setCurrentView]);
+
+//     if (loading) {
+//         return (
+//             <div className="flex items-center justify-center min-h-screen bg-background">
+//                 <p className="text-text-secondary">Loading Application...</p>
+//             </div>
+//         );
+//     }
+
+//     if (!currentUser) {
+//         return <LoginView onLogin={login} />;
+//     }
+
+//     // return (
+//     //     <div className="flex h-screen bg-background">
+//     //         <Sidebar
+//     //             currentView={currentView}
+//     //             setView={handleSetView}
+//     //             isOpen={isSidebarOpen}
+//     //             setIsOpen={setIsSidebarOpen}
+//     //         />
+//     //         <main className="flex-1 flex flex-col lg:ml-64">
+//     //             <Navbar onLogout={logout} onMenuClick={() => setIsSidebarOpen(true)} />
+//     //             <div className="flex-1 overflow-y-auto bg-background">
+//     //                 {renderView()}
+//     //             </div>
+//     //         </main>
+
+
+//     //     </div>
+//     // );
+
+
+//     return (
+//         <BrowserRouter>
+//             <Routes>
+//                 {/* 🟢 Password reset page (public route) */}
+//                 <Route path="/reset-password" element={<ResetPasswordView />} />
+
+//                 {/* 🟢 Main application (protected area) */}
+//                 <Route
+//                     path="*"
+//                     element={
+//                         !currentUser ? (
+//                             <LoginView onLogin={login} />
+//                         ) : (
+//                             <div className="flex h-screen bg-background">
+//                                 <Sidebar
+//                                     currentView={currentView}
+//                                     setView={handleSetView}
+//                                     isOpen={isSidebarOpen}
+//                                     setIsOpen={setIsSidebarOpen}
+//                                 />
+//                                 <main className="flex-1 flex flex-col lg:ml-64">
+//                                     <Navbar onLogout={logout} onMenuClick={() => setIsSidebarOpen(true)} />
+//                                     <div className="flex-1 overflow-y-auto bg-background">
+//                                         {renderView()}
+//                                     </div>
+//                                 </main>
+//                             </div>
+//                         )
+//                     }
+//                 />
+//                 {/* 👇 Catch-all route (404) */}
+//                 <Route path="*" element={<NotFoundView />} />
+//             </Routes>
+
+//         </BrowserRouter>
+//     );
+// };
+
 const App: React.FC = () => {
     const { currentView, setCurrentView, currentUser, login, logout, loading } = useContext(DataContext);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+    // const renderView = () => {
+    //     // if (!currentUser || !hasAccess(currentView, currentUser.role)) {
+    //     //     return <AccessDenied />;
+    //     // }
+
+    //     switch (currentView) {
+    //         case View.Dashboard: return <DashboardView />;
+    //         case View.Leads: return <ClientsView />;
+    //         case View.Contacts: return <ContactsView />;
+    //         case View.Deals: return <DealsView />;
+    //         case View.Tasks: return <TasksView />;
+    //         case View.Calendar: return <CalendarView />;
+    //         case View.EmailTemplates: return <EmailTemplatesView />;
+    //         case View.Proposals: return <ProposalsView />;
+    //         case View.Team: return <TeamView />;
+    //         case View.Settings: return <AdminView />;
+    //         case View.PasswordManager: return <PasswordManagerView />;
+    //         case View.BusinessLedger: return <BusinessLedgerView />;
+
+    //         // 🟢 Marketing fallback must NOT be dashboard
+    //         default:
+    //             return currentUser?.role === UserRole.Marketing
+    //                 ? <TasksView />  // ✅ Marketing fallback
+    //                 : <DashboardView />;
+    //     }
+    // };
+
     const renderView = () => {
-        if (!currentUser || !hasAccess(currentView, currentUser.role)) {
-            return <AccessDenied />;
+        if (!currentUser) return <LoginView onLogin={login} />;
+
+        let viewToRender = currentView;
+
+        // Force Marketing users to TasksView if their current view is Dashboard or invalid
+        if (currentUser.role === UserRole.Marketing) {
+            if (viewToRender === View.Dashboard || !hasAccess(viewToRender, currentUser.role)) {
+                viewToRender = View.Tasks;
+            }
+        } else {
+            // Non-marketing users: check access
+            if (!hasAccess(viewToRender, currentUser.role)) {
+                return <AccessDenied />;
+            }
         }
-        switch (currentView) {
+
+        switch (viewToRender) {
             case View.Dashboard: return <DashboardView />;
             case View.Leads: return <ClientsView />;
             case View.Contacts: return <ContactsView />;
             case View.Deals: return <DealsView />;
             case View.Tasks: return <TasksView />;
+            case View.Appointment: return <AppointmentsView />;
             case View.Calendar: return <CalendarView />;
             case View.EmailTemplates: return <EmailTemplatesView />;
             case View.Proposals: return <ProposalsView />;
-            // case View.AiAssistant: return <AiAssistantView />;
             case View.Team: return <TeamView />;
             case View.Settings: return <AdminView />;
             case View.PasswordManager: return <PasswordManagerView />;
             case View.BusinessLedger: return <BusinessLedgerView />;
-            default: return <DashboardView />;
+            default: return <AccessDenied />;
         }
     };
+
 
     useEffect(() => {
         if (!currentUser) return;
 
-        // Only set default if currentView is not yet set
+        // Set default view only once
         if (!currentView) {
             if (currentUser.role === UserRole.Marketing) {
-                setCurrentView(View.Tasks);
+                setCurrentView(View.Tasks); // ✅ Marketing skips dashboard
             } else {
                 setCurrentView(View.Dashboard);
             }
         }
     }, [currentUser, currentView, setCurrentView]);
 
-
     const handleSetView = useCallback((view: View) => {
         setCurrentView(view);
-        setIsSidebarOpen(false); // Close sidebar on nav item click
+        setIsSidebarOpen(false);
     }, [setCurrentView]);
 
     if (loading) {
@@ -261,62 +421,43 @@ const App: React.FC = () => {
         return <LoginView onLogin={login} />;
     }
 
-    // return (
-    //     <div className="flex h-screen bg-background">
-    //         <Sidebar
-    //             currentView={currentView}
-    //             setView={handleSetView}
-    //             isOpen={isSidebarOpen}
-    //             setIsOpen={setIsSidebarOpen}
-    //         />
-    //         <main className="flex-1 flex flex-col lg:ml-64">
-    //             <Navbar onLogout={logout} onMenuClick={() => setIsSidebarOpen(true)} />
-    //             <div className="flex-1 overflow-y-auto bg-background">
-    //                 {renderView()}
-    //             </div>
-    //         </main>
-
-
-    //     </div>
-    // );
-
-
     return (
         <BrowserRouter>
+            <TaskReminderPopup />
+            <AppointmentReminderPopup />
             <Routes>
-                {/* 🟢 Password reset page (public route) */}
+
+                {/* Public route */}
                 <Route path="/reset-password" element={<ResetPasswordView />} />
 
-                {/* 🟢 Main application (protected area) */}
+                {/* Protected routes */}
                 <Route
-                    path="*"
+                    path="/*"
                     element={
-                        !currentUser ? (
-                            <LoginView onLogin={login} />
-                        ) : (
-                            <div className="flex h-screen bg-background">
-                                <Sidebar
-                                    currentView={currentView}
-                                    setView={handleSetView}
-                                    isOpen={isSidebarOpen}
-                                    setIsOpen={setIsSidebarOpen}
-                                />
-                                <main className="flex-1 flex flex-col lg:ml-64">
-                                    <Navbar onLogout={logout} onMenuClick={() => setIsSidebarOpen(true)} />
-                                    <div className="flex-1 overflow-y-auto bg-background">
-                                        {renderView()}
-                                    </div>
-                                </main>
-                            </div>
-                        )
+                        <div className="flex h-screen bg-background">
+                            <Sidebar
+                                currentView={currentView}
+                                setView={handleSetView}
+                                isOpen={isSidebarOpen}
+                                setIsOpen={setIsSidebarOpen}
+                            />
+                            <main className="flex-1 flex flex-col lg:ml-64">
+                                <Navbar onLogout={logout} onMenuClick={() => setIsSidebarOpen(true)} />
+                                <div className="flex-1 overflow-y-auto bg-background">
+                                    {renderView()}
+                                </div>
+                            </main>
+                        </div>
                     }
                 />
-                {/* 👇 Catch-all route (404) */}
-                <Route path="*" element={<NotFoundView />} />
-            </Routes>
 
+                {/* Final 404 route */}
+                <Route path="*" element={<NotFoundView />} />
+
+            </Routes>
         </BrowserRouter>
     );
 };
+
 
 export default App;

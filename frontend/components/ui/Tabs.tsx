@@ -11,16 +11,15 @@ export const Tabs: React.FC<TabsProps> = ({ tabs, initialTab = 0 }) => {
   return (
     <div>
       <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+        <nav className="-mb-px flex flex-wrap" aria-label="Tabs">
           {tabs.map((tab, index) => (
             <button
               key={tab.label}
               onClick={() => setActiveTab(index)}
-              className={`${
-                activeTab === index
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-text-secondary hover:text-text-primary hover:border-gray-300'
-              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors focus:outline-none`}
+              className={`${activeTab === index
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-secondary hover:text-text-primary hover:border-gray-300'
+                } whitespace-nowrap m-0 lg:py-4 px-4 border-b-2 font-medium text-sm transition-colors focus:outline-none`}
             >
               {tab.label}
             </button>

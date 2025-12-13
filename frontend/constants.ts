@@ -29,6 +29,7 @@ export const NAV_SECTIONS: NavItem[][] = [
     { id: View.Leads, label: "Clients", icon: LeadsIcon },
     { id: View.Contacts, label: "Contacts", icon: ContactsIcon },
     { id: View.Tasks, label: "Tasks", icon: TasksIcon },
+    { id: View.Appointment, label: "Appointments", icon: ProposalsIcon },
     { id: View.Calendar, label: "Calendar", icon: CalendarIcon },
     { id: View.Proposals, label: "Proposals", icon: ProposalsIcon },
     // {

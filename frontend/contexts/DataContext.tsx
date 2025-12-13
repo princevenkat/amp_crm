@@ -1,5 +1,5 @@
 import React, { createContext, useState, ReactNode, useEffect } from 'react';
-import type { DataContextType, ContactType, Client, Task, Contact, Proposal, EmailTemplate, LedgerEntry, PasswordEntry, TeamMember } from '../types';
+import type { DataContextType, ContactType, Client, Task, Contact, Proposal, EmailTemplate, LedgerEntry, PasswordEntry, TeamMember, Appointment } from '../types';
 import { View } from '../types';
 import * as api from '../services/apiService';
 
@@ -26,6 +26,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [passwords, setPasswords] = useState<PasswordEntry[]>([]);
     const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
 
+
+    const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [appointmentReminders, setAppointmentReminders] = useState<Appointment[]>([]);
+    const [appointmentPopupOpen, setAppointmentPopupOpen] = useState(false);
+
+    const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
+    const [appointmentModalData, setAppointmentModalData] = useState<Appointment | null>(null);
 
 
     // Auth and loading state
@@ -63,6 +70,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 ledgerData,
                 passwordsData,
                 teamMembersData,
+                appointmentsData
             ] = await Promise.all([
                 api.getClients(),
                 api.getTasks(),
@@ -72,6 +80,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 api.getLedger(),
                 api.getPasswords(),
                 api.getTeamMembers(),
+                api.getAppointments()
             ]);
 
             setClients(clientsData || []);
@@ -82,6 +91,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setLedger(ledgerData || []);
             setPasswords(passwordsData || []);
             setTeamMembers(teamMembersData || []);
+            setAppointments(appointmentsData || []);
         } catch (error) {
             console.error("Failed to fetch initial data:", error);
             // If any data fetch fails, it's better to log out to avoid a broken state.
@@ -411,6 +421,196 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
+
+
+
+
+    const getUpcomingTasks = (): Task[] => {
+        if (!tasks || tasks.length === 0) return [];
+
+        const now = new Date();
+        const next24Hours = new Date();
+        next24Hours.setHours(now.getHours() + 24);
+
+        return tasks.filter(task => {
+            const due = new Date(task.dueDate);
+            return due >= now && due <= next24Hours;
+        });
+    };
+    // Add at the top inside your DataProvider component
+    const [taskReminders, setTaskReminders] = useState<Task[]>([]);
+    const [reminderPopupOpen, setReminderPopupOpen] = useState(false);
+
+    // Function to close the popup
+    const closeReminderPopup = () => setReminderPopupOpen(false);
+
+    useEffect(() => {
+        const upcomingTasks = getUpcomingTasks();
+        setTaskReminders(upcomingTasks);
+        setReminderPopupOpen(upcomingTasks.length > 0);
+    }, [tasks]); // Runs whenever tasks change
+
+
+    // -------------------------
+    // Appointments + reminders
+    // -------------------------
+
+
+    const openAppointmentModal = (appointment?: Appointment) => {
+        setAppointmentModalData(appointment || null);
+        setAppointmentModalOpen(true);
+    };
+
+    const closeAppointmentModal = () => {
+        setAppointmentModalOpen(false);
+        setAppointmentModalData(null);
+    };
+
+    const addAppointment = async (data: Omit<Appointment, "id">) => {
+        const newAppt = await api.createAppointment(data);
+        // setAppointments(prev => [newAppt, ...prev]);
+        setAppointments(prev => [...prev, newAppt]);
+
+
+    };
+
+    // const updateAppointment = async (id: string, data: Partial<Appointment>) => {
+    //     const updated = await api.updateAppointment(id, data);
+    //     setAppointments(prev => prev.map(a => (a.id === id ? updated : a)));
+    // };
+
+    // const updateAppointment = async (id: string, data: Partial<Appointment>) => {
+    //     const updatedFromAPI = await api.updateAppointment(id, data);
+    //     setAppointments(prev =>
+    //         prev.map(a => (a.id === id ? { ...a, ...updatedFromAPI } : a))
+    //     );
+    // };
+
+    const updateAppointment = async (id: string, data: Partial<Appointment>) => {
+        try {
+            await api.updateAppointment(id, data);
+
+            // Fetch latest appointments from backend
+            const latestAppointments = await api.getAppointments();
+            setAppointments(latestAppointments);
+        } catch (error) {
+            console.error("Failed to update appointment:", error);
+            throw error;
+        }
+    };
+
+
+    const deleteAppointment = async (id: string) => {
+        if (window.confirm("Are you sure you want to delete this appointment?")) {
+            await api.deleteAppointment(id);
+            setAppointments(prev => prev.filter(a => a.id !== id));
+        }
+    };
+
+    // const closeAppointmentPopup = () => setAppointmentPopupOpen(false);
+    const closeAppointmentPopup = () => {
+        setAppointmentPopupOpen(false);
+        setAppointmentReminders([]);
+    };
+
+    // 1️⃣ Move checkAppointmentReminders outside and accept appointments as parameter
+    // const checkAppointmentReminders = (list: Appointment[]) => {
+    //     if (!list || list.length === 0) return;
+
+    //     const now = new Date();
+    //     const reminders: Appointment[] = [];
+
+    //     list.forEach(a => {
+    //         if (!a.date) return;
+
+    //         const apptTime = new Date(a.date);
+    //         if (isNaN(apptTime.getTime())) return;
+
+    //         const reminderTime = new Date(apptTime.getTime() - 15 * 60 * 1000); // 15 mins before
+
+    //         // Fire if now is within 1 min window
+    //         if (now >= reminderTime && now < new Date(reminderTime.getTime() + 60 * 1000)) {
+    //             reminders.push(a);
+    //         }
+    //     });
+
+    //     setAppointmentReminders(reminders);
+    //     setAppointmentPopupOpen(reminders.length > 0);
+    // };
+
+    const checkAppointmentReminders = (list: Appointment[]) => {
+        if (!list || list.length === 0) return;
+
+        const now = new Date();
+        const in15Minutes = new Date(now.getTime() + 15 * 60 * 1000);
+
+        const reminders = list.filter(a => {
+            if (!a.date) return false;
+
+            // Combine date + time safely
+            const apptTime = a.time ? new Date(`${a.date}T${a.time}:00`) : new Date(a.date);
+
+            if (isNaN(apptTime.getTime())) return false;
+
+            // Include all appointments in the next 15 minutes
+            return apptTime >= now && apptTime <= in15Minutes;
+        });
+
+        setAppointmentReminders(reminders);
+        setAppointmentPopupOpen(reminders.length > 0);
+    };
+
+
+    // 2️⃣ Use effect with **latest appointments** using a ref or dependency
+    useEffect(() => {
+        const interval = setInterval(() => {
+            checkAppointmentReminders(appointments);
+        }, 30000);
+
+        // Run immediately on mount
+        checkAppointmentReminders(appointments);
+
+        return () => clearInterval(interval);
+    }, [appointments]); // ✅ now updates whenever appointments change
+
+
+
+    // useEffect(() => {
+    //     const now = new Date();
+    //     const upcoming = appointments.filter(a => {
+    //         const apptDate = new Date(a.date);
+    //         return apptDate >= now && apptDate <= new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    //     });
+    //     setAppointmentReminders(upcoming);
+    //     setAppointmentPopupOpen(upcoming.length > 0);
+    // }, [appointments]);
+
+    // Check every minute
+    // useEffect(() => {
+    //     const checkReminders = () => {
+    //         const now = new Date().getTime();
+
+    //         const dueSoon = appointments.filter(a => {
+    //             if (!a.date || !a.time) return false;
+
+    //             const appointmentDate = new Date(`${a.date} ${a.time}`).getTime();
+    //             const diffMinutes = (appointmentDate - now) / 60000;
+
+    //             return diffMinutes > 0 && diffMinutes <= 15; // within next 15 mins
+    //         });
+
+    //         if (dueSoon.length > 0) {
+    //             setAppointmentReminders(dueSoon);
+    //             setAppointmentPopupOpen(true);
+    //         }
+    //     };
+
+    //     checkReminders();
+    //     const interval = setInterval(checkReminders, 60000);
+
+    //     return () => clearInterval(interval);
+    // }, [appointments]);
+
     const value: DataContextType = {
         clients,
         addClient,
@@ -461,6 +661,21 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         contactModalData,
         duplicateClient,
         loadClients,
+        taskReminders,
+        reminderPopupOpen,
+        closeReminderPopup,
+        // APPOINTMENTS
+        appointments,
+        appointmentReminders,
+        appointmentPopupOpen,
+        closeAppointmentPopup,
+        appointmentModalOpen,
+        appointmentModalData,
+        openAppointmentModal,
+        closeAppointmentModal,
+        addAppointment,
+        updateAppointment,
+        deleteAppointment,
     };
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

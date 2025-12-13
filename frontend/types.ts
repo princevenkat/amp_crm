@@ -4,6 +4,7 @@ export enum View {
   Contacts = "Contacts",
   Deals = "Deals",
   Tasks = "Tasks",
+  Appointment = "Appointment",
   Calendar = "Calendar",
   EmailTemplates = "EmailTemplates",
   Proposals = "Proposals",
@@ -113,6 +114,7 @@ export interface MortgageDetails {
     | "Purpose-built Flat"
     | "Converted flat"
     | "";
+
   productTerm: string; // e.g., "2 years"
   rateExpiry: string;
   renewalReminderDate: string;
@@ -264,6 +266,8 @@ export interface ProtectionItem {
   premiumPeriod: "Guaranteed" | "Reviewable";
 
   productType: "Term" | "Renewable" | "Convertible";
+
+  repaymentType: "Interest Only" | "Part & Part" | "Capital Repayment";
 
   protectionBasis: "Level" | "Increasing" | "Decreasing";
 
@@ -487,6 +491,21 @@ export interface TeamMember {
   password?: string;
 }
 
+// types.ts or your types file
+export type AppointmentStatus = "Booked" | "Cancelled" | "Done";
+
+export type Appointment = {
+  id: string;
+  clientId: string;
+  title: string;
+  description?: string;
+  date: string; // ISO string
+  time?: string;
+  location?: string;
+  assignedTo?: string; // Team member
+  status?: "Scheduled" | "Completed" | "Cancelled";
+};
+
 export interface DataContextType {
   clients: Client[];
   addClient: (client: Omit<Client, "id" | "avatar">) => Promise<void>;
@@ -563,4 +582,22 @@ export interface DataContextType {
   contactModalData: Contact | null;
   duplicateClient: (client: Client) => Promise<Client>;
   loadClients: () => Promise<void>;
+
+  // REMINDERS
+  taskReminders: Task[];
+  reminderPopupOpen: boolean;
+  closeReminderPopup: () => void;
+
+  // Appointment state & functions
+  appointments: Appointment[];
+  appointmentModalOpen: boolean;
+  appointmentModalData: Appointment | null;
+  openAppointmentModal: (appt?: Appointment) => void;
+  closeAppointmentModal: () => void;
+  addAppointment: (appt: Omit<Appointment, "id">) => Promise<void>;
+  updateAppointment: (id: string, data: Partial<Appointment>) => Promise<void>;
+  deleteAppointment: (id: string) => Promise<void>;
+  appointmentReminders: Appointment[];
+  appointmentPopupOpen: boolean;
+  closeAppointmentPopup: () => void;
 }

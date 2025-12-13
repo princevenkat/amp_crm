@@ -7,6 +7,7 @@ import type {
   LedgerEntry,
   PasswordEntry,
   TeamMember,
+  Appointment,
 } from "../types";
 
 const API_BASE_URL =
@@ -216,3 +217,16 @@ export const duplicateClient = async (clientId: string) => {
     newCaseReference: string;
   }>;
 };
+
+// --- API Methods ---
+// Appointments
+export const getAppointments = () => apiRequest<Appointment[]>("/appointments");
+
+export const createAppointment = (data: Omit<Appointment, "id">) =>
+  apiRequest<Appointment>("/appointments", "POST", data);
+
+export const updateAppointment = (id: string, data: Partial<Appointment>) =>
+  apiRequest<Appointment>(`/appointments/${id}`, "PUT", data);
+
+export const deleteAppointment = (id: string) =>
+  apiRequest<void>(`/appointments/${id}`, "DELETE");

@@ -885,6 +885,34 @@ const ProductView: React.FC<{
                         )}
                     </div>
 
+
+                    <div>
+                        <label className="font-semibold text-text-secondary">Repayment Type</label>
+                        {isEditing ? (
+                            <select disabled={!isEditing} value={productDetails.mortgage?.repaymentType || ''} onChange={(e) => onSubFieldChange('mortgage', 'repaymentType', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100">
+                                <option value="">Select...</option>
+                                <option>Interest Only</option>
+                                <option>Part & Part</option>
+                                <option>Capital Repayment</option>
+
+                                {/* 'Detached','Semi-detached','Bungalow','Mid-terraced','End of terrace','Purpose-built Flat','Converted flat','' */}
+
+                                {/* <option>Detached</option>
+                                <option>Semi-detached</option>
+                                <option>Bungalow</option>
+                                <option>Mid- terraced</option>
+                                <option>End of terrace</option>
+                                <option>Purpose-built Flat </option>
+                                <option>Converted flat</option> */}
+
+                            </select>
+                        ) : (
+                            <p className="py-2">{formatCurrency(productDetails.mortgage?.repaymentType)}</p>  // uses your global formatter
+                        )}
+                    </div>
+
+
+
                     <div>
                         <label className="font-semibold text-text-secondary">Product Term</label>
                         {isEditing ? (
@@ -1351,6 +1379,7 @@ const ProductView: React.FC<{
                                     singleOrJoint: "Single",
                                     premiumPeriod: "Guaranteed",
                                     productType: "Renewable",
+                                    repaymentType: "Interest Only",
                                     protectionBasis: "Level",
                                     productStatus: "Live"
                                 };

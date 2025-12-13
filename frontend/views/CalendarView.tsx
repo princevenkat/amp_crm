@@ -343,7 +343,7 @@ export const CalendarView: React.FC = () => {
     }, [tasks]);
 
 
-    console.log(tasksByCase);
+    // console.log(tasksByCase);
 
     //console.log(tasks[1].caseReference);
 
@@ -553,7 +553,7 @@ export const CalendarView: React.FC = () => {
 
                                 {Object.entries(tasksByCase).map(([caseRef, caseTasks]) => (
                                     <div key={caseRef}>
-                                        <p className="font-semibold text-sm text-text-primary mb-1 mt-3 flex px-2">
+                                        <div className="font-semibold text-sm text-text-primary mb-1 mt-3 flex px-2">
                                             {caseTasks[0]?.clientName && (
                                                 <div className="text-md">
                                                     {caseTasks[0].clientName}
@@ -561,7 +561,7 @@ export const CalendarView: React.FC = () => {
                                             )}
                                             <div className="ml-auto text-[10px] text-primary ml-1">({caseRef})</div>
 
-                                        </p>
+                                        </div>
 
                                         {caseTasks.map(task => {
                                             const taskDate = new Date(task.dueDate);
