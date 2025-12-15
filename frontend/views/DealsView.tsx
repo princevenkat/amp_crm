@@ -438,7 +438,14 @@ const PipelineTableRow: React.FC<{
             <td className="px-6 py-4">
                 <div className="flex gap-4">
                     <button onClick={() => onEdit(client)} className="text-sm font-semibold text-secondary hover:underline">Edit</button>
-                    <button onClick={handleConvert} className="text-sm font-semibold text-primary hover:underline">Convert to Client</button>
+                    {/* <button onClick={handleConvert} className="text-sm font-semibold text-primary hover:underline">Convert to Client</button> */}
+
+                    <button
+                        onClick={() => onConvert(client)}
+                        className="text-sm font-semibold text-primary hover:underline"
+                    >
+                        Convert to Client
+                    </button>
 
                     {canDelete && (
                         <button
@@ -462,6 +469,11 @@ export const DealsView: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isCreatingEnquiry, setIsCreatingEnquiry] = useState(false);
     const [leadToEdit, setLeadToEdit] = useState<Client | null>(null);
+
+
+    const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
+    const [clientToConvert, setClientToConvert] = useState<Client | null>(null);
+    const [selectedAdvisorId, setSelectedAdvisorId] = useState('');
 
     const leads = useMemo(() => {
         return clients.filter(client =>
@@ -498,11 +510,50 @@ export const DealsView: React.FC = () => {
     };
 
 
-    const handleConvertToClient = async (clientToConvert: Client) => {
-        if (window.confirm(`Are you sure you want to convert "${clientToConvert.name}" to a full client?`)) {
-            await updateClient(clientToConvert.id, { status: 'Active' }); // PATCH request
+    // const handleConvertToClient = async (clientToConvert: Client) => {
+    //     if (window.confirm(`Are you sure you want to convert "${clientToConvert.name}" to a full client?`)) {
+    //         await updateClient(clientToConvert.id, { status: 'Active' }); // PATCH request
+    //     }
+    // };
+
+    const handleConvertClick = (client: Client) => {
+        setClientToConvert(client);
+        setSelectedAdvisorId('');
+        setIsConvertModalOpen(true);
+    };
+
+
+    const handleConfirmConvert = async () => {
+        if (!clientToConvert || !selectedAdvisorId) {
+            toast.error('Please select an advisor');
+            return;
+        }
+
+        try {
+            // await updateClient(clientToConvert.id, {
+            //     status: 'Active',
+            //     advisorId: selectedAdvisorId,   // 👈 important
+            // });
+
+            const selectedAdvisor = teamMembers.find(
+                m => m.id === selectedAdvisorId
+            );
+
+            await updateClient(clientToConvert.id, {
+                status: 'Active',
+                primaryAdvisor_id: selectedAdvisorId,
+                primaryAdvisor: selectedAdvisor?.name || ''
+            });
+
+            toast.success(`${clientToConvert.name} converted to client`);
+            setIsConvertModalOpen(false);
+            setClientToConvert(null);
+        } catch (error) {
+            console.error(error);
+            toast.error('Failed to convert client');
         }
     };
+
 
     // const handleDeleteLead = async (clientToDelete: Client) => {
     //     if (window.confirm(`Are you sure you want to delete "${clientToDelete.name}"?`)) {
@@ -548,6 +599,55 @@ export const DealsView: React.FC = () => {
                     onCancel={() => setIsCreatingEnquiry(false)}
                 />
             </Modal>
+
+            <Modal
+                title="Convert to Client"
+                isOpen={isConvertModalOpen}
+                onClose={() => setIsConvertModalOpen(false)}
+            >
+                <div className="space-y-4">
+                    <p className="text-sm text-text-secondary">
+                        Assign an advisor before converting this lead to a client.
+                    </p>
+
+                    <div>
+                        <label className="block text-sm font-medium mb-1">
+                            Select Advisor
+                        </label>
+                        <select
+                            value={selectedAdvisorId}
+                            onChange={(e) => setSelectedAdvisorId(e.target.value)}
+                            className="w-full border rounded-md p-2 text-sm"
+                        >
+                            <option value="">Select advisor...</option>
+                            {teamMembers
+                                .filter(member => member.role === UserRole.Adviser)
+                                .map(member => (
+                                    <option key={member.id} value={member.id}>
+                                        {member.name}
+                                    </option>
+                                ))}
+                        </select>
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4">
+                        <button
+                            type="button"
+                            onClick={() => setIsConvertModalOpen(false)}
+                            className="px-4 py-2 text-sm rounded-md bg-gray-200 hover:bg-gray-300"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleConfirmConvert}
+                            className="px-4 py-2 text-sm rounded-md bg-primary text-white hover:bg-secondary"
+                        >
+                            Convert
+                        </button>
+                    </div>
+                </div>
+            </Modal>
             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
                 <h1 className="text-3xl font-bold">Pipeline</h1>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
@@ -590,7 +690,7 @@ export const DealsView: React.FC = () => {
                                 key={client.id}
                                 client={client}
                                 onEdit={setLeadToEdit}
-                                onConvert={handleConvertToClient}
+                                onConvert={handleConvertClick}
                                 onDelete={handleDeleteLead}
                             />
                         ))}
