@@ -113,6 +113,7 @@ router.post("/", protect, async (req, res) => {
         title,
         description,
         dueDate,
+        dueTime: req.body.dueTime || null,
         status: normalizedStatus, // ✅ Correct key name
         assignedTo: assignedTo || currentUserName,
         assignedBy: assignedBy || currentUserName,
@@ -120,15 +121,37 @@ router.post("/", protect, async (req, res) => {
     };
 
     try {
+        //         await db.query(
+        //             //         `INSERT INTO tasks 
+        //             //    (id, title, description, dueDate, dueTime, status, assignedTo, assignedBy, clientId,created_at, updated_at)
+        //             //    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+
+        //             `INSERT INTO tasks
+        //   (id, title, description, dueDate, dueTime, status, assignedTo, assignedBy, clientId, created_at, updated_at)
+        //   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+        //             [
+        //                 newTask.id,
+        //                 newTask.title,
+        //                 newTask.description,
+        //                 newTask.dueDate,
+        //                 newTask.status,
+        //                 newTask.assignedTo,
+        //                 newTask.assignedBy,
+        //                 newTask.clientId,
+        //             ]
+        //         );
+
+
         await db.query(
-            `INSERT INTO tasks 
-       (id, title, description, dueDate, status, assignedTo, assignedBy, clientId)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO tasks
+    (id, title, description, dueDate, dueTime, status, assignedTo, assignedBy, clientId, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
             [
                 newTask.id,
                 newTask.title,
                 newTask.description,
                 newTask.dueDate,
+                newTask.dueTime, // ✅ here
                 newTask.status,
                 newTask.assignedTo,
                 newTask.assignedBy,
@@ -136,7 +159,12 @@ router.post("/", protect, async (req, res) => {
             ]
         );
 
-        res.status(201).json(newTask);
+        // res.status(201).json(newTask);
+        res.status(201).json({
+            ...newTask,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+        });
     } catch (error) {
         console.error("❌ Failed to create task:", error);
         res.status(500).json({ message: "Server error" });
@@ -146,10 +174,12 @@ router.post("/", protect, async (req, res) => {
 // ✅ Update existing task (robust: partial updates, validation, auth checks)
 router.put("/:id", protect, async (req, res) => {
     const { id } = req.params;
+
     const {
         title: incomingTitle,
         description: incomingDescription,
         dueDate: incomingDueDate,
+        dueTime: incomingDueTime,
         status: incomingStatus,
         assignedTo: incomingAssignedTo,
         assignedBy: incomingAssignedBy,
@@ -186,6 +216,8 @@ router.put("/:id", protect, async (req, res) => {
         const title = incomingTitle !== undefined ? incomingTitle : existing.title;
         const description = incomingDescription !== undefined ? incomingDescription : existing.description;
         const dueDate = incomingDueDate !== undefined ? incomingDueDate : existing.dueDate;
+        const dueTime = incomingDueTime !== undefined ? incomingDueTime : existing.dueTime || null;
+
 
         // validate status
         const status = validStatuses.includes(incomingStatus) ? incomingStatus
@@ -218,9 +250,9 @@ router.put("/:id", protect, async (req, res) => {
         // 5) Perform update
         const [updateResult] = await db.query(
             `UPDATE tasks
-       SET title = ?, description = ?, dueDate = ?, status = ?, assignedTo = ?, assignedBy = ?, clientId = ?
+       SET title = ?, description = ?, dueDate = ?, dueTime = ?, status = ?, assignedTo = ?, assignedBy = ?, clientId = ?,updated_at = NOW()
        WHERE id = ?`,
-            [title, description, dueDate, status, assignedTo, assignedBy, clientId, id]
+            [title, description, dueDate, dueTime || null, status, assignedTo, assignedBy, clientId, id]
         );
 
         if (updateResult.affectedRows === 0) {
@@ -262,6 +294,8 @@ router.get("/clients/:id/case-reference", protect, async (req, res) => {
             name: rows[0].name,
             caseReference: rows[0].caseReference,
         });
+
+
     } catch (error) {
         console.error("❌ Failed to fetch client case reference:", error);
         res.status(500).json({ message: "Server error" });

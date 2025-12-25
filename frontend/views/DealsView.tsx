@@ -172,10 +172,15 @@ const ApplicantDetailsForm: React.FC<{ applicant: Applicant; onChange: (e: React
 
 
 
-const EditLeadView: React.FC<{ lead: Client; onSave: (updatedLead: Client) => void; onCancel: () => void; }> = ({ lead, onSave, onCancel }) => {
+const EditLeadView: React.FC<{
+    lead: Client;
+    onSave: (updatedLead: Client) => void;
+    onCancel: () => void;
+    successMessage?: string | null;
+}> = ({ lead, onSave, onCancel, successMessage }) => {
     const [applicants, setApplicants] = useState<Applicant[]>(lead.applicants);
     const [notes, setNotes] = useState<Note[]>(lead.notes || []);
-    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    // const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     const handleApplicantChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
@@ -418,10 +423,20 @@ const PipelineTableRow: React.FC<{
     const { currentUser } = useContext(DataContext);
     const canDelete = currentUser && [UserRole.SuperAdmin].includes(currentUser.role);
 
+    const [firstName, ...rest] = client.name.trim().split(' ');
+    const surname = rest.join(' ');
+
     return (
         <tr className="border-b border-gray-200 hover:bg-gray-50">
-            {/* <td className="px-6 py-4">{applicant?.title || 'N/A'}</td> */}
-            <td className="px-6 py-4 font-semibold text-text-primary">{client.name}</td>
+            <td className="px-6 py-4">{applicant?.created_at
+                ? new Date(applicant.created_at).toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                })
+                : 'N/A'}</td>
+            <td className="px-6 py-4 font-semibold text-text-primary">{firstName || 'N/A'}</td>
+            <td className="px-6 py-4 font-semibold text-text-primary">{surname || 'N/A'}</td>
             <td className="px-6 py-4">
                 {applicant?.dob
                     ? new Date(applicant?.dob).toLocaleDateString("en-GB", {
@@ -432,7 +447,7 @@ const PipelineTableRow: React.FC<{
                     : "N/A"}
 
             </td>
-            <td className="px-6 py-4">{applicant?.nationality || 'N/A'}</td>
+            {/* <td className="px-6 py-4">{applicant?.nationality || 'N/A'}</td> */}
             <td className="px-6 py-4">{applicant?.mobileNumber || 'N/A'}</td>
             <td className="px-6 py-4">{applicant?.email || 'N/A'}</td>
             <td className="px-6 py-4">
@@ -675,10 +690,10 @@ export const DealsView: React.FC = () => {
                 <table className="min-w-full text-sm text-left">
                     <thead className="bg-gray-50 border-b border-gray-200">
                         <tr>
-                            {/* <th className="px-6 py-3 font-medium text-text-secondary">Title</th> */}
-                            <th className="px-6 py-3 font-medium text-text-secondary">Name</th>
-                            <th className="px-6 py-3 font-medium text-text-secondary">DOB</th>
-                            <th className="px-6 py-3 font-medium text-text-secondary">Nationality</th>
+                            <th className="px-6 py-3 font-medium text-text-secondary">Created Date</th>
+                            <th className="px-6 py-3 font-medium text-text-secondary">First Name</th>
+                            <th className="px-6 py-3 font-medium text-text-secondary">Surname</th>
+                            <th className="px-6 py-3 font-medium text-text-secondary">D.o.B</th>
                             <th className="px-6 py-3 font-medium text-text-secondary">Mobile Number</th>
                             <th className="px-6 py-3 font-medium text-text-secondary">Email</th>
                             <th className="px-6 py-3 font-medium text-text-secondary">Actions</th>

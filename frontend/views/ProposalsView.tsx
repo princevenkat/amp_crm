@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { PlusIcon, EditIcon } from '../components/ui/Icons';
+import { PlusIcon, EditIcon, DeleteIcon } from '../components/ui/Icons';
 import type { Proposal } from '../types';
 import { DataContext } from '../contexts/DataContext';
 import { Modal } from '../components/ui/Modal';
@@ -111,17 +111,17 @@ export const ProposalsView: React.FC = () => {
                 <td className="px-6 py-4 text-center flex justify-center gap-2">
                   <button
                     onClick={() => openEditProposalModal(p)}
-                    className="text-accent hover:text-accent-dark transition-colors"
+                    className="text-sm font-semibold text-blue-900 mr-4"
                     title="Edit Proposal"
                   >
                     {EditIcon}
                   </button>
                   <button
                     onClick={() => handleDeleteProposal(p.id)}
-                    className="text-danger hover:text-red-700 transition-colors"
+                    className="text-sm font-semibold text-red-500"
                     title="Delete Proposal"
                   >
-                    <TrashIcon className="size-4 text-red-500" />
+                    {DeleteIcon}
                   </button>
                 </td>
               </tr>

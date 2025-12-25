@@ -1,5 +1,5 @@
 import React, { createContext, useState, ReactNode, useEffect } from 'react';
-import type { DataContextType, ContactType, Client, Task, Contact, Proposal, EmailTemplate, LedgerEntry, PasswordEntry, TeamMember, Appointment } from '../types';
+import type { DataContextType, ContactType, Client, Task, Contact, ProfessionalContact, Proposal, EmailTemplate, LedgerEntry, PasswordEntry, TeamMember, Appointment } from '../types';
 import { View } from '../types';
 import * as api from '../services/apiService';
 

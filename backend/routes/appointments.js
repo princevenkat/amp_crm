@@ -68,6 +68,7 @@ router.post("/", protect, async (req, res) => {
             description,
             date,
             time,
+            endTime,
             location,
             clientId,
             assignedTo,
@@ -88,6 +89,7 @@ router.post("/", protect, async (req, res) => {
             title,
             description: description || null,
             date: toMySQLDatetime(dt),
+            endTime: endTime || null, // ✅ save endTime
             location: location || null,
             clientId: clientId || null,
 
@@ -103,8 +105,8 @@ router.post("/", protect, async (req, res) => {
 
         await db.query(
             `INSERT INTO appointments
-             (id, title, description, date, location, clientId, createdBy, assignedTo, status, reminder)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+             (id, title, description, date, endTime, location, clientId, createdBy, assignedTo, status, reminder)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             Object.values(newAppointment)
         );
 
@@ -136,6 +138,7 @@ router.put("/:id", protect, async (req, res) => {
             description,
             date,
             time,
+            endTime,
             location,
             clientId,
             assignedTo,
@@ -153,8 +156,10 @@ router.put("/:id", protect, async (req, res) => {
             title: title ?? existing.title,
             description: description ?? existing.description,
             date: updatedDate,
+            endTime: endTime, // ✅ update endTime
             location: location ?? existing.location,
-            clientId: clientId !== undefined ? clientId : existing.clientId,
+            clientId:
+                clientId && clientId.trim() !== "" ? clientId : null, // <-- FIXED
             assignedTo: assignedTo ?? existing.assignedTo,
             status: ["Scheduled", "Completed", "Cancelled"].includes(status)
                 ? status
@@ -164,7 +169,7 @@ router.put("/:id", protect, async (req, res) => {
 
         await db.query(
             `UPDATE appointments
-             SET title=?, description=?, date=?, location=?, clientId=?, assignedTo=?, status=?, reminder=?
+             SET title=?, description=?, date=?, endTime=?, location=?, clientId=?, assignedTo=?, status=?, reminder=?
              WHERE id=?`,
             [...Object.values(updated), id]
         );

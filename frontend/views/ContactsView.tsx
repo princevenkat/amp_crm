@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useContext } from 'react';
 import { DataContext } from '../contexts/DataContext';
 import type { Contact } from '../types';
-import { SearchIcon, PlusIcon, EditIcon, MinusIcon } from '../components/ui/Icons';
+import { SearchIcon, PlusIcon, EditIcon, MinusIcon, DeleteIcon } from '../components/ui/Icons';
 import { Modal } from '../components/ui/Modal';
 import { NewContactForm } from '../components/forms/NewContactForm';
 
@@ -17,15 +17,15 @@ export const ContactsView: React.FC = () => {
   // Sorting state
   const [sortConfig, setSortConfig] = useState<{ key: keyof Contact; direction: 'asc' | 'desc' } | null>(null);
   const [selectedType, setSelectedType] = useState(''); // <-- new state for type filter
-  const contactTypes = ['Lender', 'Provider', 'Solicitor', 'Accountant', 'Surveyor', 'EstateAgent', 'Clinics'].sort();;
+  const contactTypes = ['Lender', 'Provider', 'Solicitor', 'Accountant', 'Surveyor', 'EstateAgent', 'Clinics'].sort();
 
 
-  const lenders = contacts.filter(c => c.type === 'Lender');
-  const solicitors = contacts.filter(c => c.type === 'Solicitor');
-  const accountants = contacts.filter(c => c.type === 'Accountant');
-  const surveyors = contacts.filter(c => c.type === 'Surveyor');
-  const estateAgents = contacts.filter(c => c.type === 'EstateAgent');
-  const clinics = contacts.filter(c => c.type === 'Clinics');
+  // const lenders = contacts.filter(c => c.type === 'Lender');
+  // const solicitors = contacts.filter(c => c.type === 'Solicitor');
+  // const accountants = contacts.filter(c => c.type === 'Accountant');
+  // const surveyors = contacts.filter(c => c.type === 'Surveyor');
+  // const estateAgents = contacts.filter(c => c.type === 'EstateAgent');
+  // const clinics = contacts.filter(c => c.type === 'Clinics');
 
 
   // OLD
@@ -219,8 +219,8 @@ export const ContactsView: React.FC = () => {
                 <td className="px-6 py-4">{contact.phone}</td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-4">
-                    <button onClick={() => handleOpenEditModal(contact)} className="text-text-secondary hover:text-secondary">{EditIcon}</button>
-                    <button onClick={() => deleteContact(contact.id)} className="text-text-secondary hover:text-danger">{MinusIcon}</button>
+                    <button onClick={() => handleOpenEditModal(contact)} className="text-sm font-semibold text-blue-900">{EditIcon}</button>
+                    <button onClick={() => deleteContact(contact.id)} className="text-sm font-semibold text-red-500">{DeleteIcon}</button>
                   </div>
                 </td>
               </tr>

@@ -3,6 +3,7 @@ import { DataContext } from "../contexts/DataContext";
 import { AppointmentForm } from "../components/AppointmentForm";
 import { Appointment } from "@/types";
 import { Modal } from "@/components/ui/Modal";
+import { DeleteIcon, EditIcon } from "@/components/ui/Icons";
 
 export const AppointmentsView: React.FC = () => {
     const {
@@ -46,20 +47,41 @@ export const AppointmentsView: React.FC = () => {
     //     else await addAppointment(data);
     // };
 
-    const saveAppointmentWrapper = async (data: Omit<Appointment, "id">, id?: string) => {
+    // const saveAppointmentWrapper = async (data: Omit<Appointment, "id">, id?: string) => {
+    //     try {
+    //         if (id) {
+    //             await updateAppointment(id, data); // context function
+    //         } else {
+    //             await addAppointment(data); // context function
+    //         }
+
+    //         // Close modal
+    //         setEditAppointmentId(null);
+    //         setOpenForm(false);
+
+    //         // No need to call setAppointments here
+    //         // DataContext already updated appointments, table will rerender
+    //     } catch (error) {
+    //         console.error("Failed to save appointment:", error);
+    //         alert("Failed to save appointment. See console for details.");
+    //     }
+    // };
+
+    const saveAppointmentWrapper = async (
+        data: Omit<Appointment, "id"> | Partial<Appointment>,
+        id?: string
+    ) => {
         try {
             if (id) {
-                await updateAppointment(id, data); // context function
+                // UPDATE → Partial is allowed
+                await updateAppointment(id, data as Partial<Appointment>);
             } else {
-                await addAppointment(data); // context function
+                // CREATE → Full data required
+                await addAppointment(data as Omit<Appointment, "id">);
             }
 
-            // Close modal
             setEditAppointmentId(null);
             setOpenForm(false);
-
-            // No need to call setAppointments here
-            // DataContext already updated appointments, table will rerender
         } catch (error) {
             console.error("Failed to save appointment:", error);
             alert("Failed to save appointment. See console for details.");
@@ -86,34 +108,135 @@ export const AppointmentsView: React.FC = () => {
     //     });
     // }, [appointments, search, filterClient, filterStatus, filterAssigned, filterDate]);
 
-    const filteredAppointments = appointments.filter(a => {
-        const title = (a.title ?? "").toLowerCase();
-        const description = (a.description ?? "").toLowerCase();
-        const searchText = search.toLowerCase();
+    type SortKey = "title" | "client" | "assigned" | "date" | "status";
 
-        const matchSearch = title.includes(searchText) || description.includes(searchText);
-        const matchClient = filterClient ? a.clientId === filterClient : true;
-        const matchStatus = filterStatus ? a.status === filterStatus : true;
-        const matchAssigned = filterAssigned ? a.assignedTo === filterAssigned : true;
-        const matchDate = filterDate ? (a.date ?? "").slice(0, 10) === filterDate : true;
+    const [sortKey, setSortKey] = useState<SortKey>("date");
+    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
 
-        return matchSearch && matchClient && matchStatus && matchAssigned && matchDate;
-    });
+    const handleSort = (key: SortKey) => {
+        if (sortKey === key) {
+            setSortOrder(prev => (prev === "asc" ? "desc" : "asc"));
+        } else {
+            setSortKey(key);
+            setSortOrder("asc");
+        }
+    };
+    const filteredAppointments = useMemo(() => {
+        const filtered = appointments.filter(a => {
+            const title = (a.title ?? "").toLowerCase();
+            const description = (a.description ?? "").toLowerCase();
+            const searchText = search.toLowerCase();
+
+            const matchSearch = title.includes(searchText) || description.includes(searchText);
+            const matchClient = filterClient ? a.clientId === filterClient : true;
+            const matchStatus = filterStatus ? a.status === filterStatus : true;
+            const matchAssigned = filterAssigned ? a.assignedTo === filterAssigned : true;
+            const matchDate = filterDate ? (a.date ?? "").slice(0, 10) === filterDate : true;
+
+            return matchSearch && matchClient && matchStatus && matchAssigned && matchDate;
+        });
+
+        return filtered.sort((a, b) => {
+            let aVal: any;
+            let bVal: any;
+
+            switch (sortKey) {
+                case "title":
+                    aVal = a.title ?? "";
+                    bVal = b.title ?? "";
+                    break;
+
+                case "client":
+                    aVal = clients.find(c => c.id === a.clientId)?.name ?? "";
+                    bVal = clients.find(c => c.id === b.clientId)?.name ?? "";
+                    break;
+
+                case "assigned":
+                    aVal = teamMembers.find(t => t.id === a.assignedTo)?.name ?? "";
+                    bVal = teamMembers.find(t => t.id === b.assignedTo)?.name ?? "";
+                    break;
+
+                case "date":
+                    aVal = a.date ? new Date(a.date).getTime() : 0;
+                    bVal = b.date ? new Date(b.date).getTime() : 0;
+                    break;
+
+                case "status":
+                    aVal = a.status ?? "";
+                    bVal = b.status ?? "";
+                    break;
+            }
+
+            if (typeof aVal === "string") {
+                return sortOrder === "asc"
+                    ? aVal.localeCompare(bVal)
+                    : bVal.localeCompare(aVal);
+            }
+
+            return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
+        });
+    }, [
+        appointments,
+        clients,
+        teamMembers,
+        search,
+        filterClient,
+        filterStatus,
+        filterAssigned,
+        filterDate,
+        sortKey,
+        sortOrder,
+    ]);
+
+
+    // const filteredAppointments = appointments.filter(a => {
+    //     const title = (a.title ?? "").toLowerCase();
+    //     const description = (a.description ?? "").toLowerCase();
+    //     const searchText = search.toLowerCase();
+
+    //     const matchSearch = title.includes(searchText) || description.includes(searchText);
+    //     const matchClient = filterClient ? a.clientId === filterClient : true;
+    //     const matchStatus = filterStatus ? a.status === filterStatus : true;
+    //     const matchAssigned = filterAssigned ? a.assignedTo === filterAssigned : true;
+    //     const matchDate = filterDate ? (a.date ?? "").slice(0, 10) === filterDate : true;
+
+    //     return matchSearch && matchClient && matchStatus && matchAssigned && matchDate;
+    // });
 
 
 
     // console.log("Appointments changed:", appointments);
 
-
+    const SortTh = ({
+        label,
+        column,
+    }: {
+        label: string;
+        column: SortKey;
+    }) => (
+        <th
+            onClick={() => handleSort(column)}
+            className="p-2 border cursor-pointer select-none hover:bg-gray-200"
+        >
+            <span className="flex items-center gap-1">
+                {label}
+                {sortKey === column && (
+                    <span className="text-xs">
+                        {sortOrder === "asc" ? "▲" : "▼"}
+                    </span>
+                )}
+            </span>
+        </th>
+    );
     return (
-        <div className="p-4">
+        <div className="p-4 sm:p-8">
 
             {/* ───────────────────────────────────────────────────────── */}
             {/* NEW BUTTON */}
             {/* ───────────────────────────────────────────────────────── */}
             <button
                 onClick={handleNew}
-                className="mb-4 bg-primary text-white text-sm rounded-full px-4 py-2 rounded hover:bg-black"
+                className="mb-4 flex items-center justify-center gap-2 bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-md transition-colors ms-auto"
             >
                 + New Appointment
             </button>
@@ -135,7 +258,7 @@ export const AppointmentsView: React.FC = () => {
                     onChange={(e) => setFilterClient(e.target.value)}
                     className="border p-2 rounded"
                 >
-                    <option value="">All Clients</option>
+                    <option value="">Search by client</option>
                     {clients.map(c => (
                         <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
@@ -178,11 +301,11 @@ export const AppointmentsView: React.FC = () => {
                 <table className="w-full border-collapse text-sm">
                     <thead>
                         <tr className="bg-gray-100 border">
-                            <th className="p-2 border">Title</th>
-                            <th className="p-2 border">Client</th>
-                            <th className="p-2 border">Assigned To</th>
-                            <th className="p-2 border">Date</th>
-                            <th className="p-2 border">Status</th>
+                            <SortTh label="Event" column="title" />
+                            <SortTh label="Client" column="client" />
+                            <SortTh label="Assigned To" column="assigned" />
+                            <SortTh label="Date" column="date" />
+                            <SortTh label="Status" column="status" />
                             <th className="p-2 border">Actions</th>
                         </tr>
                     </thead>
@@ -226,18 +349,18 @@ export const AppointmentsView: React.FC = () => {
 
                                     <td className="p-2 border">{a.status}</td>
 
-                                    <td className="p-2 border">
+                                    <td className=" px-6 py-2 flex gap-5 justify-center">
                                         <button
                                             onClick={() => handleEdit(a.id)}
-                                            className="text-blue-500 mr-2"
+                                            className="text-sm font-semibold text-blue-900 mr-4"
                                         >
-                                            Edit
+                                            {EditIcon}
                                         </button>
                                         <button
                                             onClick={() => deleteAppointment(a.id)}
-                                            className="text-red-500"
+                                            className="text-sm font-semibold text-red-500"
                                         >
-                                            Delete
+                                            {DeleteIcon}
                                         </button>
                                     </td>
                                 </tr>

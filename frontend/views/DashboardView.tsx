@@ -135,8 +135,10 @@ export const DashboardView: React.FC = () => {
         .reduce((acc, curr) => acc + Number(curr.amount), 0);
 
     const clientsWonCount = clients.filter(c => c.caseStatus === 'Completed').length;
-    const activeClientsCount = clients.filter(c => c.status !== 'Archived').length;
-    const activeLeadsCount = clients.filter(c => c.status === 'Lead').length;
+    const activeClientsCount = clients.filter(c => c.status === 'Active').length;
+    const activeLeadsCount = clients.filter(
+        c => c.status === 'Pipeline' || c.status === 'Lead'
+    ).length;
 
     return (
         <div className="p-4 sm:p-8 bg-background min-h-full">
@@ -145,7 +147,7 @@ export const DashboardView: React.FC = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <StatCard title="Total Revenue" value={`£${totalRevenue.toLocaleString()}`} description="Gross income this year" />
-                <StatCard title="Active Clients" value={activeClientsCount.toString()} description="Includes active and leads" />
+                <StatCard title="Active Clients" value={activeClientsCount.toString()} description="In clients" />
                 <StatCard title="Active Leads" value={activeLeadsCount.toString()} description="In pipeline" />
                 <StatCard title="Clients Won" value={clientsWonCount.toString()} description="Completed this year" />
             </div>
@@ -186,7 +188,14 @@ export const DashboardView: React.FC = () => {
                                 ))}
                             </Pie>
                             <Tooltip contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e5e7eb' }} />
-                            <Legend />
+                            <Legend
+                                layout="vertical"
+                                verticalAlign="middle"
+                                align="right"
+                                iconSize={10}
+                                wrapperStyle={{ paddingRight: 16, fontSize: '14px', lineHeight: '30px', }}
+                            />
+
                         </PieChart>
                     </ResponsiveContainer>
                 </ChartContainer>

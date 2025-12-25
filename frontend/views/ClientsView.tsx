@@ -23,7 +23,7 @@ import { useNavigate } from "react-router-dom";
 
 const emptyApplicant: Applicant = {
     title: '', firstName: '', middleName: '', surname: '', gender: '', dob: '',
-    homeTelephone: '', mobileNumber: '', email: '', currentAddress: '', noOfDependents: 0, nationality: '', introducer: ''
+    homeTelephone: '', mobileNumber: '', email: '', currentAddress: '', noOfDependents: 0, nationality: '', introducer: '', created_at: ''
 };
 
 
@@ -550,9 +550,9 @@ const ProductView: React.FC<{
         }
     }
     // 3️⃣ Fallback: nested `protection.protection_json`
-    else if (productDetails.protection?.protection_json) {
+    else if (productDetails?.protection_json) {
         try {
-            let parsed = JSON.parse(productDetails.protection.protection_json);
+            let parsed = JSON.parse(productDetails?.protection_json);
             protections = Array.isArray(parsed) ? parsed : [parsed];
         } catch (err) {
             console.error("Failed to parse nested protection.protection_json:", err);
@@ -631,12 +631,29 @@ const ProductView: React.FC<{
                         {isEditing ? (
                             <select disabled={!isEditing} value={productDetails.mortgage?.mortgageType || ''} onChange={(e) => onSubFieldChange('mortgage', 'mortgageType', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100">
                                 <option value="">Select...</option>
+                                <option>Further Advance</option>
+                                <option>Product switch</option>
                                 <option>Purchase</option>
                                 <option>Remortgage with capital raising</option>
                                 <option>Remortgage without Capital raising</option>
-                                <option>Product switch</option>
-                                <option>Further Advance</option>
-                                <option>Limited Co BTL</option>
+                                {/* <option>Limited Co BTL</option> */}
+                            </select>
+                        ) : (
+                            <p className="py-2">{productDetails.mortgage?.mortgageType}</p>
+                        )}
+                    </div>
+
+                    <div>
+                        <label className="font-semibold text-text-secondary">Business Type</label>
+                        {isEditing ? (
+                            <select disabled={!isEditing} value={productDetails.mortgage?.businessType || ''} onChange={(e) => onSubFieldChange('mortgage', 'businessType', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100">
+                                <option value="">Select...</option>
+                                <option>Buy-to-Let</option>
+                                <option>Ex-Pat Buy-to-let</option>
+                                <option>Ex-Pat Residential</option>
+                                <option>Holiday Let</option>
+                                <option>Ltd Company BTL</option>
+                                <option>Residential</option>
                             </select>
                         ) : (
                             <p className="py-2">{productDetails.mortgage?.mortgageType}</p>
@@ -2083,7 +2100,14 @@ export const CaseWorkerView: React.FC<CaseWorkerViewProps> = ({
     onChange,
 }) => {
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    //     const { name, value } = e.target;
+    //     onChange({ ...caseWorker, [name]: value });
+    // };
+
+    const handleChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    ) => {
         const { name, value } = e.target;
         onChange({ ...caseWorker, [name]: value });
     };
@@ -2357,6 +2381,7 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                         title: `Renewal Due: ${finalClient.name} - ${editedMortgage.lender}`,
                         description: `Product term ending. Rate expires on ${editedMortgage.rateExpiry}.`,
                         dueDate: editedMortgage.renewalReminderDate,
+                        dueTime: "09:00",
                         status: TaskStatus.Enquiry,
                         assignedTo: finalClient.primaryAdvisor,
                         assignedBy: 'System',
@@ -2373,20 +2398,40 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                 { data: finalClient.productDetails?.surveyor, type: ContactType.Surveyor }
             ];
 
+            // for (const prof of professionals) {
+            //     if (prof.data?.name && prof.data?.email) {
+            //         const contactExists = contacts.some(c => c.email.toLowerCase() === prof.data!.email.toLowerCase());
+            //         if (!contactExists) {
+            //             await addContact({
+            //                 name: prof.data.name,
+            //                 company: prof.data.company,
+            //                 email: prof.data.email,
+            //                 phone: prof.data.phone,
+            //                 type: prof.type,
+            //             });
+            //         }
+            //     }
+            // }
+
             for (const prof of professionals) {
                 if (prof.data?.name && prof.data?.email) {
-                    const contactExists = contacts.some(c => c.email.toLowerCase() === prof.data!.email.toLowerCase());
+                    const contactExists = contacts.some(
+                        (c) => c.email.toLowerCase() === prof.data!.email.toLowerCase()
+                    );
                     if (!contactExists) {
                         await addContact({
                             name: prof.data.name,
-                            company: prof.data.company,
+                            company: prof.data.company || "",
                             email: prof.data.email,
-                            phone: prof.data.phone,
+                            phone: prof.data.phone || "",
                             type: prof.type,
+                            address: prof.data.address || "",
+                            notes: prof.data.notes || "",
                         });
                     }
                 }
             }
+
 
 
             await updateClient(client.id, finalClient);
@@ -2702,7 +2747,7 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                         {isEditing ? (
                             <select
                                 name="adminId"
-                                value={editedClient.admin_id || ""}
+                                value={editedClient.id || ""}
                                 onChange={handleGeneralChangeNe}
                                 className="bg-surface border border-gray-300 rounded-md p-1 text-sm ml-1"
                             >
@@ -2861,14 +2906,87 @@ export const ClientsView: React.FC = () => {
     //     );
     // }, [searchTerm, clients]);
 
+
+    type SortKey = 'name' | 'product' | 'lastContacted' | 'createdDate' | '';
+    type SortOrder = 'asc' | 'desc';
+
+    const [sortKey, setSortKey] = useState<SortKey>('');
+    const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+
+    const handleSort = (key: SortKey) => {
+        if (sortKey === key) {
+            setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'));
+        } else {
+            setSortKey(key);
+            setSortOrder('asc');
+        }
+    };
+
+    const SortIcon = ({ active }: { active: boolean }) => (
+        <span className="ml-1 text-xs">{active ? (sortOrder === 'asc' ? '▲' : '▼') : '⇅'}</span>
+    );
+
+    // const filteredClients = useMemo(() => {
+    //     return clients.filter(client =>
+    //         client.status !== 'Lead' &&
+    //         (client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    //             client.email.toLowerCase().includes(searchTerm.toLowerCase())) &&
+    //         (caseStatusFilter ? client.caseStatus === caseStatusFilter : true)
+    //     );
+    // }, [searchTerm, clients, caseStatusFilter]);
+
     const filteredClients = useMemo(() => {
-        return clients.filter(client =>
+        let result = clients.filter(client =>
             client.status !== 'Lead' &&
             (client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 client.email.toLowerCase().includes(searchTerm.toLowerCase())) &&
             (caseStatusFilter ? client.caseStatus === caseStatusFilter : true)
         );
-    }, [searchTerm, clients, caseStatusFilter]);
+
+        if (!sortKey) return result;
+
+        return [...result].sort((a, b) => {
+            let valA: any;
+            let valB: any;
+
+            switch (sortKey) {
+                case 'name':
+                    valA = a.name?.toLowerCase() || '';
+                    valB = b.name?.toLowerCase() || '';
+                    break;
+
+                case 'product':
+                    valA = a.productDetails?.businessWritten || '';
+                    valB = b.productDetails?.businessWritten || '';
+                    break;
+
+                // case 'status':
+                //     valA = a.caseStatus || '';
+                //     valB = b.caseStatus || '';
+                //     break;
+
+                case 'lastContacted':
+                    valA = a.lastContacted ? new Date(a.lastContacted).getTime() : 0;
+                    valB = b.lastContacted ? new Date(b.lastContacted).getTime() : 0;
+                    break;
+
+                case 'createdDate':
+                    valA = a.createdDate ? new Date(a.createdDate).getTime() : 0;
+                    valB = b.createdDate ? new Date(b.createdDate).getTime() : 0;
+                    break;
+
+                default:
+                    return 0;
+            }
+
+            if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+            if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }, [clients, searchTerm, caseStatusFilter, sortKey, sortOrder]);
+
+
+
 
     const handleAddClient = async (client: Omit<Client, 'id' | 'avatar'>) => {
         await addClient({ ...client, status: 'Active' });
@@ -2912,6 +3030,10 @@ export const ClientsView: React.FC = () => {
         'Othes': 'bg-gray-500 text-black',
     };
 
+
+
+
+    console.log(filteredClients);
     return (
         <div className="p-4 sm:p-8">
             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
@@ -2960,59 +3082,102 @@ export const ClientsView: React.FC = () => {
                 <table className="min-w-full text-sm text-left">
                     <thead className="bg-gray-50 border-b border-gray-200">
                         <tr>
-                            <th className="px-6 py-3 font-medium text-text-secondary">Name</th>
+                            <th
+                                className="px-6 py-3 font-medium text-text-secondary cursor-pointer select-none"
+                                onClick={() => handleSort('createdDate')}
+                            >
+                                Date of Enquiry
+                                <SortIcon active={sortKey === 'createdDate'} />
+                            </th>
+
+
+                            <th
+                                className="px-6 py-3 font-medium text-text-secondary cursor-pointer select-none"
+                                onClick={() => handleSort('name')}
+                            > First Name <SortIcon active={sortKey === 'name'} /></th>
+                            <th className="px-6 py-3 font-medium text-text-secondary cursor-pointer select-none" onClick={() => handleSort('name')}>Surname <SortIcon active={sortKey === 'name'} /></th>
                             {/* <th className="px-6 py-3 font-medium text-text-secondary">Status</th> */}
-                            <th className="px-6 py-3 font-medium text-text-secondary">Status</th>
-                            <th className="px-6 py-3 font-medium text-text-secondary">Product</th>
-                            <th className="px-6 py-3 font-medium text-text-secondary">Last Contacted</th>
+                            <th className="px-6 py-3 font-medium text-text-secondary cursor-pointer select-none" >Status</th>
+                            <th className="px-6 py-3 font-medium text-text-secondary cursor-pointer select-none" onClick={() => handleSort('product')}>Product <SortIcon active={sortKey === 'product'} /></th>
+                            <th className="px-6 py-3 font-medium text-text-secondary cursor-pointer select-none" onClick={() => handleSort('lastContacted')}>Last Accessed <SortIcon active={sortKey === 'lastContacted'} /> </th>
                             <th className="px-6 py-3 font-medium text-text-secondary">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredClients.filter(client => client.status !== 'Pipeline').map(client => (
-                            <tr key={client.id} className="border-b border-gray-200 hover:bg-gray-50">
-                                <td className="px-6 py-4 flex items-center">
-                                    {/* <img src={client.avatar} alt={client.name} className="w-10 h-10 rounded-full mr-4" /> */}
+                        {filteredClients.filter(client => client.status !== 'Pipeline').map(client => {
+
+                            // ✅ client exists here
+                            const [firstName, ...rest] = client.name?.trim().split(" ") || [];
+                            const surname = rest.join(" ");
+                            return (
+                                <tr key={client.id} className="border-b border-gray-200 hover:bg-gray-50">
+                                    <td className="px-6 py-4">
+                                        {
+                                            client.createdDate
+                                                ? new Date(client.createdDate).toLocaleDateString("en-GB", {
+                                                    day: "2-digit",
+                                                    month: "2-digit",
+                                                    year: "numeric",
+                                                })
+                                                : "N/A"
+                                        }
+                                    </td>
+
+
+                                    {/* <td className="px-6 py-4 flex items-center">
                                     <div>
                                         <p className="font-semibold text-text-primary">{client.name}</p>
                                         <p className="text-xs text-text-secondary">{client.email}</p>
                                     </div>
-                                </td>
-                                {/* <td className="px-6 py-4">
+                                </td> */}
+                                    {/* <td className="px-6 py-4">
                                     <span className={`px-2 py-1 text-xs rounded-full capitalize ${client.status === 'Active' ? 'bg-success/20 text-success' : (client.status === 'Lead' ? 'bg-warning/20 text-warning' : 'bg-gray-500/20 text-gray-500')}`}>
                                         {client.status}
                                     </span>
                                 </td> */}
-                                <td className="px-6 py-4">
-                                    {/* {client.caseStatus ? (
+                                    {/* First Name */}
+                                    <td className="px-6 py-4">
+                                        <p className="font-semibold text-text-primary">
+                                            {firstName || "N/A"}
+                                        </p>
+                                        <p className="text-xs text-text-secondary">{client.email}</p>
+                                    </td>
+
+                                    {/* Surname */}
+                                    <td className="px-6 py-4">
+                                        {surname || "N/A"}
+                                    </td>
+
+                                    <td className="px-6 py-4">
+                                        {/* {client.caseStatus ? (
                                         <span className="px-3 py-1 text-xs rounded-full inline-block bg-[#002d62] text-white">
                                             {client.caseStatus}
                                         </span>
                                     ) : 'N/A'} */}
-                                    {client.caseStatus ? (
-                                        <span className={`px-3 py-1 text-xs rounded-full inline-block ${caseStatusColors[client.caseStatus] || 'bg-gray-200 text-black'}`}>
-                                            {client.caseStatus}
-                                        </span>
-                                    ) : 'N/A'}
-                                </td>
-                                <td className="px-6 py-4">
-                                    {businessWrittenDisplayMap[client.productDetails?.businessWritten || 'N/A']}
-                                    {/* {client.productDetails?.businessWritten || 'N/A'} */}
+                                        {client.caseStatus ? (
+                                            <span className={`px-3 py-1 text-xs rounded-full inline-block ${caseStatusColors[client.caseStatus] || 'bg-gray-200 text-black'}`}>
+                                                {client.caseStatus}
+                                            </span>
+                                        ) : 'N/A'}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        {businessWrittenDisplayMap[client.productDetails?.businessWritten || 'N/A']}
+                                        {/* {client.productDetails?.businessWritten || 'N/A'} */}
 
-                                </td>
-                                <td className="px-6 py-4">
-                                    {client.lastContacted
-                                        ? new Date(client.lastContacted).toLocaleDateString("en-GB", {
-                                            day: "2-digit",
-                                            month: "numeric",
-                                            year: "numeric",
-                                        })
-                                        : "N/A"}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        {client.lastContacted
+                                            ? new Date(client.lastContacted).toLocaleDateString("en-GB", {
+                                                day: "2-digit",
+                                                month: "numeric",
+                                                year: "numeric",
+                                            })
+                                            : "N/A"}
 
-                                </td>
-                                <td className="px-6 py-4">
-                                    <button onClick={() => setSelectedClient(client)} className="text-green-600 hover:underline font-semibold">View</button>
-                                    {/* {client.status === 'Archived' && (
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <button onClick={() => setSelectedClient(client)} className="text-green-600 hover:underline font-semibold">View</button>
+                                        {/* {client.status === 'Archived' && (
                                         <button
                                             onClick={() => handleRetrieveClient(client)}
                                             className="ml-4 text-primary hover:underline font-semibold"
@@ -3023,8 +3188,8 @@ export const ClientsView: React.FC = () => {
 
 
 
-                                    {/* Show Retrieve button only for archived clients */}
-                                    {/* {client.status === 'Archived' && (
+                                        {/* Show Retrieve button only for archived clients */}
+                                        {/* {client.status === 'Archived' && (
                                         <button
                                             onClick={() => handleRetrieveClient(client)}
                                             className="ml-4 text-primary hover:underline font-semibold"
@@ -3033,19 +3198,20 @@ export const ClientsView: React.FC = () => {
                                         </button>
                                     )} */}
 
-                                    {/* Show Move to Pipeline button for all non-pipeline clients */}
-                                    {client.status !== 'Pipeline' && (
-                                        <button
-                                            onClick={() => handleMoveToPipeline(client)}
-                                            className="ml-4 text-secondary hover:underline font-semibold"
-                                        >
-                                            Move to Pipeline
-                                        </button>
-                                    )}
+                                        {/* Show Move to Pipeline button for all non-pipeline clients */}
+                                        {client.status !== 'Pipeline' && (
+                                            <button
+                                                onClick={() => handleMoveToPipeline(client)}
+                                                className="ml-4 text-secondary hover:underline font-semibold"
+                                            >
+                                                Move to Pipeline
+                                            </button>
+                                        )}
 
-                                </td>
-                            </tr>
-                        ))}
+                                    </td>
+                                </tr>
+                            )
+                        })}
                     </tbody>
                 </table>
             </div>

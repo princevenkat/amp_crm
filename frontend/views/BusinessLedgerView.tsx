@@ -1,7 +1,7 @@
 import React, { useContext, useState, useMemo, useEffect } from 'react';
 import { DataContext } from '../contexts/DataContext';
 import type { LedgerEntry } from '../types';
-import { PlusIcon, EditIcon, MinusIcon } from '../components/ui/Icons';
+import { PlusIcon, EditIcon, MinusIcon, DeleteIcon } from '../components/ui/Icons';
 import { Modal } from '../components/ui/Modal';
 import { NewLedgerEntryForm } from '../components/forms/NewLedgerEntryForm';
 import { UserRole } from '../types';
@@ -430,15 +430,15 @@ export const BusinessLedgerView: React.FC = () => {
                                         <div className="flex items-center gap-4">
                                             <button
                                                 onClick={() => handleOpenEditModal(entry)}
-                                                className="text-text-secondary hover:text-secondary"
+                                                className="text-blue-900 hover:text-secondary"
                                             >
                                                 {EditIcon}
                                             </button>
                                             <button
                                                 onClick={() => deleteLedgerEntry(entry.id)}
-                                                className="text-text-secondary hover:text-danger"
+                                                className="text-red-500 hover:text-danger"
                                             >
-                                                {MinusIcon}
+                                                {DeleteIcon}
                                             </button>
                                         </div>
                                     </td>

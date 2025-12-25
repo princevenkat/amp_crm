@@ -454,7 +454,7 @@ const hydrateClient = async (clientRow) => {
         status: clientRow.status,
         caseStatus: clientRow.caseStatus,
         lastContacted: clientRow.lastContacted ? clientRow.lastContacted.toISOString().split('T')[0] : null,
-        createdDate: clientRow.created_date ? clientRow.created_date.toISOString().split('T')[0] : null,
+        createdDate: clientRow.createdDate ? clientRow.createdDate.toISOString().split('T')[0] : null,
         avatar: clientRow.avatar,
         value: clientRow.value,
         product: { type: clientRow.productType },
@@ -611,7 +611,7 @@ router.put('/:id', protect, async (req, res) => {
                 .map((key) => `${key} = ?`)
                 .join(', ');
             const values = Object.values(updates);
-            await connection.query(`UPDATE clients SET ${sets} WHERE id = ?`, [...values, id]);
+            await connection.query(`UPDATE clients SET ${sets}, lastContacted = NOW() WHERE id = ?`, [...values, id]);
             await connection.commit();
 
             const [updatedRows] = await connection.query('SELECT * FROM clients WHERE id = ?', [id]);
@@ -646,6 +646,10 @@ router.put('/:id', protect, async (req, res) => {
         await connection.query(
             `UPDATE clients SET ${ALL_CLIENT_FIELDS_FOR_UPDATE} WHERE id = ?`,
             [...clientFields, id]
+        );
+        await connection.query(
+            `UPDATE clients SET lastContacted = NOW() WHERE id = ?`,
+            [id]
         );
 
 
@@ -684,6 +688,9 @@ router.put('/:id', protect, async (req, res) => {
                         app.noOfDependents || 0,
                         app.nationality || '',
                         app.introducer || '',
+                        app.introducer || '',
+                        app.introducer || '',
+                        // updated_at = NOW()
                     ]
                 );
             }
@@ -716,11 +723,12 @@ router.put('/:id', protect, async (req, res) => {
             const m = merged.productDetails.mortgage;
             await connection.query(
                 `INSERT INTO mortgage_details 
-          (clientId, mortgageType, dateOfFma, dateOffered, lender, lenderReference, propertyValue,  mortgageLoanAmount, brokerFees, procurationFees, rate, productType, repaymentType, productTerm, rateExpiry, renewalReminderDate, mortgageTerm, advisor)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (clientId, mortgageType,businessType, dateOfFma, dateOffered, lender, lenderReference, propertyValue,  mortgageLoanAmount, brokerFees, procurationFees, rate, productType, repaymentType, productTerm, rateExpiry, renewalReminderDate, mortgageTerm, advisor)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)`,
                 [
                     id,
                     m.mortgageType || '',
+                    m.businessType || '',
                     toMySQLDate(m.dateOfFma),
                     toMySQLDate(m.dateOffered),
                     m.lender || '',

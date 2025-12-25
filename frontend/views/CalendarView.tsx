@@ -89,7 +89,7 @@ const CalendarDay: React.FC<{
     onTaskClick: (task: Task) => void;
     onAppointmentClick: (appt: Appointment) => void;
     onAddTask: (date: Date) => void;   // 👈 New prop
-}> = ({ day, date, isCurrentMonth, isToday, tasks, appointments, onTaskClick, onAppointmentClick, onAddTask, task, }) => {
+}> = ({ day, date, isCurrentMonth, isToday, tasks, appointments, onTaskClick, onAppointmentClick, onAddTask }) => {
     const dayClasses = `border-t border-r border-gray-200 p-2 h-24 md:h-28 relative flex flex-col ${isCurrentMonth ? 'bg-surface' : 'bg-gray-50'}`;
     const dayNumberClasses = `text-sm ${isToday ? 'bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center font-bold' : (isCurrentMonth ? 'text-text-primary' : 'text-text-secondary/50')}`;
 
@@ -149,7 +149,7 @@ const CalendarDay: React.FC<{
     );
 };
 export const CalendarView: React.FC = () => {
-    const { tasks, task, addTask, updateTask, deleteTask, clients, currentUser, setCurrentView, setSelectedClientIdForNav, setSelectedTaskIdForNav, appointments, teamMembers, updateAppointment,     // ✅ ADD THIS
+    const { tasks, addTask, updateTask, deleteTask, clients, currentUser, setCurrentView, setSelectedClientIdForNav, setSelectedTaskIdForNav, appointments, teamMembers, updateAppointment,     // ✅ ADD THIS
         deleteAppointment } = useContext(DataContext);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -728,6 +728,24 @@ export const CalendarView: React.FC = () => {
                                     });
 
                                     return (
+                                        // <CalendarDay
+                                        //     key={index}
+                                        //     date={date}
+                                        //     day={date.getDate()}
+                                        //     isCurrentMonth={date.getMonth() === month}
+                                        //     isToday={date.toDateString() === today.toDateString()}
+                                        //     tasks={tasksForDay}
+                                        //     appointments={appointmentsForDay}
+                                        //     onTaskClick={handleTaskClick}
+                                        //     onAppointmentClick={(appt) => {
+                                        //         setSelectedAppointment(appt);
+                                        //         setIsEditingAppointment(false);
+                                        //         // open appointment modal if needed
+                                        //     }}
+                                        //     onAddTask={handleAddTaskForDate}
+                                        //     events={calendarEvents}
+                                        // />
+
                                         <CalendarDay
                                             key={index}
                                             date={date}
@@ -740,11 +758,12 @@ export const CalendarView: React.FC = () => {
                                             onAppointmentClick={(appt) => {
                                                 setSelectedAppointment(appt);
                                                 setIsEditingAppointment(false);
-                                                // open appointment modal if needed
                                             }}
                                             onAddTask={handleAddTaskForDate}
-                                            events={calendarEvents}
                                         />
+
+
+
                                     );
                                 })}
                             </div>
@@ -798,6 +817,7 @@ export const CalendarView: React.FC = () => {
                             appointment={selectedAppointment}
                             clients={clients}
                             teamMembers={teamMembers}
+                            onSave={async () => { }}
                             onUpdate={async (id, data) => {
                                 await updateAppointment(id, data);
                                 setIsEditingAppointment(false);
@@ -809,9 +829,20 @@ export const CalendarView: React.FC = () => {
                         <div className="space-y-3">
                             <h3 className="text-lg font-bold">{selectedAppointment.title}</h3>
 
+                            {/* <p className="text-sm text-gray-700">
+                                <strong>Date:</strong> {splitDateTime(selectedAppointment.date).date}{" "}
+                                <strong>Time:</strong> {splitDateTime(selectedAppointment.date).time}
+                            </p> */}
+
                             <p className="text-sm text-gray-700">
                                 <strong>Date:</strong> {splitDateTime(selectedAppointment.date).date}{" "}
                                 <strong>Time:</strong> {splitDateTime(selectedAppointment.date).time}
+                                {selectedAppointment.endTime && (
+                                    <>
+                                        {" "}– <strong>End:</strong>{" "}
+                                        {selectedAppointment.endTime.slice(0, 5)}
+                                    </>
+                                )}
                             </p>
 
                             <p className="text-sm">

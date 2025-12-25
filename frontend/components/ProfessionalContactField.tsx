@@ -1,22 +1,30 @@
 import React, { useContext } from "react";
 import { DataContext } from "../contexts/DataContext";
+import type { ProfessionalContact } from "@/types";
+
 
 interface Contact {
     id: string | number;
     name: string;
+
     company?: string;
     address?: string;
     email?: string;
     phone?: string;
 }
 
+
 interface ProfessionalContactFieldProps {
     label: string;
-    contact?: Contact;
-    contacts: Contact[];
+    contact?: ProfessionalContact;
+    contacts: ProfessionalContact[];
     isEditing: boolean;
-    onChange: (field: string, value: any) => void;
+    onChange: <K extends keyof ProfessionalContact>(
+        field: K,
+        value: ProfessionalContact[K]
+    ) => void;
 }
+
 
 const ProfessionalContactField: React.FC<ProfessionalContactFieldProps> = ({
     label,

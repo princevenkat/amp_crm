@@ -15,12 +15,25 @@ export enum View {
   BusinessLedger = "BusinessLedger",
 }
 
+// export enum TaskStatus {
+//   Enquiry = "Enquiry",
+//   AIP = "AIP",
+//   FMA = "FMA",
+//   Offered = "Offered",
+//   Completed = "Completed",
+//   CommissionDue = "Commission Due",
+//   NPW = "NPW",
+// }
+
 export enum TaskStatus {
-  Enquiry = "Enquiry",
+  Enquiry = "Initial Enquiry",
   AIP = "AIP",
   FMA = "FMA",
   Offered = "Offered",
   Completed = "Completed",
+  Renewal = "Renewal",
+  OnRisk = "On Risk",
+  Others = "Others",
   CommissionDue = "Commission Due",
   NPW = "NPW",
 }
@@ -49,6 +62,7 @@ export interface Applicant {
   noOfDependents: number;
   nationality: string;
   introducer: string;
+  created_at: string;
 }
 
 export interface PropertyDetails {
@@ -89,11 +103,20 @@ export interface MortgageFee {
 
 export interface MortgageDetails {
   mortgageType:
+    | "Further Advance"
+    | "Product switch"
     | "Purchase"
     | "Remortgage with capital raising"
     | "Remortgage without Capital raising"
-    | "Product switch"
-    | "Further Advance"
+    | "";
+
+  businessType:
+    | "Buy-to-Let"
+    | "Ex-Pat Buy-to-let"
+    | "Ex-Pat Residential"
+    | "Holiday Let"
+    | "Ltd Company BTL"
+    | "Residential"
     | "";
   dateOfFma: string;
   dateOffered: string;
@@ -120,6 +143,7 @@ export interface MortgageDetails {
   renewalReminderDate: string;
   mortgageTerm: string; // e.g., "25 years"
   advisor?: string;
+  repaymentType?: string;
 }
 
 export interface ProtectionDetails {
@@ -161,11 +185,21 @@ export interface BandCDetails {
 }
 
 export interface ProfessionalContact {
-  name: string;
-  company: string;
-  address: string;
-  email: string;
+  // id: string;
+  // name: string;
+  // company: string;
+  // address: string;
+  // email: string;
+  // phone: string;
+  // notes?: string;
+  id: string | null;
+  name: string | null;
+  // type: ContactType;
+  email: string | null;
   phone: string;
+  company: string | null;
+  address: string;
+  notes?: string | null;
 }
 
 export interface EstateAgentContact {
@@ -297,10 +331,25 @@ export interface ProtectionItem {
   commission: number;
 }
 
+// export interface ProductDetails {
+//   businessWritten: BusinessWrittenType;
+//   mortgage?: MortgageDetails;
+//   // protection?: ProtectionDetails;
+//   protections?: ProtectionItem[];
+//   bandc?: BandCDetails;
+//   lender?: ProfessionalContact;
+//   solicitor?: ProfessionalContact;
+//   provider?: ProfessionalContact;
+//   accountant?: ProfessionalContact;
+//   surveyor?: ProfessionalContact;
+//   estateAgent?: ProfessionalContact;
+//   limitedCompany: LimitedCompanyDetails;
+//   protection_json: string;
+// }
+
 export interface ProductDetails {
   businessWritten: BusinessWrittenType;
   mortgage?: MortgageDetails;
-  // protection?: ProtectionDetails;
   protections?: ProtectionItem[];
   bandc?: BandCDetails;
   lender?: ProfessionalContact;
@@ -309,7 +358,8 @@ export interface ProductDetails {
   accountant?: ProfessionalContact;
   surveyor?: ProfessionalContact;
   estateAgent?: ProfessionalContact;
-  limitedCompany: LimitedCompanyDetails;
+  limitedCompany?: LimitedCompanyDetails; // now optional
+  protection_json?: string; // now optional
 }
 
 // --- NEW Document Interface ---
@@ -385,6 +435,8 @@ export interface Client {
     reference: string;
     profession: string;
   } | null;
+
+  primaryAdvisor_id?: string;
 }
 
 export interface Task {
@@ -392,23 +444,25 @@ export interface Task {
   title: string;
   description?: string;
   dueDate: string;
+  dueTime: string;
   status: TaskStatus;
   assignedTo: string;
   assignedBy: string;
   clientId?: string;
   clientName?: string; // ✅ add this
   caseReference?: string; // ✅ add this
+  created_at?: string;
 }
 
 export interface Contact {
   id: string;
-  name?: string;
+  name: string | null;
   type: ContactType;
-  email?: string;
+  email: string | null;
   phone: string;
   company: string;
   address: string;
-  notes: string;
+  notes?: string | null;
 }
 
 // FIX: Added the 'Deal' interface to resolve an import error in NewDealForm.tsx.
@@ -496,10 +550,11 @@ export type AppointmentStatus = "Booked" | "Cancelled" | "Done";
 
 export type Appointment = {
   id: string;
-  clientId: string;
+  clientId?: string;
   title: string;
   description?: string;
   date: string; // ISO string
+  endTime?: string;
   time?: string;
   location?: string;
   assignedTo?: string; // Team member
@@ -576,7 +631,8 @@ export interface DataContextType {
   }) => Promise<{ success: boolean; message: string }>;
   loading: boolean;
   // 🔵 ADD THESE 4 NEW MODAL FIELDS
-  openContactModal: (contact?: Contact) => void;
+  // openContactModal: (contact?: Contact) => void;
+  openContactModal: (contact?: ProfessionalContact) => void;
   closeContactModal: () => void;
   contactModalOpen: boolean;
   contactModalData: Contact | null;

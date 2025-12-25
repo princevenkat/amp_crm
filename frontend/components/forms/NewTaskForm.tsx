@@ -13,7 +13,7 @@ import { MagnifyingGlassIcon } from "@heroicons/react/24/solid"; // ✅ Add at t
 interface NewTaskFormProps {
   onSubmit: (taskData: Omit<Task, 'id'>) => void;
   onCancel: () => void;
-  initialData?: Task | null;
+  initialData?: Partial<Task> | null;
   clientId?: string;              // ✅ optional — pre-linked client (like a lead)
   hideClientSelector?: boolean;   // ✅ hide search for pipeline tasks
   statusSelector?: boolean;   // ✅ hide search for pipeline tasks
@@ -25,6 +25,7 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
 
   const [title, setTitle] = useState(initialData?.title || '');
   const [description, setDescription] = useState(initialData?.description || '');
+  const [created_at, setCreatedAt] = useState(initialData?.created_at || '');
 
   // const [dueDate, setDueDate] = useState(() => {
   //   if (!initialData?.dueDate) return '';
@@ -43,7 +44,11 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
     }
   });
 
-  const [status, setStatus] = useState<Task['status']>(initialData?.status || 'Enquiry');
+  // const [status, setStatus] = useState<Task['status']>(initialData?.status || 'Enquiry');
+
+  const [status, setStatus] = useState<Task['status']>(
+    initialData?.status ?? TaskStatus.Enquiry
+  );
   const [assignedTo, setAssignedTo] = useState(initialData?.assignedTo || '');
   const [assignedBy, setAssignedBy] = useState(initialData?.assignedBy || '');
   const [clientId, setClientId] = useState(initialData?.clientId || '');
@@ -53,13 +58,71 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
 
   useEffect(() => {
     if (currentUser) {
-      const userName = currentUser.name || currentUser.fullName || 'Unknown User';
+      const userName = currentUser.name || 'Unknown User';
       if (!initialData || !initialData.assignedBy) setAssignedBy(userName);
       if (!initialData) setAssignedTo(userName);
     }
   }, [initialData, currentUser]);
 
+
+  const normalizeTaskStatus = (value?: string): TaskStatus => {
+    if (!value) return TaskStatus.Enquiry;
+
+    // Check for enum match
+    const found = Object.values(TaskStatus).find(v => v.toLowerCase() === value.toLowerCase());
+    return found ?? TaskStatus.Enquiry;
+  };
+
+
   // Pre-fill client info when editing a task
+  // useEffect(() => {
+  //   if (!initialData) return;
+
+  //   const client = clients.find(c => c.id === initialData.clientId);
+
+  //   // const normalizeTaskStatus = (value?: string): TaskStatus => {
+  //   //   if (Object.values(TaskStatus).includes(value as TaskStatus)) {
+  //   //     return value as TaskStatus;
+  //   //   }
+  //   //   return TaskStatus.Enquiry;
+  //   // };
+
+
+
+  //   if (client) {
+  //     setClientId(client.id);
+  //     setSearchTerm(`${client.name} (${client.caseReference || 'N/A'})`);
+
+  //     setStatus(
+  //       normalizeTaskStatus(
+  //         client.caseStatus?.trim() || initialData?.status
+  //       )
+  //     );
+
+  //   } else if (initialData.clientId) {
+  //     setClientId(initialData.clientId);
+  //     setSearchTerm(
+  //       `${initialData.clientName || 'Unknown Client'} (${initialData.caseReference || 'N/A'})`
+  //     );
+
+  //     setStatus(
+  //       normalizeTaskStatus(initialData.status)
+  //     );
+  //   }
+
+
+  //   // if (client) {
+  //   //   setClientId(client.id);
+  //   //   setSearchTerm(`${client.name} (${client.caseReference || 'N/A'})`);
+  //   //   setStatus(client.caseStatus?.trim() as Task['status'] || initialData.status || 'Enquiry');
+  //   // } else if (initialData.clientId) {
+  //   //   // Fallback: use data from initialData
+  //   //   setClientId(initialData.clientId);
+  //   //   setSearchTerm(`${initialData.clientName || 'Unknown Client'} (${initialData.caseReference || 'N/A'})`);
+  //   //   setStatus(initialData.status || 'Enquiry');
+  //   // }
+  // }, [initialData, clients]);
+
   useEffect(() => {
     if (!initialData) return;
 
@@ -68,15 +131,21 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
     if (client) {
       setClientId(client.id);
       setSearchTerm(`${client.name} (${client.caseReference || 'N/A'})`);
-      setStatus(client.caseStatus?.trim() as Task['status'] || initialData.status || 'Enquiry');
     } else if (initialData.clientId) {
-      // Fallback: use data from initialData
       setClientId(initialData.clientId);
-      setSearchTerm(`${initialData.clientName || 'Unknown Client'} (${initialData.caseReference || 'N/A'})`);
-      setStatus(initialData.status || 'Enquiry');
+      setSearchTerm(
+        `${initialData.clientName || 'Unknown Client'} (${initialData.caseReference || 'N/A'})`
+      );
     }
+
+    // ✅ ALWAYS use task status when editing
+    setStatus(normalizeTaskStatus(initialData.status));
   }, [initialData, clients]);
+
+
+
   console.log(initialData);
+  console.log(status);
 
 
 
@@ -121,6 +190,7 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
       title,
       description,
       dueDate,
+      dueTime,
       status,
       assignedTo,
       assignedBy,
@@ -131,10 +201,60 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
 
   const statusOptions: TaskStatus[] = Object.values(TaskStatus);
 
+  // const formatDateTime = (date?: string) => {
+  //   if (!date) return "N/A";
+  //   return new Date(date).toLocaleString("en-GB", {
+  //     day: "2-digit",
+  //     month: "2-digit",
+  //     year: "numeric",
+  //     hour: "2-digit",
+  //     minute: "2-digit",
+  //   });
+  // };
+  const formatDate = (date?: string) => {
+    if (!date) return "N/A";
+    return new Date(date).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
+  const [dueTime, setDueTime] = useState(
+    initialData?.dueTime || ""
+  );
+
   return (
     <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4 relative">
 
 
+      {/* {initialData && (
+        <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-3 rounded-md border">
+
+          // Created At 
+          <div>
+            <label className="block text-sm font-medium mb-1">Created At</label>
+            <input
+              type="text"
+              value={formatDateTime(initialData.created_at)}
+              readOnly
+              className="w-full border border-gray-300 rounded-md p-2 bg-gray-100 text-gray-600 cursor-not-allowed"
+            />
+          </div>
+
+          //  Updated At
+          <div>
+            <label className="block text-sm font-medium mb-1">Last Updated</label>
+            <input
+              type="text"
+              value={formatDateTime(initialData.updated_at)}
+              readOnly
+              className="w-full border border-gray-300 rounded-md p-2 bg-gray-100 text-gray-600 cursor-not-allowed"
+            />
+          </div>
+
+        </div>
+      )} */}
 
 
       {/* 🔍 Search Client by Case Reference (Mandatory) */}
@@ -165,7 +285,7 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
 
                 if (value.trim() === '') {
                   setClientId('');
-                  setStatus('Enquiry'); // reset to default
+                  setStatus(TaskStatus.Enquiry); // reset to default
                   setError('');
                 } else if (error) {
                   setError('');
@@ -206,6 +326,8 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
         </div>
 
       )}
+
+
 
 
 
@@ -268,7 +390,7 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
 
       {/* 🟩 Title */}
       <div className="md:col-span-2">
-        <label className="block text-sm font-medium mb-1">Title</label>
+        <label className="block text-sm font-medium mb-1">Task</label>
         <input
           type="text"
           value={title}
@@ -289,15 +411,38 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
         />
       </div>
 
+      {/* Created At */}
+      {initialData && (
+        <div>
+          <label className="block text-sm font-medium mb-1">Task Created</label>
+          <input
+            type="text"
+            value={formatDate(initialData.created_at)}
+            readOnly
+            className="w-full border border-gray-300 rounded-md p-2 bg-gray-100 text-gray-600 cursor-not-allowed"
+          />
+        </div>
+      )}
+
       {/* 🟩 Due Date */}
       <div>
-        <label className="block text-sm font-medium mb-1">Date</label>
+        <label className="block text-sm font-medium mb-1">Task Due</label>
         <input
           type="date"
           value={dueDate}
           onChange={e => setDueDate(e.target.value)}
           required
           className="w-full border border-gray-300 rounded-md p-2"
+        />
+      </div>
+      {/* 🟩 Due Time */}
+      <div>
+        <label className="block text-sm font-medium mb-1">Due Time</label>
+        <input
+          type="time"
+          value={dueTime}
+          onChange={(e) => setDueTime(e.target.value)}
+          className="w-full border rounded-md p-2 text-sm"
         />
       </div>
 
@@ -319,11 +464,18 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
             onChange={e => setStatus(e.target.value as Task['status'])}
             className="w-full border border-gray-300 rounded-md p-2"
           >
-            {statusOptions.map(option => (
+            {/* {statusOptions.map(option => (
               <option key={option} value={option}>
                 {option}
               </option>
-            ))}
+            ))} */}
+            {[...statusOptions]
+              .sort((a, b) => a.localeCompare(b))
+              .map(option => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
           </select>
         )}
         {/* <select
@@ -347,11 +499,18 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
           onChange={e => setAssignedTo(e.target.value)}
           className="w-full border border-gray-300 rounded-md p-2"
         >
-          {teamMembers.map(member => (
+          {/* {teamMembers.map(member => (
             <option key={member.id} value={member.name}>
               {member.name}
             </option>
-          ))}
+          ))} */}
+          {[...teamMembers]
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map(member => (
+              <option key={member.id} value={member.name}>
+                {member.name}
+              </option>
+            ))}
         </select>
       </div>
 
@@ -374,11 +533,19 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
           onChange={e => setAssignedBy(e.target.value)}
           className="w-full border border-gray-300 rounded-md p-2"
         >
-          {teamMembers.map(member => (
+          {/* {teamMembers.map(member => (
             <option key={member.id} value={member.name}>
               {member.name}
             </option>
-          ))}
+          ))} */}
+
+          {[...teamMembers]
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map(member => (
+              <option key={member.id} value={member.name}>
+                {member.name}
+              </option>
+            ))}
         </select>
       </div>
 
