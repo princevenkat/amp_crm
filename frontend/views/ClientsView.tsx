@@ -656,7 +656,7 @@ const ProductView: React.FC<{
                                 <option>Residential</option>
                             </select>
                         ) : (
-                            <p className="py-2">{productDetails.mortgage?.mortgageType}</p>
+                            <p className="py-2">{productDetails.mortgage?.businessType}</p>
                         )}
                     </div>
                     <div>
