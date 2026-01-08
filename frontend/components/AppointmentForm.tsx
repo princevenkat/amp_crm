@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import type { Appointment, Client, TeamMember } from "../types";
 import JoditEditor from "jodit-react";
+
 
 
 
@@ -188,6 +189,54 @@ export const AppointmentForm: React.FC<Props> = ({
 
 
 
+    const editor = useRef(null);
+
+    const joditConfig = useMemo(
+        () => ({
+            readonly: false,
+            height: 120,
+            toolbarAdaptive: true,   // ✅ IMPORTANT
+            toolbarSticky: false,
+            // toolbarButtonSize: "small",
+            placeholder: "",
+            showCharsCounter: false,
+            showWordsCounter: false,
+            // showXPathInStatusbar: false,
+            buttons: [
+                "bold",
+                "italic",
+                "underline",
+                "strikethrough",
+                "superscript",
+                "subscript",
+                "ul",
+                "ol",
+                "outdent",
+                "indent",
+                "font",
+                "fontsize",
+                "brush",
+                "paragraph",
+                "image",
+                "video",
+                "table",
+                "link",
+                "align",
+                "undo",
+                "redo",
+                "hr",
+                "eraser",
+                "copyformat",
+                "fullsize",
+                "print",
+                "source",
+            ],
+
+
+
+        }),
+        []
+    );
 
 
     return (
@@ -235,48 +284,14 @@ export const AppointmentForm: React.FC<Props> = ({
                 /> */}
 
                 <JoditEditor
-                    name="description"
+                    ref={editor}
                     value={form.description}
-                    onChange={(newContent) =>
-                        setForm((prev) => ({ ...prev, description: newContent }))
+                    config={joditConfig}
+                    onBlur={(newContent) =>
+                        setForm(prev => ({ ...prev, description: newContent }))
                     }
-                    config={{
-                        readonly: false,
-                        height: 120,
-                        toolbarAdaptive: false,
-                        toolbarSticky: false,
-                        buttons: [
-                            "bold",
-                            "italic",
-                            "underline",
-                            "strikethrough",
-                            "superscript",
-                            "subscript",
-                            "ul",
-                            "ol",
-                            "outdent",
-                            "indent",
-                            "font",
-                            "fontsize",
-                            "brush",
-                            "paragraph",
-                            "image",
-                            "video",
-                            "table",
-                            "link",
-                            "align",
-                            "undo",
-                            "redo",
-                            "hr",
-                            "eraser",
-                            "copyformat",
-                            "fullsize",
-                            "print",
-                            "source",
-                        ],
-                    }}
-
                 />
+
 
             </div>
 
