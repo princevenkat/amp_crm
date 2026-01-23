@@ -871,12 +871,22 @@ router.get('/', protect, async (req, res) => {
         //         ORDER BY createdDate DESC
         //     `, [user.id, user.id]);
         // }
+        //     else if (user.role === 'Advisor' || user.role === 'Adviser') {
+        //         [clientRows] = await db.query(`
+        //     SELECT * FROM clients
+        //     WHERE primaryAdvisor_id = ? 
+        //     ORDER BY createdDate DESC
+        // `, [user.id]);
+        //     }
+
+
         else if (user.role === 'Advisor' || user.role === 'Adviser') {
             [clientRows] = await db.query(`
         SELECT * FROM clients
-        WHERE primaryAdvisor_id = ? 
+        WHERE primaryAdvisor_id = ?
+           OR createdBy = ?
         ORDER BY createdDate DESC
-    `, [user.id]);
+    `, [user.id, user.id]);
         }
 
         else {
@@ -1102,6 +1112,30 @@ router.post("/:id/duplicate", protect, async (req, res) => {
         //             ]
         //         );
 
+        //     await db.query(
+        //         `INSERT INTO clients 
+        // (id, name, email, phone, applicationType, status, caseStatus, primaryAdvisor, primaryAdvisor_id, admin, admin_id, caseReference, createdDate, createdBy)
+        // VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
+        // `,
+        //         [
+        //             newClientId,
+        //             oldClient.name,
+        //             oldClient.email,
+        //             oldClient.phone,
+        //             oldClient.applicationType,
+        //             "Active",
+        //             "Initial Enquiry",
+        //             req.user.name,
+        //             req.user.id,           // ✔ adviser = current user (ID)
+        //             admin,
+        //             admin_id,
+        //             oldClient.admin,
+        //             oldClient.admin_id,    // ✔ keep original admin ID
+        //             newCaseReference,
+        //             req.user.id            // ✔ creator = current user
+        //         ]
+        //     );
+
         await db.query(
             `INSERT INTO clients 
     (id, name, email, phone, applicationType, status, caseStatus, primaryAdvisor, primaryAdvisor_id, admin, admin_id, caseReference, createdDate, createdBy)
@@ -1115,12 +1149,12 @@ router.post("/:id/duplicate", protect, async (req, res) => {
                 oldClient.applicationType,
                 "Active",
                 "Initial Enquiry",
-                req.user.name,
-                req.user.id,           // ✔ adviser = current user (ID)
-                oldClient.admin,
-                oldClient.admin_id,    // ✔ keep original admin ID
+                req.user.name,           // primaryAdvisor
+                req.user.id,             // primaryAdvisor_id
+                oldClient.admin ?? "",   // ✅ fallback in case admin is null/undefined
+                oldClient.admin_id ?? "",// ✅ fallback
                 newCaseReference,
-                req.user.id            // ✔ creator = current user
+                req.user.id
             ]
         );
 

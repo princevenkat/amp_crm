@@ -2546,7 +2546,7 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
         [teamMembers]
     );
 
-    const caseStatuses: CaseStatus[] = ['Initial Enquiry', 'AIP', 'FMA Submitted', 'Offered', 'Completed', 'Renewal', 'On Risk', 'Others'];
+    const caseStatuses: CaseStatus[] = ['Enquiry', 'AIP', 'FMA Submitted', 'Offered', 'Exchanged', 'Completed', 'Renewal', 'On Risk', 'Commission Due', 'NPW', 'Other'];
     const clientStatuses: Client['status'][] = ['Active', 'Lead', 'Archived'];
 
     //const canDelete = currentUser && [UserRole.Admin, UserRole.SuperAdmin].includes(currentUser.role);
@@ -2668,14 +2668,17 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
 
 
     const caseStatusColors: Record<string, string> = {
-        'Initial Enquiry': 'bg-blue-500 text-white',
+        'Enquiry': 'bg-blue-500 text-white',
         'AIP': 'bg-yellow-400 text-black',
         'FMA Submitted': 'bg-purple-500 text-white',
         'Offered': 'bg-orange-500 text-white',
+        'Exchanged': 'bg-indigo-500 text-white',
         'Completed': 'bg-green-500 text-white',
         'Renewal': 'bg-gray-600 text-white',
         'On Risk': 'bg-red-500 text-white',
-        'Othes': 'bg-gray-500 text-black',
+        'Commission Due': 'bg-pink-500 text-white',
+        'NPW': 'bg-cyan-500 text-white',
+        'Other': 'bg-gray-500 text-black',
     };
 
 
@@ -2698,9 +2701,9 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                         <h1 className="text-2xl sm:text-3xl font-bold">{editedClient.name} {editedClient.applicationType === 'Joint' && `& ${editedClient.applicants[1]?.firstName} ${editedClient.applicants[1]?.surname}`}</h1>
                         {!isEditing ? (
                             <div className="flex flex-wrap gap-2 mt-2">
-                                <span className={`px-3 py-1 text-sm rounded-full inline-block ${editedClient.status === 'Active' ? 'bg-success/20 text-success' : 'bg-gray-500/20 text-gray-500'}`}>
+                                {/* <span className={`px-3 py-1 text-sm rounded-full inline-block ${editedClient.status === 'Active' ? 'bg-success/20 text-success' : 'bg-gray-500/20 text-gray-500'}`}>
                                     {editedClient.status}
-                                </span>
+                                </span> */}
                                 {editedClient.caseStatus && (
                                     <span className={`px-3 py-1 text-sm rounded-full inline-block ${caseStatusColors[editedClient.caseStatus] || 'bg-gray-200 text-black'}`}>{editedClient.caseStatus}</span>
                                     // <span className="px-3 py-1 text-sm rounded-full inline-block bg-accent/20 text-accent">
@@ -2710,9 +2713,11 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                             </div>
                         ) : (
                             <div className="flex items-center gap-2 mt-2">
-                                <select name="status" value={editedClient.status} onChange={handleGeneralChange} className="bg-surface border border-gray-300 rounded-md p-1 text-sm">
+                                {/* <select name="status" value={editedClient.status} onChange={handleGeneralChange} className="bg-surface border border-gray-300 rounded-md p-1 text-sm">
                                     {clientStatuses.map(s => <option key={s} value={s}>{s}</option>)}
-                                </select>
+                                </select> */}
+
+
                                 <select name="caseStatus" value={editedClient.caseStatus} onChange={handleGeneralChange} className="bg-surface border border-gray-300 rounded-md p-1 text-sm">
                                     {caseStatuses.map(s => <option key={s} value={s}>{s}</option>)}
                                 </select>
@@ -2745,14 +2750,27 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                     <p className="text-text-secondary">
                         <strong>Admin:</strong>
                         {isEditing ? (
+                            // <select
+                            //     name="adminId"
+                            //     value={editedClient.id || ""}
+                            //     onChange={handleGeneralChangeNe}
+                            //     className="bg-surface border border-gray-300 rounded-md p-1 text-sm ml-1"
+                            // >
+                            //     <option value="" disabled>Please select admin</option>
+                            //     {cadmins.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                            // </select>
                             <select
                                 name="adminId"
-                                value={editedClient.id || ""}
+                                value={editedClient.admin_id || ""}
                                 onChange={handleGeneralChangeNe}
                                 className="bg-surface border border-gray-300 rounded-md p-1 text-sm ml-1"
                             >
                                 <option value="" disabled>Please select admin</option>
-                                {cadmins.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                                {cadmins.map(a => (
+                                    <option key={a.id} value={a.id}>
+                                        {a.name}
+                                    </option>
+                                ))}
                             </select>
                         ) : (
                             editedClient.admin || " — "
@@ -3020,15 +3038,19 @@ export const ClientsView: React.FC = () => {
 
 
     const caseStatusColors: Record<string, string> = {
-        'Initial Enquiry': 'bg-blue-500 text-white',
+        'Enquiry': 'bg-blue-500 text-white',
         'AIP': 'bg-yellow-400 text-black',
         'FMA Submitted': 'bg-purple-500 text-white',
         'Offered': 'bg-orange-500 text-white',
+        'Exchanged': 'bg-indigo-500 text-white',
         'Completed': 'bg-green-500 text-white',
         'Renewal': 'bg-gray-600 text-white',
         'On Risk': 'bg-red-500 text-white',
-        'Othes': 'bg-gray-500 text-black',
+        'Commission Due': 'bg-pink-500 text-white',
+        'NPW': 'bg-cyan-500 text-white',
+        'Other': 'bg-gray-500 text-black',
     };
+
 
 
 
@@ -3066,14 +3088,17 @@ export const ClientsView: React.FC = () => {
                             className="bg-surface border border-gray-200 rounded-lg py-2 px-3 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 w-full"
                         >
                             <option value="">All Case Statuses</option>
-                            <option value="Initial Enquiry">Initial Enquiry</option>
+                            <option value="Enquiry">Enquiry</option>
                             <option value="AIP">AIP</option>
                             <option value="FMA Submitted">FMA Submitted</option>
                             <option value="Offered">Offered</option>
+                            <option value="Exchanged">Exchanged</option>
                             <option value="Completed">Completed</option>
                             <option value="Renewal">Renewal</option>
-                            <option value="Renewal">On Risk</option>
-                            <option value="Renewal">Others</option>
+                            <option value="On Risk">On Risk</option>
+                            <option value="Commission Due">Commission Due</option>
+                            <option value="NPW">NPW</option>
+                            <option value="Other">Other</option>
                         </select>
                     </div>
                 </div>

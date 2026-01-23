@@ -102,7 +102,7 @@ router.post("/", protect, async (req, res) => {
     const { title, description, dueDate, status, assignedTo, assignedBy, clientId } = req.body;
 
     // ✅ Ensure valid status
-    const validStatuses = ['Enquiry', 'AIP', 'FMA', 'Offered', 'Completed', 'Commission Due', 'NPW'];
+    const validStatuses = ['Enquiry', 'AIP', 'FMA Submitted', 'Offered', 'Exchanged', 'Completed', 'Renewal', 'On Risk', 'Commission Due', 'NPW', 'Other'];
     const normalizedStatus = validStatuses.includes(status) ? status : 'Enquiry';
 
     // ✅ Default assignedBy / assignedTo to current logged-in user if missing
@@ -186,7 +186,8 @@ router.put("/:id", protect, async (req, res) => {
         clientId: incomingClientId,
     } = req.body;
 
-    const validStatuses = ['Enquiry', 'AIP', 'FMA', 'Offered', 'Completed', 'Commission Due', 'NPW'];
+    //const validStatuses = ['Enquiry', 'AIP', 'FMA', 'Offered', 'Completed', 'Commission Due', 'NPW'];
+    const validStatuses = ['Enquiry', 'AIP', 'FMA Submitted', 'Offered', 'Exchanged', 'Completed', 'Renewal', 'On Risk', 'Commission Due', 'NPW', 'Other'];
 
     try {
         // 1) Load existing task

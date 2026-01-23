@@ -129,16 +129,16 @@ const NotesView: React.FC<{
 
 const ApplicantDetailsForm: React.FC<{ applicant: Applicant; onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void }> = ({ applicant, onChange }) => {
     const formFields: { name: keyof Applicant; label: string; type: string; required: boolean; fullWidth?: boolean }[] = [
-        { name: 'title', label: 'Title', type: 'select', required: true },
+        { name: 'title', label: 'Title', type: 'select', required: false },
         { name: 'firstName', label: 'First Name', type: 'text', required: true },
         { name: 'middleName', label: 'Middle Name', type: 'text', required: false },
         { name: 'surname', label: 'Surname', type: 'text', required: true },
-        { name: 'gender', label: 'Gender', type: 'select-gender', required: true },
+        { name: 'gender', label: 'Gender', type: 'select-gender', required: false },
         { name: 'dob', label: 'Date of Birth', type: 'date', required: false },
         { name: 'homeTelephone', label: 'Home Telephone', type: 'tel', required: false },
-        { name: 'mobileNumber', label: 'Mobile Number', type: 'tel', required: true },
-        { name: 'currentAddress', label: 'Current Address', type: 'text', required: false, fullWidth: true },
-        { name: 'email', label: 'Email Address', type: 'email', required: true },
+        { name: 'mobileNumber', label: 'Mobile Number', type: 'tel', required: false },
+        { name: 'currentAddress', label: 'Current Address', type: 'text', required: false, fullWidth: false },
+        { name: 'email', label: 'Email Address', type: 'email', required: false },
         { name: 'noOfDependents', label: 'No Of Dependents', type: 'number', required: false },
         { name: 'nationality', label: 'Nationality', type: 'text', required: false },
         { name: 'introducer', label: 'Introducer', type: 'text', required: false },
@@ -447,7 +447,8 @@ const PipelineTableRow: React.FC<{
                     : "N/A"}
 
             </td>
-            {/* <td className="px-6 py-4">{applicant?.nationality || 'N/A'}</td> */}
+            <td className="px-6 py-4">{applicant?.introducer || 'N/A'}</td>
+
             <td className="px-6 py-4">{applicant?.mobileNumber || 'N/A'}</td>
             <td className="px-6 py-4">{applicant?.email || 'N/A'}</td>
             <td className="px-6 py-4">
@@ -490,13 +491,108 @@ export const DealsView: React.FC = () => {
     const [clientToConvert, setClientToConvert] = useState<Client | null>(null);
     const [selectedAdvisorId, setSelectedAdvisorId] = useState('');
 
+    // const leads = useMemo(() => {
+    //     return clients.filter(client =>
+    //         (client.status === 'Lead' || client.status === 'Pipeline') &&
+    //         (client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    //             client.email.toLowerCase().includes(searchTerm.toLowerCase()))
+    //     );
+    // }, [searchTerm, clients]);
+
+
+
+    type SortKey =
+        | 'createdDate'
+        | 'firstName'
+        | 'surname'
+        | 'dob'
+        | 'mobile'
+        | 'email';
+    type SortOrder = 'asc' | 'desc';
+
+    const [sortKey, setSortKey] = useState<SortKey>('createdDate');
+    const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+
+    const handleSort = (key: SortKey) => {
+        if (sortKey === key) {
+            setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'));
+        } else {
+            setSortKey(key);
+            setSortOrder('asc');
+        }
+    };
+
+    const SortIcon = ({ active }: { active: boolean }) => (
+        <span className="ml-1 text-xs">{active ? (sortOrder === 'asc' ? '▲' : '▼') : '⇅'}</span>
+    );
+
+    // const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+    // const handleSort = (key: SortKey) => {
+    //     if (sortKey === key) {
+    //         setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    //     } else {
+    //         setSortKey(key);
+    //         setSortDirection('asc');
+    //     }
+    // };
+
+
+
+
+
     const leads = useMemo(() => {
-        return clients.filter(client =>
+        const filtered = clients.filter(client =>
             (client.status === 'Lead' || client.status === 'Pipeline') &&
-            (client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                client.email.toLowerCase().includes(searchTerm.toLowerCase()))
+            (
+                client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                client.email.toLowerCase().includes(searchTerm.toLowerCase())
+            )
         );
-    }, [searchTerm, clients]);
+
+        return [...filtered].sort((a, b) => {
+            const aApp = a.applicants?.[0];
+            const bApp = b.applicants?.[0];
+
+            let aVal: any = '';
+            let bVal: any = '';
+
+            switch (sortKey) {
+                case 'createdDate':
+                    aVal = aApp?.created_at || '';
+                    bVal = bApp?.created_at || '';
+                    break;
+                case 'firstName':
+                    aVal = aApp?.firstName || '';
+                    bVal = bApp?.firstName || '';
+                    break;
+                case 'surname':
+                    aVal = aApp?.surname || '';
+                    bVal = bApp?.surname || '';
+                    break;
+                case 'dob':
+                    aVal = aApp?.dob || '';
+                    bVal = bApp?.dob || '';
+                    break;
+                case 'mobile':
+                    aVal = aApp?.mobileNumber || '';
+                    bVal = bApp?.mobileNumber || '';
+                    break;
+                case 'email':
+                    aVal = aApp?.email || '';
+                    bVal = bApp?.email || '';
+                    break;
+            }
+
+            if (!aVal) return 1;
+            if (!bVal) return -1;
+
+            if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }, [clients, searchTerm, sortKey, sortOrder]);
+
+
 
     const handleAddEnquiry = async (client: Omit<Client, 'id' | 'avatar'>) => {
         await addClient(client);
@@ -606,6 +702,12 @@ export const DealsView: React.FC = () => {
         );
     }
     const canDelete = currentUser?.role === UserRole.SuperAdmin;
+
+
+
+
+
+
     return (
         <div className="p-4 sm:p-8">
             <Modal title="New Enquiry" isOpen={isCreatingEnquiry} onClose={() => setIsCreatingEnquiry(false)} size="4xl">
@@ -690,10 +792,28 @@ export const DealsView: React.FC = () => {
                 <table className="min-w-full text-sm text-left">
                     <thead className="bg-gray-50 border-b border-gray-200">
                         <tr>
-                            <th className="px-6 py-3 font-medium text-text-secondary">Created Date</th>
-                            <th className="px-6 py-3 font-medium text-text-secondary">First Name</th>
-                            <th className="px-6 py-3 font-medium text-text-secondary">Surname</th>
+                            <th
+                                className="px-6 py-3 font-medium text-text-secondary cursor-pointer select-none"
+                                onClick={() => handleSort('createdDate')}
+                            >
+                                Created Date <SortIcon active={sortKey === 'createdDate'} />
+                            </th>
+                            <th
+                                className="px-6 py-3 font-medium text-text-secondary cursor-pointer select-none"
+                                onClick={() => handleSort('firstName')}>
+                                First Name <SortIcon active={sortKey === 'firstName'} />
+                            </th>
+
+                            <th
+                                className="px-6 py-3 font-medium text-text-secondary cursor-pointer select-none"
+                                onClick={() => handleSort('surname')}
+                            >
+                                Surname <SortIcon active={sortKey === 'surname'} />
+                            </th>
+
+
                             <th className="px-6 py-3 font-medium text-text-secondary">D.o.B</th>
+                            <th className="px-6 py-3 font-medium text-text-secondary">Introducer</th>
                             <th className="px-6 py-3 font-medium text-text-secondary">Mobile Number</th>
                             <th className="px-6 py-3 font-medium text-text-secondary">Email</th>
                             <th className="px-6 py-3 font-medium text-text-secondary">Actions</th>

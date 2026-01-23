@@ -1,16 +1,43 @@
 import React, { useContext } from "react";
 import { DataContext } from "../contexts/DataContext";
+import { UserRole } from "@/types";
 
 export const TaskReminderPopup: React.FC = () => {
     const {
         taskReminders,
         appointmentReminders,
         reminderPopupOpen,
-        closeReminderPopup
+        closeReminderPopup,
+        currentUser,
     } = useContext(DataContext);
 
     // If BOTH lists are empty or popup is closed → hide
-    if (!reminderPopupOpen || (taskReminders.length === 0 && appointmentReminders.length === 0)) {
+    // if (!reminderPopupOpen || (taskReminders.length === 0 && appointmentReminders.length === 0)) {
+    //     return null;
+    // }
+
+
+
+    const visibleTaskReminders = React.useMemo(() => {
+        if (!currentUser) return [];
+
+        // 👑 Super Admin sees everything
+        if (currentUser.role === UserRole.SuperAdmin) {
+            return taskReminders;
+        }
+
+        // 👤 Everyone else sees ONLY their tasks
+        return taskReminders.filter(
+            task => task.assignedTo === currentUser.name
+        );
+    }, [taskReminders, currentUser]);
+
+
+
+    if (
+        !reminderPopupOpen ||
+        (visibleTaskReminders.length === 0 && appointmentReminders.length === 0)
+    ) {
         return null;
     }
 
@@ -35,7 +62,7 @@ export const TaskReminderPopup: React.FC = () => {
                     <div className="mb-4">
                         <h3 className="text-sm font-bold text-blue-700 mb-2">Tasks Due Soon</h3>
                         <ul className="space-y-2">
-                            {taskReminders.map(task => (
+                            {visibleTaskReminders.map(task => (
                                 <li key={task.id} className="border rounded-lg p-4 bg-gray-50 hover:shadow transition">
                                     <strong className="text-md text-gray-900">{task.title}</strong>
 

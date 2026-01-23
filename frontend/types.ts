@@ -26,16 +26,17 @@ export enum View {
 // }
 
 export enum TaskStatus {
-  Enquiry = "Initial Enquiry",
+  Enquiry = "Enquiry",
   AIP = "AIP",
-  FMA = "FMA",
+  FMASubmitted = "FMA Submitted",
   Offered = "Offered",
+  Exchanged = "Exchanged",
   Completed = "Completed",
   Renewal = "Renewal",
   OnRisk = "On Risk",
-  Others = "Others",
   CommissionDue = "Commission Due",
   NPW = "NPW",
+  Other = "Other",
 }
 
 export enum ContactType {
@@ -379,16 +380,29 @@ export interface Note {
   date: string;
 }
 
+// export type CaseStatus =
+//   | "Initial Enquiry"
+//   | "AIP"
+//   | "FMA Submitted"
+//   | "Offered"
+//   | "Completed"
+//   | "Renewal"
+//   | "On Risk"
+//   | "Others"
+//   | "";
+
 export type CaseStatus =
-  | "Initial Enquiry"
+  | "Enquiry"
   | "AIP"
   | "FMA Submitted"
   | "Offered"
+  | "Exchanged"
   | "Completed"
   | "Renewal"
   | "On Risk"
-  | "Others"
-  | "";
+  | "Commission Due"
+  | "NPW"
+  | "Other";
 
 export interface Client {
   id: string;
@@ -405,6 +419,7 @@ export interface Client {
   caseReference: string;
   primaryAdvisor: string;
   admin: string;
+  admin_id: string;
   applicationType: "Single" | "Joint";
   applicants: Applicant[];
   property: PropertyDetails;
@@ -566,7 +581,7 @@ export interface DataContextType {
   addClient: (client: Omit<Client, "id" | "avatar">) => Promise<void>;
   updateClient: (
     clientId: string,
-    updatedData: Partial<Client>
+    updatedData: Partial<Client>,
   ) => Promise<void>;
   deleteClient: (clientId: string) => Promise<boolean>;
   tasks: Task[];
@@ -577,7 +592,7 @@ export interface DataContextType {
   addContact: (contact: Omit<Contact, "id">) => Promise<void>;
   updateContact: (
     contactId: string,
-    updatedData: Partial<Contact>
+    updatedData: Partial<Contact>,
   ) => Promise<void>;
   deleteContact: (contactId: string) => Promise<boolean>;
   getContactsByType: (type: ContactType) => Contact[];
@@ -591,7 +606,7 @@ export interface DataContextType {
   addLedgerEntry: (entry: Omit<LedgerEntry, "id">) => Promise<void>;
   updateLedgerEntry: (
     entryId: string,
-    updatedData: Partial<LedgerEntry>
+    updatedData: Partial<LedgerEntry>,
   ) => Promise<void>;
   deleteLedgerEntry: (entryId: string) => Promise<boolean>;
   // passwords: PasswordEntry[];
@@ -606,14 +621,14 @@ export interface DataContextType {
   fetchPasswords: () => Promise<void>;
   updatePasswordEntry: (
     entryId: string,
-    updatedData: Partial<PasswordEntry>
+    updatedData: Partial<PasswordEntry>,
   ) => Promise<void>;
   deletePasswordEntry: (entryId: string) => Promise<boolean>;
   teamMembers: TeamMember[];
   addTeamMember: (member: Omit<TeamMember, "id" | "avatar">) => Promise<void>;
   updateTeamMember: (
     memberId: string,
-    updatedData: Partial<TeamMember>
+    updatedData: Partial<TeamMember>,
   ) => Promise<void>;
   deleteTeamMember: (memberId: string) => Promise<boolean>;
   currentView: View;

@@ -24,6 +24,8 @@ export const TasksView: React.FC = () => {
     const [clientFilter, setClientFilter] = useState('');
     const [assigneeFilter, setAssigneeFilter] = useState('');
 
+    const [searchTerm, setSearchTerm] = useState('');
+
     useEffect(() => {
         if (selectedTaskIdForNav) {
             const taskToOpen = tasks.find(t => t.id === selectedTaskIdForNav);
@@ -76,13 +78,67 @@ export const TasksView: React.FC = () => {
         }
     };
 
+    // const filteredTasks = useMemo(() => {
+    //     const filtered = tasks.filter(task => {
+    //         const client = task.clientId
+    //             ? clients.find(c => c.id === task.clientId)
+    //             : null;
+
+    //         return (
+    //             (!statusFilter || task.status === statusFilter) &&
+    //             (!clientFilter || client?.name === clientFilter) &&
+    //             (!assigneeFilter || task.assignedTo === assigneeFilter)
+    //         );
+    //     });
+
+    //     return filtered.sort((a, b) => {
+    //         let aVal: any = a[sortKey];
+    //         let bVal: any = b[sortKey];
+
+    //         // Date columns
+    //         if (sortKey === 'dueDate' || sortKey === 'created_at') {
+    //             aVal = new Date(aVal).getTime();
+    //             bVal = new Date(bVal).getTime();
+    //         }
+
+    //         // String columns
+    //         if (typeof aVal === 'string') {
+    //             return sortOrder === 'asc'
+    //                 ? aVal.localeCompare(bVal)
+    //                 : bVal.localeCompare(aVal);
+    //         }
+
+    //         return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+    //     });
+    // }, [
+    //     tasks,
+    //     clients,
+    //     statusFilter,
+    //     clientFilter,
+    //     assigneeFilter,
+    //     sortKey,
+    //     sortOrder,
+    // ]);
+
     const filteredTasks = useMemo(() => {
+        const search = searchTerm.toLowerCase();
+
         const filtered = tasks.filter(task => {
             const client = task.clientId
                 ? clients.find(c => c.id === task.clientId)
                 : null;
 
+            const matchesSearch =
+                !search ||
+                task.title.toLowerCase().includes(search) ||
+                task.status.toLowerCase().includes(search) ||
+                task.assignedTo.toLowerCase().includes(search) ||
+                task.assignedBy.toLowerCase().includes(search) ||
+                client?.name?.toLowerCase().includes(search) ||
+                client?.caseReference?.toLowerCase().includes(search);
+
             return (
+                matchesSearch &&
                 (!statusFilter || task.status === statusFilter) &&
                 (!clientFilter || client?.name === clientFilter) &&
                 (!assigneeFilter || task.assignedTo === assigneeFilter)
@@ -93,13 +149,11 @@ export const TasksView: React.FC = () => {
             let aVal: any = a[sortKey];
             let bVal: any = b[sortKey];
 
-            // Date columns
             if (sortKey === 'dueDate' || sortKey === 'created_at') {
                 aVal = new Date(aVal).getTime();
                 bVal = new Date(bVal).getTime();
             }
 
-            // String columns
             if (typeof aVal === 'string') {
                 return sortOrder === 'asc'
                     ? aVal.localeCompare(bVal)
@@ -114,9 +168,11 @@ export const TasksView: React.FC = () => {
         statusFilter,
         clientFilter,
         assigneeFilter,
+        searchTerm,
         sortKey,
         sortOrder,
     ]);
+
 
 
     const getRelativeDueDate = (dueDate: string) => {
@@ -162,7 +218,7 @@ export const TasksView: React.FC = () => {
         return taskDueDate < today;
     };
 
-    console.log(tasks)
+    // console.log(tasks)
 
 
     const SortableTh = ({
@@ -186,6 +242,10 @@ export const TasksView: React.FC = () => {
             </span>
         </th>
     );
+
+
+
+
 
 
     return (
@@ -213,7 +273,16 @@ export const TasksView: React.FC = () => {
             </div>
 
             {/* Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4 text-sm">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4 text-sm">
+
+                {/* Search */}
+                <input
+                    type="text"
+                    placeholder="Search by Client..."
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    className="border p-2 rounded md:col-span-2"
+                />
                 <select
                     value={statusFilter}
                     onChange={e => setStatusFilter(e.target.value)}
@@ -225,7 +294,7 @@ export const TasksView: React.FC = () => {
                     ))}
                 </select>
 
-                <select
+                {/* <select
                     value={clientFilter}
                     onChange={e => setClientFilter(e.target.value)}
                     className="border p-2 rounded cursor-pointer"
@@ -234,7 +303,7 @@ export const TasksView: React.FC = () => {
                     {clients.map(c => (
                         <option key={c.id} value={c.name}>{c.name}</option>
                     ))}
-                </select>
+                </select> */}
 
                 <select
                     value={assigneeFilter}
