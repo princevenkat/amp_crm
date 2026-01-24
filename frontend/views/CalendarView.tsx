@@ -1031,9 +1031,10 @@ export const CalendarView: React.FC = () => {
                             </p>
 
                             {selectedAppointment.description && (
-                                <p className="text-sm text-gray-600">
-                                    {selectedAppointment.description}
-                                </p>
+                                <div
+                                    className="text-sm text-gray-600"
+                                    dangerouslySetInnerHTML={{ __html: selectedAppointment.description }}
+                                />
                             )}
 
                             <div className="flex justify-end gap-3 pt-4 border-t">
