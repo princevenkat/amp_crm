@@ -10,6 +10,7 @@ import { AppointmentForm } from '@/components/AppointmentForm';
 import { splitDateTime } from '../utils/dateUtils';
 
 
+
 // Helper to get color classes for task status badges
 const getStatusBadgeColorClass = (status: TaskStatus) => {
     switch (status) {
@@ -17,7 +18,7 @@ const getStatusBadgeColorClass = (status: TaskStatus) => {
             return 'bg-purple-100 text-purple-800';
         case TaskStatus.AIP:
             return 'bg-blue-100 text-blue-800';
-        case TaskStatus.FMA:
+        case TaskStatus.FMASubmitted:
             return 'bg-amber-100 text-amber-800';
         case TaskStatus.Offered:
             return 'bg-indigo-100 text-indigo-800';
@@ -39,7 +40,7 @@ const getStatusEventColorClass = (status: TaskStatus) => {
             return 'bg-purple-100 text-purple-800 hover:bg-purple-200';
         case TaskStatus.AIP:
             return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
-        case TaskStatus.FMA:
+        case TaskStatus.FMASubmitted:
             return 'bg-amber-100 text-amber-800 hover:bg-amber-200';
         case TaskStatus.Offered:
             return 'bg-indigo-100 text-indigo-800 hover:bg-indigo-200';
@@ -54,30 +55,7 @@ const getStatusEventColorClass = (status: TaskStatus) => {
     }
 }
 
-// const CalendarDay: React.FC<{ day: number; date: Date; isCurrentMonth: boolean; isToday: boolean; tasks: Task[]; onTaskClick: (task: Task) => void; }> = ({ day, isCurrentMonth, isToday, tasks, onTaskClick }) => {
-//     const dayClasses = `border-t border-r border-gray-200 p-2 h-24 md:h-28 relative flex flex-col ${isCurrentMonth ? 'bg-surface' : 'bg-gray-50'}`;
-//     const dayNumberClasses = `text-sm ${isToday ? 'bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center font-bold' : (isCurrentMonth ? 'text-text-primary' : 'text-text-secondary/50')}`;
 
-//     return (
-//         <div className={dayClasses}>
-//             <div className={dayNumberClasses}>
-//                 {day}
-//             </div>
-//             <div className="flex-grow overflow-y-auto text-xs mt-1 space-y-1">
-//                 {tasks.map(task => (
-//                     <div
-//                         key={task.id}
-//                         className={`p-1 rounded-md truncate cursor-pointer transition-colors ${getStatusEventColorClass(task.status)}`}
-//                         title={task.title}
-//                         onClick={() => onTaskClick(task)}
-//                     >
-//                         {task.title}
-//                     </div>
-//                 ))}
-//             </div>
-//         </div>
-//     );
-// }
 
 const CalendarDay: React.FC<{
     day: number;
@@ -89,9 +67,11 @@ const CalendarDay: React.FC<{
     onTaskClick: (task: Task) => void;
     onAppointmentClick: (appt: Appointment) => void;
     onAddTask: (date: Date) => void;   // 👈 New prop
-}> = ({ day, date, isCurrentMonth, isToday, tasks, appointments, onTaskClick, onAppointmentClick, onAddTask }) => {
+    onAddClick: (date: Date) => void;
+}> = ({ day, date, isCurrentMonth, isToday, tasks, appointments, onTaskClick, onAppointmentClick, onAddTask, onAddClick }) => {
     const dayClasses = `border-t border-r border-gray-200 p-2 h-24 md:h-28 relative flex flex-col ${isCurrentMonth ? 'bg-surface' : 'bg-gray-50'}`;
     const dayNumberClasses = `text-sm ${isToday ? 'bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center font-bold' : (isCurrentMonth ? 'text-text-primary' : 'text-text-secondary/50')}`;
+
 
 
 
@@ -100,11 +80,18 @@ const CalendarDay: React.FC<{
             <div className="flex justify-between items-start relative">
                 <div className={dayNumberClasses}>{day}</div>
                 {/* 🟩 Small + button (hidden until hover) */}
-                <button
+                {/* <button
                     onClick={() => onAddTask(date)}
                     // className="text-lg text-primary hover:text-secondary opacity-0 group-hover:opacity-100 transition-opacity"
                     className="absolute end-0 opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded-full bg-[#d28302] text-white hover:bg-primary transition-all duration-200"
                     title="Add task"
+                >
+                    +
+                </button> */}
+
+                <button
+                    onClick={() => onAddClick(date)}
+                    className="absolute end-0 opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded-full bg-[#d28302] text-white hover:bg-primary transition-all duration-200"
                 >
                     +
                 </button>
@@ -144,12 +131,25 @@ const CalendarDay: React.FC<{
                         </div>
                     );
                 })}
+
+
+
             </div>
         </div>
     );
 };
 export const CalendarView: React.FC = () => {
-    const { tasks, addTask, updateTask, deleteTask, clients, currentUser, setCurrentView, setSelectedClientIdForNav, setSelectedTaskIdForNav, appointments, teamMembers, updateAppointment,     // ✅ ADD THIS
+
+    type SidebarTab = 'tasks' | 'appointments';
+
+    const [activeTab, setActiveTab] = useState<SidebarTab>('tasks');
+
+
+    const [addChooserDate, setAddChooserDate] = useState<Date | null>(null);
+
+
+
+    const { tasks, addTask, updateTask, deleteTask, clients, currentUser, setCurrentView, setSelectedClientIdForNav, setSelectedTaskIdForNav, appointments, teamMembers, addAppointment, updateAppointment,     // ✅ ADD THIS
         deleteAppointment } = useContext(DataContext);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -403,6 +403,10 @@ export const CalendarView: React.FC = () => {
     //     throw new Error('Function not implemented.');
     // }
 
+
+
+
+
     return (
         <div className="p-4 sm:p-8">
             {selectedTask && (
@@ -528,20 +532,41 @@ export const CalendarView: React.FC = () => {
                 {/* Left Column for Search and Results */}
                 <div className="lg:col-span-1">
                     <h1 className="text-3xl font-bold mb-8">Calendar</h1>
-                    <div className="relative mb-4">
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                            {SearchIcon}
-                        </span>
-                        <input
-                            type="text"
-                            placeholder="Search by client..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-surface border border-gray-200 rounded-lg py-2 pl-10 pr-4 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
-                        />
+
+                    <div className="flex border-b mb-4">
+                        {(['tasks', 'appointments'] as const).map(tab => (
+                            <button
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                className={`
+                                    flex-1 py-2 text-sm font-semibold rounded-md transition
+                                    ${activeTab === tab ? 'bg-white shadow text-primary' : 'text-gray-500 hover:text-gray-700'}
+                                `}
+                            >
+                                {tab === 'tasks' ? 'Tasks' : 'Appointments'}
+                                <span className="ml-2 text-xs opacity-60">
+                                    ({tab === 'tasks' ? tasks.length : appointments.length})
+                                </span>
+                            </button>
+                        ))}
                     </div>
 
-                    <div className="mt-4 space-y-2 max-h-[70vh] overflow-y-auto  
+                    {activeTab === 'tasks' && (
+                        <div className="relative mb-4">
+                            <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                                {SearchIcon}
+                            </span>
+                            <input
+                                type="text"
+                                placeholder="Search by client..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full bg-surface border border-gray-200 rounded-lg py-2 pl-10 pr-4 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            />
+                        </div>
+                    )}
+                    {activeTab === 'tasks' && (
+                        <div className="mt-4 space-y-2 max-h-[70vh] overflow-y-auto  
                         [&::-webkit-scrollbar]:w-1.5
                         [&::-webkit-scrollbar]:h-1.5
                         [&::-webkit-scrollbar-track]:bg-transparent
@@ -552,80 +577,20 @@ export const CalendarView: React.FC = () => {
                         scrollbar-thumb-rounded-full
                         scrollbar-track-transparent                    
                     ">
-                        {searchTerm.trim() ? (
-                            <>
-                                <h3 className="font-semibold text-text-primary mb-2">
-                                    Search Results ({searchResults.length})
-                                </h3>
-                                {searchResults.length > 0 ? (
-                                    searchResults.map(task => {
-                                        const client = clients.find(c => c.id === task.clientId);
-                                        const taskDate = new Date(task.dueDate);
-                                        return (
-                                            <div
-                                                key={task.id}
-                                                onClick={() => handleSearchResultClick(task)}
-                                                className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 cursor-pointer border"
-                                            >
-                                                <div className="text-center flex-shrink-0 w-12">
-                                                    <p className="text-xs text-text-secondary">
-                                                        {taskDate.toLocaleString('default', { month: 'short' })}
-                                                    </p>
-                                                    <p className="text-lg font-bold text-text-primary">
-                                                        {taskDate.getDate()}
-                                                    </p>
-                                                </div>
-                                                <div className="flex-1">
-                                                    <p className="font-semibold text-sm text-text-primary leading-tight">
-                                                        {task.title}
-                                                    </p>
-                                                    {client && (
-                                                        <p className="text-xs text-secondary mt-0.5">
-                                                            {client.name}
-                                                        </p>
-                                                    )}
-                                                    <p
-                                                        className={`text-xs mt-1 font-semibold ${getStatusBadgeColorClass(
-                                                            task.status
-                                                        )} px-1.5 py-0.5 rounded-full inline-block`}
-                                                    >
-                                                        {task.status}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        );
-                                    })
-                                ) : (
-                                    <p className="text-sm text-text-secondary text-center p-4">
-                                        No tasks found for "{searchTerm}".
-                                    </p>
-                                )}
-                            </>
-                        ) : (
-                            <>
-                                <h3 className="font-semibold text-text-primary mb-2">
-                                    All Client Tasks
-                                </h3>
-
-                                {Object.entries(tasksByCase).map(([caseRef, caseTasks]) => (
-                                    <div key={caseRef}>
-                                        <div className="font-semibold text-sm text-text-primary mb-1 mt-3 flex px-2">
-                                            {caseTasks[0]?.clientName && (
-                                                <div className="text-md">
-                                                    {caseTasks[0].clientName}
-                                                </div>
-                                            )}
-                                            <div className="ml-auto text-[10px] text-primary ml-1">({caseRef})</div>
-
-                                        </div>
-
-                                        {caseTasks.map(task => {
+                            {searchTerm.trim() ? (
+                                <>
+                                    <h3 className="font-semibold text-text-primary mb-2">
+                                        Search Results ({searchResults.length})
+                                    </h3>
+                                    {searchResults.length > 0 ? (
+                                        searchResults.map(task => {
+                                            const client = clients.find(c => c.id === task.clientId);
                                             const taskDate = new Date(task.dueDate);
                                             return (
                                                 <div
                                                     key={task.id}
                                                     onClick={() => handleSearchResultClick(task)}
-                                                    className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 cursor-pointer border mb-2"
+                                                    className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 cursor-pointer border"
                                                 >
                                                     <div className="text-center flex-shrink-0 w-12">
                                                         <p className="text-xs text-text-secondary">
@@ -639,6 +604,11 @@ export const CalendarView: React.FC = () => {
                                                         <p className="font-semibold text-sm text-text-primary leading-tight">
                                                             {task.title}
                                                         </p>
+                                                        {client && (
+                                                            <p className="text-xs text-secondary mt-0.5">
+                                                                {client.name}
+                                                            </p>
+                                                        )}
                                                         <p
                                                             className={`text-xs mt-1 font-semibold ${getStatusBadgeColorClass(
                                                                 task.status
@@ -649,15 +619,130 @@ export const CalendarView: React.FC = () => {
                                                     </div>
                                                 </div>
                                             );
-                                        })}
-                                    </div>
-                                ))}
+                                        })
+                                    ) : (
+                                        <p className="text-sm text-text-secondary text-center p-4">
+                                            No tasks found for "{searchTerm}".
+                                        </p>
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    <h3 className="font-semibold text-text-primary mb-2">
+                                        All Client Tasks
+                                    </h3>
+
+                                    {Object.entries(tasksByCase).map(([caseRef, caseTasks]) => (
+                                        <div key={caseRef}>
+                                            <div className="font-semibold text-sm text-text-primary mb-1 mt-3 flex px-2">
+                                                {caseTasks[0]?.clientName && (
+                                                    <div className="text-md">
+                                                        {caseTasks[0].clientName}
+                                                    </div>
+                                                )}
+                                                <div className="ml-auto text-[10px] text-primary ml-1">({caseRef})</div>
+
+                                            </div>
+
+                                            {caseTasks.map(task => {
+                                                const taskDate = new Date(task.dueDate);
+                                                return (
+                                                    <div
+                                                        key={task.id}
+                                                        onClick={() => handleSearchResultClick(task)}
+                                                        className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 cursor-pointer border mb-2"
+                                                    >
+                                                        <div className="text-center flex-shrink-0 w-12">
+                                                            <p className="text-xs text-text-secondary">
+                                                                {taskDate.toLocaleString('default', { month: 'short' })}
+                                                            </p>
+                                                            <p className="text-lg font-bold text-text-primary">
+                                                                {taskDate.getDate()}
+                                                            </p>
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className="font-semibold text-sm text-text-primary leading-tight">
+                                                                {task.title}
+                                                            </p>
+                                                            <p
+                                                                className={`text-xs mt-1 font-semibold ${getStatusBadgeColorClass(
+                                                                    task.status
+                                                                )} px-1.5 py-0.5 rounded-full inline-block`}
+                                                            >
+                                                                {task.status}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    ))}
 
 
 
-                            </>
-                        )}
-                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
+
+
+                    {activeTab === 'appointments' && (
+                        <div className="mt-4 space-y-2 max-h-[70vh] overflow-y-auto">
+                            {appointments.length ? (
+                                appointments
+                                    .sort(
+                                        (a, b) =>
+                                            new Date(a.date).getTime() - new Date(b.date).getTime()
+                                    )
+                                    .map(appt => {
+                                        const { date, time } = splitDateTime(appt.date);
+                                        const client = clients.find(c => c.id === appt.clientId);
+
+                                        return (
+                                            <div
+                                                key={appt.id}
+                                                onClick={() => setSelectedAppointment(appt)}
+                                                className="group p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition"
+                                            >
+                                                <div className="flex items-start gap-3">
+                                                    {/* Date badge */}
+                                                    <div className="w-10 text-center bg-orange-100 text-orange-700 rounded-md py-1">
+                                                        <div className="text-xs font-semibold">
+                                                            {new Date(appt.date).toLocaleString('default', { month: 'short' })}
+                                                        </div>
+                                                        <div className="text-sm font-bold">
+                                                            {new Date(appt.date).getDate()}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Content */}
+                                                    <div className="flex-1">
+                                                        <div className="font-semibold text-sm group-hover:text-primary">
+                                                            {appt.title}
+                                                        </div>
+
+                                                        <div className="text-xs text-gray-500">
+                                                            {splitDateTime(appt.date).time}
+                                                        </div>
+
+                                                        {clients.find(c => c.id === appt.clientId) && (
+                                                            <div className="text-xs text-secondary mt-1">
+                                                                {clients.find(c => c.id === appt.clientId)?.name}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                            ) : (
+                                <p className="text-sm text-gray-500 text-center py-6">
+                                    No appointments scheduled
+                                </p>
+                            )}
+                        </div>
+                    )}
+
 
                     {/* {searchTerm.trim() && (
                         <div className="mt-4 space-y-2 max-h-[60vh] overflow-y-auto">
@@ -689,6 +774,9 @@ export const CalendarView: React.FC = () => {
                             )}
                         </div>
                     )} */}
+
+
+
                 </div>
 
                 {/* Right Column for Calendar */}
@@ -710,22 +798,45 @@ export const CalendarView: React.FC = () => {
                         <div className="overflow-x-auto">
                             <div className="grid grid-cols-7 min-w-[700px] md:min-w-full">
                                 {calendarGrid.map((date, index) => {
-                                    const tasksForDay = tasks.filter(t => {
-                                        const taskDate = new Date(t.dueDate);
-                                        return taskDate.getFullYear() === date.getFullYear() &&
-                                            taskDate.getMonth() === date.getMonth() &&
-                                            taskDate.getDate() === date.getDate();
-                                    });
+                                    // const tasksForDay = tasks.filter(t => {
+                                    //     const taskDate = new Date(t.dueDate);
+                                    //     return taskDate.getFullYear() === date.getFullYear() &&
+                                    //         taskDate.getMonth() === date.getMonth() &&
+                                    //         taskDate.getDate() === date.getDate();
+                                    // });
 
+                                    // const appointmentsForDay = appointments.filter(a => {
+                                    //     const d = new Date(a.date);
+                                    //     return (
+                                    //         d.getFullYear() === date.getFullYear() &&
+                                    //         d.getMonth() === date.getMonth() &&
+                                    //         d.getDate() === date.getDate()
+                                    //     );
+                                    // });
 
-                                    const appointmentsForDay = appointments.filter(a => {
-                                        const d = new Date(a.date);
-                                        return (
-                                            d.getFullYear() === date.getFullYear() &&
-                                            d.getMonth() === date.getMonth() &&
-                                            d.getDate() === date.getDate()
-                                        );
-                                    });
+                                    const tasksForDay =
+                                        activeTab === 'tasks'
+                                            ? tasks.filter(t => {
+                                                const d = new Date(t.dueDate);
+                                                return (
+                                                    d.getFullYear() === date.getFullYear() &&
+                                                    d.getMonth() === date.getMonth() &&
+                                                    d.getDate() === date.getDate()
+                                                );
+                                            })
+                                            : [];
+                                    const appointmentsForDay =
+                                        activeTab === 'appointments'
+                                            ? appointments.filter(a => {
+                                                const d = new Date(a.date);
+                                                return (
+                                                    d.getFullYear() === date.getFullYear() &&
+                                                    d.getMonth() === date.getMonth() &&
+                                                    d.getDate() === date.getDate()
+                                                );
+                                            })
+                                            : [];
+
 
                                     return (
                                         // <CalendarDay
@@ -760,6 +871,8 @@ export const CalendarView: React.FC = () => {
                                                 setIsEditingAppointment(false);
                                             }}
                                             onAddTask={handleAddTaskForDate}
+                                            onAddClick={(date) => setAddChooserDate(date)}
+
                                         />
 
 
@@ -770,6 +883,52 @@ export const CalendarView: React.FC = () => {
                         </div>
                     </div>
                 </div>
+
+
+                {addChooserDate && (
+                    <div
+                        className="fixed inset-0 z-50 bg-black/30"
+                        onClick={() => setAddChooserDate(null)}
+                    >
+                        {/* Center the chooser modal */}
+                        <div
+                            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-lg border p-2 w-48"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {activeTab === 'tasks' && (
+                                <button
+                                    onClick={() => {
+                                        handleAddTaskForDate(addChooserDate);
+                                        setAddChooserDate(null);
+                                    }}
+                                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded"
+                                >
+                                    ➕ Add Task
+                                </button>
+                            )}
+                            {activeTab === 'appointments' && (
+                                <button
+                                    onClick={() => {
+                                        setSelectedAppointment({
+                                            title: 'New Appointment',
+                                            date: addChooserDate.toLocaleDateString('en-CA'),
+                                            time: '09:00',
+                                            clientId: null,
+                                            assignedTo: currentUser?.id ?? null,
+                                        } as Appointment);
+                                        setIsEditingAppointment(true);
+                                        setAddChooserDate(null);
+                                    }}
+                                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded"
+                                >
+                                    📅 Add Appointment
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+
             </div>
 
             <Modal
@@ -813,13 +972,29 @@ export const CalendarView: React.FC = () => {
                     title={isEditingAppointment ? "Edit Appointment" : "Appointment Details"}
                 >
                     {isEditingAppointment ? (
+                        // <AppointmentForm
+                        //     appointment={selectedAppointment}
+                        //     clients={clients}
+                        //     teamMembers={teamMembers}
+                        //     onSave={async () => { }}
+                        //     onUpdate={async (id, data) => {
+                        //         await updateAppointment(id, data);
+                        //         setIsEditingAppointment(false);
+                        //         setSelectedAppointment(null);
+                        //     }}
+                        //     onClose={() => setIsEditingAppointment(false)}
+                        // />
                         <AppointmentForm
                             appointment={selectedAppointment}
                             clients={clients}
                             teamMembers={teamMembers}
-                            onSave={async () => { }}
+                            onSave={async (data) => {
+                                await addAppointment(data);   // ✅ CREATE
+                                setIsEditingAppointment(false);
+                                setSelectedAppointment(null);
+                            }}
                             onUpdate={async (id, data) => {
-                                await updateAppointment(id, data);
+                                await updateAppointment(id, data); // ✅ UPDATE
                                 setIsEditingAppointment(false);
                                 setSelectedAppointment(null);
                             }}

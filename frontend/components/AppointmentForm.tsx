@@ -57,20 +57,6 @@ export const AppointmentForm: React.FC<Props> = ({
 
 
 
-    // Default client/teamMember if creating
-    // useEffect(() => {
-    //     if (!appointment && clients.length > 0 && teamMembers.length > 0) {
-    //         setForm(prev => ({
-    //             ...prev,
-    //             clientId: prev.clientId || clients[0].id,
-    //             assignedTo: prev.assignedTo || teamMembers[0].id,
-    //         }));
-    //     }
-    // }, [appointment, clients, teamMembers]);
-
-
-
-
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
     ) => {
@@ -78,73 +64,7 @@ export const AppointmentForm: React.FC<Props> = ({
         setForm(prev => ({ ...prev, [name]: value }));
     };
 
-    // const handleSubmit = async (e: React.FormEvent) => {
-    //     e.preventDefault();
 
-    //     if (!form.clientId || !form.title || !form.date) {
-    //         alert("Client, title, and date are required.");
-    //         return;
-    //     }
-
-    //     try {
-    //         // Combine date + time into single ISO string for DB
-    //         const combinedDate = form.time
-    //             ? new Date(`${form.date}T${form.time}`).toISOString()
-    //             : new Date(form.date).toISOString();
-
-    //         const payload = {
-    //             ...form,
-    //             date: combinedDate,   // <-- send as "date" for DB
-    //         };
-    //         delete payload.time;       // remove time field
-
-    //         console.log("Sending appointment payload:", payload);
-
-    //         if (appointment && onUpdate) {
-    //             await onUpdate(appointment.id, payload);
-    //         } else {
-    //             await onSave(payload);
-    //         }
-
-    //         onClose();
-    //     } catch (error) {
-    //         console.error("Failed to save appointment:", error);
-    //         alert("Failed to save appointment. See console for details.");
-    //     }
-    // };
-
-    // const handleSubmit = async (e: React.FormEvent) => {
-    //     e.preventDefault();
-
-    //     if (!form.title || !form.date) {
-    //         alert("Event, and Date are required.");
-    //         return;
-    //     }
-
-    //     try {
-    //         const combinedDate = form.time
-    //             ? new Date(`${form.date}T${form.time}`).toISOString()
-    //             : new Date(form.date).toISOString();
-
-    //         const payload: Partial<Appointment> = {
-    //             ...form,
-    //             date: combinedDate,
-    //         };
-
-    //         delete payload.time;
-
-    //         if (appointment && onUpdate) {
-    //             await onUpdate(appointment.id, payload);
-    //         } else {
-    //             await onSave(payload);
-    //         }
-
-    //         onClose();
-    //     } catch (error) {
-    //         console.error("Failed to save appointment:", error);
-    //         alert("Failed to save appointment. See console for details.");
-    //     }
-    // };
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -173,8 +93,19 @@ export const AppointmentForm: React.FC<Props> = ({
 
             delete payload.time;
 
-            if (appointment && onUpdate) {
-                await onUpdate(appointment.id, payload);
+            // if (appointment && onUpdate) {
+            //     await onUpdate(appointment.id, payload);
+            // } else {
+            //     await onSave(payload as Omit<Appointment, "id">);
+            // }
+
+            const isEditing =
+                typeof appointment?.id === "string" &&
+                appointment.id.trim().length > 0 &&
+                typeof onUpdate === "function";
+
+            if (isEditing) {
+                await onUpdate!(appointment!.id, payload);
             } else {
                 await onSave(payload as Omit<Appointment, "id">);
             }

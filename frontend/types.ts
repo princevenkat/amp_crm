@@ -671,4 +671,7 @@ export interface DataContextType {
   appointmentReminders: Appointment[];
   appointmentPopupOpen: boolean;
   closeAppointmentPopup: () => void;
+
+  reloadTasks: () => Promise<void>; // ✅ ADD
+  reloadAppointments: () => Promise<void>; // ✅ ADD
 }

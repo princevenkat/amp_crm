@@ -230,10 +230,22 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
 
 
+    const reloadTasks = async () => {
+        try {
+            const data = await api.getTasks();
+            setTasks(data || []);
+        } catch (err) {
+            console.error("Failed to reload tasks:", err);
+        }
+    };
 
+    // const addTask = async (task: Omit<Task, 'id'>) => {
+    //     const newTask = await api.createTask(task);
+    //     setTasks(prev => [newTask, ...prev]);
+    // };
     const addTask = async (task: Omit<Task, 'id'>) => {
-        const newTask = await api.createTask(task);
-        setTasks(prev => [newTask, ...prev]);
+        await api.createTask(task);
+        await reloadTasks(); // ✅ pull real created_at from backend
     };
 
     const updateTask = async (taskId: string, updatedData: Partial<Task>) => {
@@ -466,12 +478,26 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setAppointmentModalData(null);
     };
 
+    // const addAppointment = async (data: Omit<Appointment, "id">) => {
+    //     const newAppt = await api.createAppointment(data);
+    //     // setAppointments(prev => [newAppt, ...prev]);
+    //     setAppointments(prev => [...prev, newAppt]);
+    // };
+
+    const reloadAppointments = async () => {
+        try {
+            const data = await api.getAppointments();
+            setAppointments(data || []);
+        } catch (err) {
+            console.error("Failed to reload appointments:", err);
+        }
+    };
+
     const addAppointment = async (data: Omit<Appointment, "id">) => {
+        // await api.createAppointment(data);
         const newAppt = await api.createAppointment(data);
-        // setAppointments(prev => [newAppt, ...prev]);
         setAppointments(prev => [...prev, newAppt]);
-
-
+        await reloadAppointments(); // ✅ consistent with update
     };
 
     // const updateAppointment = async (id: string, data: Partial<Appointment>) => {
@@ -561,6 +587,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
 
+
     // 2️⃣ Use effect with **latest appointments** using a ref or dependency
     useEffect(() => {
         const interval = setInterval(() => {
@@ -572,6 +599,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         return () => clearInterval(interval);
     }, [appointments]); // ✅ now updates whenever appointments change
+
 
 
 
@@ -610,6 +638,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     //     return () => clearInterval(interval);
     // }, [appointments]);
+
+
+
 
     const value: DataContextType = {
         clients,
@@ -676,6 +707,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addAppointment,
         updateAppointment,
         deleteAppointment,
+        reloadTasks,
+        reloadAppointments,
     };
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
