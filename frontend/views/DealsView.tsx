@@ -23,6 +23,9 @@ const NotesView: React.FC<{
     const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
     const [editedText, setEditedText] = useState('');
 
+
+
+
     const handleAddNote = () => {
         if (newNoteText.trim() === '') return;
         const newNote: Note = {
@@ -60,6 +63,30 @@ const NotesView: React.FC<{
         setEditingNoteId(null);
         setEditedText('');
     };
+
+    const formatDateTime = (value?: string | null) => {
+        if (!value) return 'N/A';
+
+        const date = new Date(value.replace(' ', 'T'));
+
+        const time = date.toLocaleString('en-GB', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+        })
+            .replace(' ', '')
+            .toLowerCase();
+
+        const day = date.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+        });
+
+        return `${time}  ${day}`;
+    };
+
+
 
     return (
         <div className="space-y-4">
@@ -104,14 +131,13 @@ const NotesView: React.FC<{
                                 <p className="whitespace-pre-wrap">{note.text}</p>
                                 <div className="flex justify-between items-center mt-2">
                                     <p className="text-xs text-text-secondary">
-                                        - {note.author} on  {note.date
-                                            ? new Date(note.date).toLocaleDateString("en-GB", {
-                                                day: "2-digit",
-                                                month: "numeric",
-                                                year: "numeric",
-                                            })
-                                            : "N/A"}
+                                        -
+                                        {note.author} on  {formatDateTime(note?.date)}
+
+                                        {/* {formatDateTime(note?.date)} */}
+
                                     </p>
+
                                     <div className="flex gap-4">
                                         <button type="button" onClick={() => handleStartEdit(note)} className="text-xs text-secondary font-semibold hover:underline">Edit</button>
                                         <button type="button" onClick={() => handleDeleteNote(note.id)} className="text-xs text-danger hover:underline">Delete</button>
@@ -321,7 +347,7 @@ const EditLeadView: React.FC<{
                                 <NotesView
                                     notes={notes}
                                     onChange={setNotes}
-                                    currentAuthor="Admin User"
+                                    currentAuthor={currentUser?.name || 'Unknown User'}
                                 />
                             </CardContent>
                         </Card>

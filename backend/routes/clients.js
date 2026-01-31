@@ -711,8 +711,8 @@ router.put('/:id', protect, async (req, res) => {
             for (const note of merged.notes) {
                 const noteId = note.id?.startsWith('note-') ? note.id : `note-${uuidv4()}`;
                 await connection.query(
-                    'INSERT INTO notes (id, clientId, text, author, date) VALUES (?, ?, ?, ?, ?)',
-                    [noteId, id, note.text || '', note.author || '', toMySQLDate(note.date)]
+                    'INSERT INTO notes (id, clientId, text, author) VALUES (?, ?, ?, ?)',
+                    [noteId, id, note.text || '', note.author || '']
                 );
             }
         }

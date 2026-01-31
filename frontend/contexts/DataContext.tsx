@@ -437,18 +437,39 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
 
 
-    const getUpcomingTasks = (): Task[] => {
+    // const getUpcomingTasks = (): Task[] => {
+    //     if (!tasks || tasks.length === 0) return [];
+
+    //     const now = new Date();
+    //     const next24Hours = new Date();
+    //     next24Hours.setHours(now.getHours() + 24);
+
+    //     return tasks.filter(task => {
+    //         const due = new Date(task.dueDate);
+    //         return due >= now && due <= next24Hours;
+    //     });
+    // };
+
+    const getTodayTasks = (): Task[] => {
         if (!tasks || tasks.length === 0) return [];
 
-        const now = new Date();
-        const next24Hours = new Date();
-        next24Hours.setHours(now.getHours() + 24);
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+
+        const endOfToday = new Date();
+        endOfToday.setHours(23, 59, 59, 999);
 
         return tasks.filter(task => {
+            if (!task.dueDate) return false;
+
             const due = new Date(task.dueDate);
-            return due >= now && due <= next24Hours;
+            return due >= startOfToday && due <= endOfToday;
         });
     };
+
+
+
+
     // Add at the top inside your DataProvider component
     const [taskReminders, setTaskReminders] = useState<Task[]>([]);
     const [reminderPopupOpen, setReminderPopupOpen] = useState(false);
@@ -456,11 +477,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Function to close the popup
     const closeReminderPopup = () => setReminderPopupOpen(false);
 
+    // useEffect(() => {
+    //     const upcomingTasks = getUpcomingTasks();
+    //     setTaskReminders(upcomingTasks);
+    //     setReminderPopupOpen(upcomingTasks.length > 0);
+    // }, [tasks]); // Runs whenever tasks change
+
     useEffect(() => {
-        const upcomingTasks = getUpcomingTasks();
-        setTaskReminders(upcomingTasks);
-        setReminderPopupOpen(upcomingTasks.length > 0);
-    }, [tasks]); // Runs whenever tasks change
+        const todayTasks = getTodayTasks();
+        setTaskReminders(todayTasks);
+        setReminderPopupOpen(todayTasks.length > 0);
+    }, [tasks]);
 
 
     // -------------------------

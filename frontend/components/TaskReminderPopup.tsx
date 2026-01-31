@@ -41,6 +41,26 @@ export const TaskReminderPopup: React.FC = () => {
         return null;
     }
 
+
+    const formatDateDMY = (dateStr: string) => {
+        return new Date(dateStr).toLocaleDateString("en-GB");
+    };
+
+    const formatTimeOnly = (timeStr: string) => {
+        if (!timeStr) return "";
+
+        const [hourStr, minute] = timeStr.split(":");
+        let hour = Number(hourStr);
+
+        const ampm = hour >= 12 ? "PM" : "AM";
+        hour = hour % 12 || 12;
+
+        return `${hour.toString().padStart(2, "0")}:${minute} ${ampm}`;
+    };
+
+
+
+
     return (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
             <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-xl overflow-y-auto max-h-[80vh] relative">
@@ -80,7 +100,7 @@ export const TaskReminderPopup: React.FC = () => {
 
                                     <div className="text-xs text-gray-700 mt-1">
                                         <span className="font-semibold">Due:</span>{" "}
-                                        {new Date(task.dueDate).toLocaleString()}
+                                        {formatDateDMY(task.dueDate)} - {formatTimeOnly(task.dueTime)}
                                     </div>
                                 </li>
                             ))}
