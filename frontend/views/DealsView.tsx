@@ -319,9 +319,42 @@ const EditLeadView: React.FC<{
             </Modal>
 
 
-            <button onClick={onCancel} className="mb-6 text-sm text-secondary hover:underline">&larr; Back to Pipeline</button>
+            {/* <button onClick={onCancel} className="mb-6 text-sm text-secondary hover:underline">&larr; Back to Pipeline</button>
             <h1 className="text-3xl font-bold mb-2">Edit Pipeline</h1>
-            <p className="text-text-secondary mb-8">Editing information for {lead.name}.</p>
+            <p className="text-text-secondary mb-8">Editing information for {lead.name}.</p> */}
+
+            <div className="flex justify-between items-end mb-6">
+                <div>
+                    <button
+                        onClick={onCancel}
+                        className="text-sm text-secondary hover:underline mb-2"
+                    >
+                        &larr; Back to Pipeline
+                    </button>
+                    <h1 className="text-3xl font-bold">Edit Pipeline</h1>
+                    <p className="text-text-secondary">
+                        Editing information for {lead.name}.
+                    </p>
+                </div>
+
+                <div className="flex gap-3">
+                    <button
+                        type="button"
+                        onClick={onCancel}
+                        className="bg-gray-200 hover:bg-gray-300 text-text-primary font-semibold py-2 px-5 rounded-md"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        form="edit-lead-form"
+                        className="bg-primary hover:bg-secondary text-white font-semibold py-2 px-5 rounded-md"
+                    >
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+
 
             {/* Success message */}
             {successMessage && (
@@ -330,7 +363,7 @@ const EditLeadView: React.FC<{
                 </div>
             )}
 
-            <form onSubmit={handleSubmit}>
+            <form id="edit-lead-form" onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2">
                         <Card>
@@ -422,10 +455,10 @@ const EditLeadView: React.FC<{
                     </div>
                 </div>
 
-                <div className="flex justify-end gap-4 pt-6 mt-8 border-t">
+                {/* <div className="flex justify-end gap-4 pt-6 mt-8 border-t">
                     <button type="button" onClick={onCancel} className="bg-gray-200 hover:bg-gray-300 text-text-primary font-semibold py-2 px-6 rounded-md">Cancel</button>
                     <button type="submit" className="bg-primary hover:bg-secondary text-white font-semibold py-2 px-6 rounded-md">Save Changes</button>
-                </div>
+                </div> */}
             </form>
         </div>
     );
@@ -532,6 +565,7 @@ export const DealsView: React.FC = () => {
         | 'firstName'
         | 'surname'
         | 'dob'
+        | 'introducer'
         | 'mobile'
         | 'email';
     type SortOrder = 'asc' | 'desc';
@@ -598,6 +632,10 @@ export const DealsView: React.FC = () => {
                 case 'dob':
                     aVal = aApp?.dob || '';
                     bVal = bApp?.dob || '';
+                    break;
+                case 'introducer':
+                    aVal = aApp?.introducer || '';
+                    bVal = bApp?.introducer || '';
                     break;
                 case 'mobile':
                     aVal = aApp?.mobileNumber || '';
@@ -839,9 +877,9 @@ export const DealsView: React.FC = () => {
 
 
                             <th className="px-6 py-3 font-medium text-text-secondary">D.o.B</th>
-                            <th className="px-6 py-3 font-medium text-text-secondary">Introducer</th>
-                            <th className="px-6 py-3 font-medium text-text-secondary">Mobile Number</th>
-                            <th className="px-6 py-3 font-medium text-text-secondary">Email</th>
+                            <th className="px-6 py-3 font-medium text-text-secondary" onClick={() => handleSort('introducer')}>Introducer <SortIcon active={sortKey === 'introducer'} /></th>
+                            <th className="px-6 py-3 font-medium text-text-secondary" onClick={() => handleSort('mobile')}>Mobile Number <SortIcon active={sortKey === 'mobile'} /></th>
+                            <th className="px-6 py-3 font-medium text-text-secondary" onClick={() => handleSort('email')}>Email <SortIcon active={sortKey === 'email'} /></th>
                             <th className="px-6 py-3 font-medium text-text-secondary">Actions</th>
                         </tr>
                     </thead>

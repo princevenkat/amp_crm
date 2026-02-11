@@ -17,10 +17,12 @@ interface NewTaskFormProps {
   clientId?: string;              // ✅ optional — pre-linked client (like a lead)
   hideClientSelector?: boolean;   // ✅ hide search for pipeline tasks
   statusSelector?: boolean;   // ✅ hide search for pipeline tasks
+
+  onClientDetailsClick?: (clientId: string) => void; // ✅ NEW
 }
 
 export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, initialData, clientId: propClientId,
-  hideClientSelector = false, statusSelector = false }) => {
+  hideClientSelector = false, statusSelector = false, onClientDetailsClick }) => {
   const { clients, teamMembers, currentUser } = useContext(DataContext);
 
   const [title, setTitle] = useState(initialData?.title || '');
@@ -552,7 +554,7 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
 
 
       {/* 🟩 Actions */}
-      <div className="md:col-span-2 flex justify-end gap-3 mt-4">
+      {/* <div className="md:col-span-2 flex justify-end gap-3 mt-4">
         <button
           type="button"
           onClick={onCancel}
@@ -566,7 +568,38 @@ export const NewTaskForm: React.FC<NewTaskFormProps> = ({ onSubmit, onCancel, in
         >
           {initialData ? 'Update Task' : 'Create Task'}
         </button>
+      </div> */}
+      <div className="md:col-span-2 flex justify-end gap-3 mt-4 justify-between">
+
+        {/* Client Details Button */}
+        {clientId && onClientDetailsClick && (
+          <button
+            type="button"
+            onClick={() => onClientDetailsClick(clientId)}
+            className="px-4 py-2 bg-success text-white rounded-md hover:bg-secondary"
+          >
+            Client Details
+          </button>
+        )}
+
+        <div className='md:col-span-2 flex justify-end gap-3'><button
+          type="button"
+          onClick={onCancel}
+          className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100"
+        >
+          Cancel
+        </button>
+
+          <button
+            type="submit"
+            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-secondary"
+          >
+            {initialData ? 'Update Task' : 'Create Task'}
+          </button></div>
+
       </div>
+
+
     </form >
   );
 };

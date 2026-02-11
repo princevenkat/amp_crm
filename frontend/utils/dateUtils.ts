@@ -51,3 +51,37 @@ export function formatDbTime(time?: string): string {
     .toString()
     .padStart(2, "0")} ${meridiem}`;
 }
+
+/**
+ * Format a date string to YYYY-MM-DD (for <input type="date" />)
+ */
+export const formatDateForInput = (date?: string | Date | null): string => {
+  if (!date) return "";
+
+  const d = new Date(date);
+
+  if (isNaN(d.getTime())) return "";
+
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+/**
+ * Format a date string for display (UK format)
+ */
+export const formatDateForDisplay = (date?: string | Date | null): string => {
+  if (!date) return "—";
+
+  const d = new Date(date);
+
+  if (isNaN(d.getTime())) return "—";
+
+  return d.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};

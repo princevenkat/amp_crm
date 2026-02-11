@@ -11,6 +11,8 @@ import { PlusIcon, SearchIcon, MinusIcon, EditIcon } from '../components/ui/Icon
 import { ContactType, TaskStatus, UserRole, ProtectionItem } from '../types';
 
 import { formatCurrency } from "@/utils/formatCurrency";
+import { formatDateForInput, formatDateForDisplay } from "@/utils/dateUtils";
+
 
 import { toast, Toaster, ToastBar } from 'react-hot-toast';
 import { TrashIcon } from '@heroicons/react/24/solid';
@@ -569,7 +571,19 @@ const ProductView: React.FC<{
 
 
 
+    const formatForDateInput = (date?: string) =>
+        date ? date.substring(0, 10) : "";
 
+
+    const date = new Date(productDetails.mortgage.renewalReminderDate);
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // months are 0-indexed
+    const day = String(date.getDate()).padStart(2, '0');
+
+    // console.log(new Date(productDetails.mortgage.renewalReminderDate));
+
+    console.log(`${year}-${month}-${day}`);
     return (
         <div className="text-sm">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -665,7 +679,7 @@ const ProductView: React.FC<{
                             <input
                                 disabled={!isEditing}
                                 type="date"
-                                value={productDetails.mortgage?.dateOfFma ? new Date(productDetails.mortgage.dateOfFma).toISOString().split('T')[0] : ''}
+                                value={formatDateForInput(productDetails.mortgage?.dateOfFma)}
                                 onChange={(e) => onSubFieldChange('mortgage', 'dateOfFma', e.target.value)}
                                 className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100"
                             />
@@ -688,7 +702,8 @@ const ProductView: React.FC<{
                             <input
                                 disabled={!isEditing}
                                 type="date"
-                                value={productDetails.mortgage?.dateOffered ? new Date(productDetails.mortgage.dateOffered).toISOString().split('T')[0] : ''}
+                                value={formatDateForInput(productDetails.mortgage?.dateOffered)}
+                                // value={productDetails.mortgage?.dateOffered ? new Date(productDetails.mortgage.dateOffered).toISOString().split('T')[0] : ''}
                                 onChange={(e) => onSubFieldChange('mortgage', 'dateOffered', e.target.value)}
                                 className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100"
                             />
@@ -949,11 +964,15 @@ const ProductView: React.FC<{
                     <div>
                         <label className="font-semibold text-text-secondary">Rate Expiry</label>
                         {isEditing ? (
-                            <input disabled={!isEditing} type="date" value={
-                                productDetails.mortgage?.rateExpiry
-                                    ? new Date(productDetails.mortgage.rateExpiry).toISOString().split("T")[0]
-                                    : ''
-                            } onChange={(e) => onSubFieldChange('mortgage', 'rateExpiry', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
+                            <input disabled={!isEditing}
+                                type="date"
+                                value={formatDateForInput(productDetails.mortgage?.rateExpiry)}
+                                // value={
+                                //     productDetails.mortgage?.rateExpiry
+                                //         ? new Date(productDetails.mortgage.rateExpiry).toISOString().split("T")[0]
+                                //         : ''
+                                // }
+                                onChange={(e) => onSubFieldChange('mortgage', 'rateExpiry', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
                         ) : (
                             <p className="py-2">
                                 {productDetails.mortgage?.rateExpiry
@@ -972,11 +991,7 @@ const ProductView: React.FC<{
                         {isEditing ? (
                             <input disabled={!isEditing} type="date"
 
-                                value={
-                                    productDetails.mortgage?.renewalReminderDate
-                                        ? new Date(productDetails.mortgage.renewalReminderDate).toISOString().split("T")[0]
-                                        : ''
-                                }
+                                value={formatDateForInput(productDetails.mortgage?.renewalReminderDate)}
 
 
                                 onChange={(e) => onSubFieldChange('mortgage', 'renewalReminderDate', e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-surface text-text-primary disabled:bg-gray-100" />
@@ -2224,6 +2239,11 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
 
     const navigate = useNavigate();
 
+
+
+
+
+
     // useEffect(() => {
     //     setEditedClient(client);
     // }, [client]);
@@ -2558,6 +2578,11 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
     }, [editedClient?.applicants]);
 
     console.log(editedClient);
+
+
+
+
+
 
     const tabs = [
         {
@@ -2906,6 +2931,23 @@ export const ClientsView: React.FC = () => {
 
     const [caseStatusFilter, setCaseStatusFilter] = useState<string>(''); // '' = no filter
 
+
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const idFromUrl = params.get("id");
+
+        if (idFromUrl && clients.length > 0) {
+            const foundClient = clients.find(c => String(c.id) === String(idFromUrl));
+
+            if (foundClient) {
+                setSelectedClient(foundClient);
+            }
+        }
+    }, [clients]);
+
+
+
     useEffect(() => {
         if (selectedClientIdForNav) {
             const clientToSelect = clients.find(c => c.id === selectedClientIdForNav);
@@ -2915,6 +2957,11 @@ export const ClientsView: React.FC = () => {
             }
         }
     }, [selectedClientIdForNav, clients, setSelectedClientIdForNav]);
+
+
+
+
+
 
     // const filteredClients = useMemo(() => {
     //     return clients.filter(client =>

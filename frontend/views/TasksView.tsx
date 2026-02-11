@@ -1,5 +1,6 @@
 import React, { useState, useContext, useMemo, useEffect } from 'react';
 import type { Task } from '../types';
+import { View } from '../types';
 import { DataContext } from '../contexts/DataContext';
 import { Modal } from '../components/ui/Modal';
 import { NewTaskForm } from '../components/forms/NewTaskForm';
@@ -14,6 +15,9 @@ export const TasksView: React.FC = () => {
         clients,
         selectedTaskIdForNav,
         setSelectedTaskIdForNav,
+
+        setCurrentView,              // ✅ ADD
+        setSelectedClientIdForNav,   // ✅ ADD
     } = useContext(DataContext);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -244,8 +248,18 @@ export const TasksView: React.FC = () => {
     );
 
 
+    const handleNavigateToClient = (clientId: string) => {
+        if (!clientId) return;
 
+        setSelectedClientIdForNav(clientId);
+        setCurrentView(View.Leads); // Leads view handles client details
+        setIsModalOpen(false);
+    };
 
+    const openClientInNewTab = (clientId: string) => {
+        const url = `${window.location.origin}/?view=leads&id=${clientId}`;
+        window.open(url, "_blank", "noopener,noreferrer");
+    };
 
 
     return (
@@ -259,6 +273,8 @@ export const TasksView: React.FC = () => {
                     onSubmit={handleSaveTask}
                     onCancel={() => setIsModalOpen(false)}
                     initialData={taskToEdit}
+                    //onClientDetailsClick={(clientId) => handleNavigateToClient(clientId)}
+                    onClientDetailsClick={openClientInNewTab}
                 />
             </Modal>
 

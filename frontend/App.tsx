@@ -392,6 +392,26 @@ const App: React.FC = () => {
 
 
     useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const view = params.get("view");
+        const id = params.get("id");
+
+        if (view === "leads") {
+            setCurrentView(View.Leads);
+
+            if (id) {
+                // store selected client ID in context
+                // you already use selectedTaskIdForNav for tasks
+                // do same for clients
+                // Example:
+                localStorage.setItem("openClientId", id);
+            }
+        }
+    }, []);
+
+
+
+    useEffect(() => {
         if (!currentUser) return;
 
         // Set default view only once
