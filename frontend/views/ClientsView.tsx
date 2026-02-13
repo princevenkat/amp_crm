@@ -2972,7 +2972,7 @@ export const ClientsView: React.FC = () => {
     // }, [searchTerm, clients]);
 
 
-    type SortKey = 'name' | 'product' | 'lastContacted' | 'createdDate' | '';
+    type SortKey = 'name' | 'product' | 'lastContacted' | 'introducer' | 'createdDate' | 'caseReference' | '';
     type SortOrder = 'asc' | 'desc';
 
     const [sortKey, setSortKey] = useState<SortKey>('');
@@ -3035,9 +3035,19 @@ export const ClientsView: React.FC = () => {
                     valB = b.lastContacted ? new Date(b.lastContacted).getTime() : 0;
                     break;
 
+                case 'introducer':
+                    valA = a.applicants?.[0]?.introducer?.toLowerCase() || '';
+                    valB = b.applicants?.[0]?.introducer?.toLowerCase() || '';
+                    break;
+
                 case 'createdDate':
                     valA = a.createdDate ? new Date(a.createdDate).getTime() : 0;
                     valB = b.createdDate ? new Date(b.createdDate).getTime() : 0;
+                    break;
+
+                case 'caseReference':
+                    valA = a.caseReference?.toLowerCase() || '';
+                    valB = b.caseReference?.toLowerCase() || '';
                     break;
 
                 default:
@@ -3162,6 +3172,7 @@ export const ClientsView: React.FC = () => {
                                 <SortIcon active={sortKey === 'createdDate'} />
                             </th>
 
+                            <th className="px-6 py-3 font-medium text-text-secondary cursor-pointer select-none" onClick={() => handleSort('caseReference')}>Case Reference <SortIcon active={sortKey === 'caseReference'} /> </th>
 
                             <th
                                 className="px-6 py-3 font-medium text-text-secondary cursor-pointer select-none"
@@ -3172,6 +3183,7 @@ export const ClientsView: React.FC = () => {
                             <th className="px-6 py-3 font-medium text-text-secondary cursor-pointer select-none" >Status</th>
                             <th className="px-6 py-3 font-medium text-text-secondary cursor-pointer select-none" onClick={() => handleSort('product')}>Product <SortIcon active={sortKey === 'product'} /></th>
                             <th className="px-6 py-3 font-medium text-text-secondary cursor-pointer select-none" onClick={() => handleSort('lastContacted')}>Last Accessed <SortIcon active={sortKey === 'lastContacted'} /> </th>
+                            <th className="px-6 py-3 font-medium text-text-secondary cursor-pointer select-none" onClick={() => handleSort('introducer')}>Introducer <SortIcon active={sortKey === 'introducer'} /> </th>
                             <th className="px-6 py-3 font-medium text-text-secondary">Actions</th>
                         </tr>
                     </thead>
@@ -3195,6 +3207,11 @@ export const ClientsView: React.FC = () => {
                                         }
                                     </td>
 
+                                    <td className="px-6 py-4">
+                                        <p className="text-text-primary text-sm">
+                                            {client.caseReference || "N/A"}
+                                        </p>
+                                    </td>
 
                                     {/* <td className="px-6 py-4 flex items-center">
                                     <div>
@@ -3246,6 +3263,9 @@ export const ClientsView: React.FC = () => {
                                             })
                                             : "N/A"}
 
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        {client.applicants?.[0]?.introducer || 'N/A'}
                                     </td>
                                     <td className="px-6 py-4">
                                         <button onClick={() => setSelectedClient(client)} className="text-green-600 hover:underline font-semibold">View</button>
