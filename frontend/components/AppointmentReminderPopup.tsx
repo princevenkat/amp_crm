@@ -26,18 +26,37 @@ export const AppointmentReminderPopup: React.FC = () => {
 
     if (!appointmentPopupOpen || upcomingWithin15Min.length === 0) return null;
 
+    // const formatDateTime = (a: any) => {
+    //     const apptDate = a.time
+    //         ? new Date(`${a.date}T${a.time}`)
+    //         : new Date(a.date);
+
+    //     return {
+    //         displayDate: apptDate.toLocaleDateString(),
+    //         displayTime: apptDate.toLocaleTimeString([], {
+    //             hour: "2-digit",
+    //             minute: "2-digit",
+    //         }),
+    //     };
+    // };
+
     const formatDateTime = (a: any) => {
         const apptDate = a.time
             ? new Date(`${a.date}T${a.time}`)
             : new Date(a.date);
 
-        return {
-            displayDate: apptDate.toLocaleDateString(),
-            displayTime: apptDate.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-            }),
-        };
+        const pad = (n: number) => n.toString().padStart(2, "0");
+
+        const displayDate = `${pad(apptDate.getDate())}/${pad(
+            apptDate.getMonth() + 1
+        )}/${apptDate.getFullYear()}`;
+
+        const displayTime = apptDate.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+
+        return { displayDate, displayTime };
     };
 
     return (
@@ -78,9 +97,19 @@ export const AppointmentReminderPopup: React.FC = () => {
                                     {teamMembers.find(t => t.id === a.assignedTo)?.name || "—"}
                                 </div>
 
-                                {a.description && (
+                                {/* {a.description && (
                                     <div className="text-xs text-gray-700 mt-1">
                                         <span className="font-semibold">Notes:</span> {a.description}
+                                    </div>
+                                )} */}
+
+                                {a.description && (
+                                    <div className="text-xs text-gray-700 mt-1">
+                                        <span className="font-semibold">Notes:</span>
+                                        <div
+                                            className="mt-1 prose prose-sm max-w-none"
+                                            dangerouslySetInnerHTML={{ __html: a.description }}
+                                        />
                                     </div>
                                 )}
                             </li>

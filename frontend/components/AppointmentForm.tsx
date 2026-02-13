@@ -35,20 +35,40 @@ export const AppointmentForm: React.FC<Props> = ({
         status: "Scheduled",
     });
 
-    useEffect(() => {
-        if (!appointment) return;
+    // useEffect(() => {
+    //     if (!appointment) return;
 
-        const dt = appointment.date ? new Date(appointment.date) : null;
+    //     const dt = appointment.date ? new Date(appointment.date) : null;
+
+    //     setForm({
+    //         clientId: appointment.clientId || "",
+    //         title: appointment.title || "",
+    //         description: appointment.description || "",
+    //         date: dt ? dt.toISOString().split("T")[0] : "",
+    //         time: dt ? dt.toTimeString().slice(0, 5) : "",
+    //         endTime: appointment.endTime
+    //             ? appointment.endTime.slice(0, 5) // HH:mm:ss → HH:mm
+    //             : "",
+    //         location: appointment.location || "",
+    //         assignedTo: appointment.assignedTo || "",
+    //         status: appointment.status || "Scheduled",
+    //     });
+    // }, [appointment]);
+
+    useEffect(() => {
+        if (!appointment?.date) return;
+
+        const dt = new Date(appointment.date);
+
+        const pad = (n: number) => n.toString().padStart(2, "0");
 
         setForm({
             clientId: appointment.clientId || "",
             title: appointment.title || "",
             description: appointment.description || "",
-            date: dt ? dt.toISOString().split("T")[0] : "",
-            time: dt ? dt.toTimeString().slice(0, 5) : "",
-            endTime: appointment.endTime
-                ? appointment.endTime.slice(0, 5) // HH:mm:ss → HH:mm
-                : "",
+            date: `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`,
+            time: `${pad(dt.getHours())}:${pad(dt.getMinutes())}`,
+            endTime: appointment.endTime?.slice(0, 5) || "",
             location: appointment.location || "",
             assignedTo: appointment.assignedTo || "",
             status: appointment.status || "Scheduled",

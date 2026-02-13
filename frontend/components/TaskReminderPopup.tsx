@@ -131,7 +131,12 @@ export const TaskReminderPopup: React.FC = () => {
 
                                     <div className="text-xs text-gray-700 mt-1">
                                         <span className="font-semibold">Date:</span>{" "}
-                                        {new Date(appt.date).toLocaleString()}
+                                        {formatDateDMY(appt.date)}
+                                        {appt.time && (
+                                            <>
+                                                {" "}– {formatTimeOnly(appt.time)}
+                                            </>
+                                        )}
                                     </div>
                                 </li>
                             ))}
