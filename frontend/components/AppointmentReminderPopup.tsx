@@ -13,32 +13,48 @@ export const AppointmentReminderPopup: React.FC = () => {
     const now = new Date();
 
     // 🔥 Filter only appointments within next 15 minutes
-    const upcomingWithin15Min = appointmentReminders.filter((a: any) => {
-        const apptDate = a.time
-            ? new Date(`${a.date}T${a.time}`)
-            : new Date(a.date);
-
-        const diffInMs = apptDate.getTime() - now.getTime();
-        const diffInMinutes = diffInMs / (1000 * 60);
-
-        return diffInMinutes > 0 && diffInMinutes <= 15;
-    });
-
-    if (!appointmentPopupOpen || upcomingWithin15Min.length === 0) return null;
-
-    // const formatDateTime = (a: any) => {
+    // const upcomingWithin15Min = appointmentReminders.filter((a: any) => {
     //     const apptDate = a.time
     //         ? new Date(`${a.date}T${a.time}`)
     //         : new Date(a.date);
 
-    //     return {
-    //         displayDate: apptDate.toLocaleDateString(),
-    //         displayTime: apptDate.toLocaleTimeString([], {
-    //             hour: "2-digit",
-    //             minute: "2-digit",
-    //         }),
-    //     };
-    // };
+    //     const diffInMs = apptDate.getTime() - now.getTime();
+    //     const diffInMinutes = diffInMs / (1000 * 60);
+
+    //     return diffInMinutes > 0 && diffInMinutes <= 15;
+    // });
+
+
+    const upcomingWithin15Min = appointmentReminders.filter((a: any) => {
+        // ❌ Skip completed meetings
+        if (a.status === "Completed" || a.isCompleted) return false;
+
+        const startDateTime = a.time
+            ? new Date(`${a.date}T${a.time}`)
+            : new Date(a.date);
+
+        // If you have endTime field
+        const endDateTime = a.endTime
+            ? new Date(`${a.date}T${a.endTime}`)
+            : null;
+
+        const nowTime = now.getTime();
+
+        // ❌ If meeting already ended → don't show
+        if (endDateTime && endDateTime.getTime() <= nowTime) {
+            return false;
+        }
+
+        const diffInMinutes =
+            (startDateTime.getTime() - nowTime) / (1000 * 60);
+
+        // ✅ Show only if starting within next 15 minutes
+        return diffInMinutes > 0 && diffInMinutes <= 15;
+    });
+
+
+    if (!appointmentPopupOpen || upcomingWithin15Min.length === 0) return null;
+
 
     const formatDateTime = (a: any) => {
         const apptDate = a.time
@@ -107,7 +123,7 @@ export const AppointmentReminderPopup: React.FC = () => {
                                     <div className="text-xs text-gray-700 mt-1">
                                         <span className="font-semibold">Notes:</span>
                                         <div
-                                            className="mt-1 prose prose-sm max-w-none"
+                                            className="mt-1 prose prose-sm max-w-none break-words overflow-hidden prose-a:text-blue-600 prose-a:underline prose-a:break-all"
                                             dangerouslySetInnerHTML={{ __html: a.description }}
                                         />
                                     </div>
