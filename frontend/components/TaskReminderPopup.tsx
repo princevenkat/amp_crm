@@ -208,7 +208,7 @@ export const TaskReminderPopup: React.FC = () => {
                                 )}
 
                                 {/* ---------- APPOINTMENT REMINDERS ---------- */}
-                                {appointmentReminders.length > 0 && (
+                                {/* {appointmentReminders.length > 0 && (
                                     <div>
                                         <h3 className="text-sm font-bold text-green-700 mb-2">Upcoming Appointments</h3>
                                         <ul className="space-y-2">
@@ -241,7 +241,7 @@ export const TaskReminderPopup: React.FC = () => {
                                             ))}
                                         </ul>
                                     </div>
-                                )}
+                                )} */}
 
                             </div>
                         )}
