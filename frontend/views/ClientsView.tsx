@@ -1991,13 +1991,51 @@ const AssociatedContactsEditor: React.FC<{
 
 
 
+
+
+
+
+const roleColors: Record<string, string> = {
+    Admin: 'bg-blue-500 text-white',
+    Adviser: 'bg-green-500 text-white',
+    'Super Admin': 'bg-red-500 text-white',
+    Other: 'bg-gray-500 text-white',
+};
+
 const NotesView: React.FC<{
     notes: Note[];
     isEditing: boolean;
     onChange: (notes: Note[]) => void;
-    currentAuthor: string;
-}> = ({ notes, isEditing, onChange, currentAuthor }) => {
+}> = ({ notes, isEditing, onChange }) => {
     const [newNoteText, setNewNoteText] = useState('');
+
+    const { currentUser } = useContext(DataContext);
+
+    console.log(currentUser.role)
+
+    // const currentAuthor = currentUser
+    //     ? `${currentUser.role} ${currentUser.name}`
+    //     : 'Other Unknown';
+
+    const currentAuthor = currentUser
+        ? currentUser.role === 'Super Admin'
+            ? 'Super Admin'
+            : `${currentUser.role} ${currentUser.name}`
+        : 'Other Unknown';
+
+
+    // Extract role from currentAuthor string
+    // const getRole = (author: string) => {
+    //     const role = author.split(' ')[0]; // assumes format: "Role Name"
+    //     return roleColors[role] ? role : 'Other';
+    // };
+
+    const getRole = (author: string) => {
+        const matchedRole = Object.keys(roleColors).find(role =>
+            author.startsWith(role)
+        );
+        return matchedRole || 'Other';
+    };
 
     const handleNoteTextChange = (id: string, newText: string) => {
         const updatedNotes = notes.map(note => note.id === id ? { ...note, text: newText } : note);
@@ -2010,7 +2048,8 @@ const NotesView: React.FC<{
             id: `note-${Date.now()}`,
             text: newNoteText.trim(),
             author: currentAuthor,
-            date: new Date().toISOString().split('T')[0],
+            // date: new Date().toISOString().split('T')[0],
+            date: new Date().toISOString(),
         };
         onChange([newNote, ...notes]);
         setNewNoteText('');
@@ -2022,28 +2061,44 @@ const NotesView: React.FC<{
         }
     };
 
+    const sortedNotes = [...notes].sort((a, b) => {
+        const idA = Number(a.id.replace('note-', ''));
+        const idB = Number(b.id.replace('note-', ''));
+        return idB - idA; // DESC
+    });
+
+    const isOwnNote = (note: Note) => {
+        return note.author === currentAuthor;
+    };
+
+
+    console.log(notes.map(n => n.date));
     if (!isEditing) {
         return (
             <div>
                 {notes.length > 0 ? (
                     <ul className="space-y-4">
-                        {notes.map(note => (
-                            <li key={note.id} className="p-4 bg-gray-50 rounded-md text-sm border">
-                                <p className="whitespace-pre-wrap">{note.text}</p>
-                                <p className="text-xs text-text-secondary mt-2 text-right">
-                                    - {note.author} on {note.date
-                                        ? new Date(note.date).toLocaleDateString("en-GB", {
-                                            day: "2-digit",
-                                            month: "numeric",
-                                            year: "numeric",
-                                        })
-                                        : "N/A"}
-
-
-
-                                </p>
-                            </li>
-                        ))}
+                        {sortedNotes.map(note => {
+                            const role = getRole(note.author);
+                            return (
+                                <li key={note.id} className="p-4 bg-gray-50 rounded-md text-sm border">
+                                    <p className="whitespace-pre-wrap">{note.text}</p>
+                                    <p className="text-xs text-text-secondary mt-2 text-right flex justify-end items-center gap-2">
+                                        <span className={`px-2 py-0.5 rounded text-xs ${roleColors[role] || roleColors['Other']}`}>
+                                            {role}
+                                        </span>
+                                        - {note.author.replace(role, '').trim()
+                                        } on {note.date
+                                            ? new Date(note.date).toLocaleDateString("en-GB", {
+                                                day: "2-digit",
+                                                month: "numeric",
+                                                year: "numeric",
+                                            })
+                                            : "N/A"}
+                                    </p>
+                                </li>
+                            )
+                        })}
                     </ul>
                 ) : (
                     <p className="text-sm text-text-secondary">No notes for this client.</p>
@@ -2054,6 +2109,7 @@ const NotesView: React.FC<{
 
     return (
         <div className="space-y-4">
+            {/* Add new note */}
             <div className="border rounded-md p-4">
                 <label className="block text-sm font-semibold text-text-secondary mb-2">Add New Note</label>
                 <textarea
@@ -2064,35 +2120,170 @@ const NotesView: React.FC<{
                     placeholder="Type your note here..."
                 />
                 <div className="flex justify-end mt-2">
-                    <button onClick={handleAddNote} className="bg-secondary hover:bg-primary text-white font-semibold py-1 px-3 rounded-md text-sm">Add Note</button>
+                    <button
+                        onClick={handleAddNote}
+                        className="bg-secondary hover:bg-primary text-white font-semibold py-1 px-3 rounded-md text-sm"
+                    >
+                        Add Note
+                    </button>
                 </div>
             </div>
 
-            {notes.map(note => (
-                <div key={note.id} className="p-4 bg-gray-50 rounded-md text-sm border">
-                    <textarea
-                        value={note.text}
-                        onChange={(e) => handleNoteTextChange(note.id, e.target.value)}
-                        rows={3}
-                        className="w-full bg-surface border border-gray-300 rounded-md p-2 text-sm"
-                    />
-                    <div className="flex justify-between items-center mt-2">
-                        <p className="text-xs text-text-secondary text-right">
-                            - {note.author} on                            {note.date
-                                ? new Date(note.date).toLocaleDateString("en-GB", {
-                                    day: "2-digit",
-                                    month: "numeric",
-                                    year: "numeric",
-                                })
-                                : "—"}
-                        </p>
-                        <button onClick={() => handleDeleteNote(note.id)} className="text-xs text-danger hover:underline">Delete</button>
+            {/* Editable notes */}
+            {sortedNotes.map(note => {
+                const role = getRole(note.author);
+                return (
+                    <div key={note.id} className="p-4 bg-gray-50 rounded-md text-sm border">
+                        {/* <textarea
+                            value={note.text}
+                            onChange={(e) => handleNoteTextChange(note.id, e.target.value)}
+                            rows={3}
+                            className="w-full bg-surface border border-gray-300 rounded-md p-2 text-sm"
+                        /> */}
+                        {isOwnNote(note) ? (
+                            <textarea
+                                value={note.text}
+                                onChange={(e) => handleNoteTextChange(note.id, e.target.value)}
+                                rows={3}
+                                className="w-full bg-surface border border-gray-300 rounded-md p-2 text-sm"
+                            />
+                        ) : (
+                            <p className="whitespace-pre-wrap">{note.text}</p>
+                        )}
+                        <div className="flex justify-between items-center mt-2">
+                            <p className="text-xs text-text-secondary flex items-center gap-2">
+                                <span className={`px-2 py-0.5 rounded text-xs ${roleColors[role] || roleColors['Other']}`}>
+                                    {role}
+                                </span>
+                                - {note.author.replace(role, '').trim()
+                                } on {note.date
+                                    ? new Date(note.date).toLocaleDateString("en-GB", {
+                                        day: "2-digit",
+                                        month: "numeric",
+                                        year: "numeric",
+                                    })
+                                    : "—"}
+                            </p>
+                            {isOwnNote(note) && (
+                                <button
+                                    onClick={() => handleDeleteNote(note.id)}
+                                    className="text-xs text-danger hover:underline"
+                                >
+                                    Delete
+                                </button>
+                            )}
+                        </div>
                     </div>
-                </div>
-            ))}
+                )
+            })}
         </div>
     );
 };
+
+
+
+// const NotesView: React.FC<{
+//     notes: Note[];
+//     isEditing: boolean;
+//     onChange: (notes: Note[]) => void;
+//     currentAuthor: string;
+// }> = ({ notes, isEditing, onChange, currentAuthor }) => {
+//     const [newNoteText, setNewNoteText] = useState('');
+
+//     const handleNoteTextChange = (id: string, newText: string) => {
+//         const updatedNotes = notes.map(note => note.id === id ? { ...note, text: newText } : note);
+//         onChange(updatedNotes);
+//     };
+
+//     const handleAddNote = () => {
+//         if (newNoteText.trim() === '') return;
+//         const newNote: Note = {
+//             id: `note-${Date.now()}`,
+//             text: newNoteText.trim(),
+//             author: currentAuthor,
+//             date: new Date().toISOString().split('T')[0],
+//         };
+//         onChange([newNote, ...notes]);
+//         setNewNoteText('');
+//     };
+
+//     const handleDeleteNote = (id: string) => {
+//         if (window.confirm("Are you sure you want to delete this note?")) {
+//             onChange(notes.filter(note => note.id !== id));
+//         }
+//     };
+
+//     if (!isEditing) {
+//         return (
+//             <div>
+//                 {notes.length > 0 ? (
+//                     <ul className="space-y-4">
+//                         {notes.map(note => (
+//                             <li key={note.id} className="p-4 bg-gray-50 rounded-md text-sm border">
+//                                 <p className="whitespace-pre-wrap">{note.text}</p>
+//                                 <p className="text-xs text-text-secondary mt-2 text-right">
+//                                     - {note.author} on {note.date
+//                                         ? new Date(note.date).toLocaleDateString("en-GB", {
+//                                             day: "2-digit",
+//                                             month: "numeric",
+//                                             year: "numeric",
+//                                         })
+//                                         : "N/A"}
+
+
+
+//                                 </p>
+//                             </li>
+//                         ))}
+//                     </ul>
+//                 ) : (
+//                     <p className="text-sm text-text-secondary">No notes for this client.</p>
+//                 )}
+//             </div>
+//         );
+//     }
+
+//     return (
+//         <div className="space-y-4">
+//             <div className="border rounded-md p-4">
+//                 <label className="block text-sm font-semibold text-text-secondary mb-2">Add New Note</label>
+//                 <textarea
+//                     value={newNoteText}
+//                     onChange={(e) => setNewNoteText(e.target.value)}
+//                     rows={3}
+//                     className="w-full bg-surface border border-gray-300 rounded-md p-2 text-sm"
+//                     placeholder="Type your note here..."
+//                 />
+//                 <div className="flex justify-end mt-2">
+//                     <button onClick={handleAddNote} className="bg-secondary hover:bg-primary text-white font-semibold py-1 px-3 rounded-md text-sm">Add Note</button>
+//                 </div>
+//             </div>
+
+//             {notes.map(note => (
+//                 <div key={note.id} className="p-4 bg-gray-50 rounded-md text-sm border">
+//                     <textarea
+//                         value={note.text}
+//                         onChange={(e) => handleNoteTextChange(note.id, e.target.value)}
+//                         rows={3}
+//                         className="w-full bg-surface border border-gray-300 rounded-md p-2 text-sm"
+//                     />
+//                     <div className="flex justify-between items-center mt-2">
+//                         <p className="text-xs text-text-secondary text-right">
+//                             - {note.author} on                            {note.date
+//                                 ? new Date(note.date).toLocaleDateString("en-GB", {
+//                                     day: "2-digit",
+//                                     month: "numeric",
+//                                     year: "numeric",
+//                                 })
+//                                 : "—"}
+//                         </p>
+//                         <button onClick={() => handleDeleteNote(note.id)} className="text-xs text-danger hover:underline">Delete</button>
+//                     </div>
+//                 </div>
+//             ))}
+//         </div>
+//     );
+// };
 
 
 interface CaseWorker {
@@ -2686,7 +2877,7 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                 notes={editedClient.notes || []}
                 isEditing={isEditing}
                 onChange={handleNotesChange}
-                currentAuthor="Admin User" // In a real app, this would come from auth context
+            // currentAuthor="Admin User" // In a real app, this would come from auth context
             />,
         },
     ];

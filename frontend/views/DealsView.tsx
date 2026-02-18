@@ -605,7 +605,8 @@ export const DealsView: React.FC = () => {
             (client.status === 'Lead' || client.status === 'Pipeline') &&
             (
                 client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                client.email.toLowerCase().includes(searchTerm.toLowerCase())
+                client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                client.phone.toLowerCase().includes(searchTerm.toLowerCase())
             )
         );
 

@@ -1,5 +1,6 @@
 import React, { useState, useContext, useMemo, useEffect } from 'react';
 import type { Task } from '../types';
+import { TaskStatus } from '../types';
 import { View } from '../types';
 import { DataContext } from '../contexts/DataContext';
 import { Modal } from '../components/ui/Modal';
@@ -299,7 +300,7 @@ export const TasksView: React.FC = () => {
                     onChange={e => setSearchTerm(e.target.value)}
                     className="border p-2 rounded md:col-span-2"
                 />
-                <select
+                {/* <select
                     value={statusFilter}
                     onChange={e => setStatusFilter(e.target.value)}
                     className="border p-2 rounded cursor-pointer"
@@ -307,6 +308,19 @@ export const TasksView: React.FC = () => {
                     <option value="">All Statuses</option>
                     {[...new Set(tasks.map(t => t.status))].map(status => (
                         <option key={status} value={status}>{status}</option>
+                    ))}
+                </select> */}
+
+                <select
+                    value={statusFilter}
+                    onChange={e => setStatusFilter(e.target.value as TaskStatus | '')}
+                    className="border p-2 rounded cursor-pointer"
+                >
+                    <option value="">All Statuses</option>
+                    {Object.values(TaskStatus).map(status => (
+                        <option key={status} value={status}>
+                            {status}
+                        </option>
                     ))}
                 </select>
 
