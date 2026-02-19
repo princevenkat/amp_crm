@@ -117,20 +117,57 @@ export const DashboardView: React.FC = () => {
 
 
     // 5️⃣ Lead Pipeline
+    // const leadPipelineData = useMemo(() => {
+    //     const leads = adviserClients.filter(c => c.status === 'Lead');
+    //     const stages: CaseStatus[] = [
+    //         // 'Initial Enquiry',
+    //         // 'AIP',
+    //         // 'FMA Submitted',
+    //         // 'Offered'
+
+    //         "Enquiry",
+    //         "AIP",
+    //         "FMA Submitted",
+    //         "Offered",
+    //         "Exchanged",
+    //         "Completed",
+    //         "Renewal",
+    //         "On Risk",
+    //         "Commission Due",
+    //         "NPW",
+    //         "Other",
+
+    //     ];
+
+    //     return stages.map(stage => ({
+    //         name: stage,
+    //         Leads: leads.filter(l => l.caseStatus === stage).length,
+    //     }));
+    // }, [adviserClients]);
+
     const leadPipelineData = useMemo(() => {
-        const leads = adviserClients.filter(c => c.status === 'Lead');
-        const stages: CaseStatus[] = [
-            'Initial Enquiry',
-            'AIP',
-            'FMA Submitted',
-            'Offered'
+
+        const stages = [
+            "Enquiry",
+            "AIP",
+            "FMA Submitted",
+            "Offered",
+            "Exchanged",
+            "Completed",
+            "Renewal",
+            "On Risk",
+            "Commission Due",
+            "NPW",
+            "Other",
         ];
 
         return stages.map(stage => ({
             name: stage,
-            Leads: leads.filter(l => l.caseStatus === stage).length,
+            Leads: adviserClients.filter(c => c.caseStatus === stage).length,
         }));
+
     }, [adviserClients]);
+
 
 
     // 6️⃣ New Client Growth
@@ -208,9 +245,23 @@ export const DashboardView: React.FC = () => {
 
 
 
-    console.log("Ledger Raw:", ledger);
-    console.log("Adviser Clients:", adviserClients);
+    // console.log("Ledger Raw:", ledger);
+    // console.log("Adviser Clients:", adviserClients);
 
+
+    const STAGE_COLORS: Record<string, string> = {
+        "Enquiry": "#002D62",
+        "AIP": "#D4AF37",
+        "FMA Submitted": "#6C757D",
+        "Offered": "#002D62",
+        "Exchanged": "#D4AF37",
+        "Completed": "#6C757D",
+        "Renewal": "#002D62",
+        "On Risk": "#D4AF37",
+        "Commission Due": "#6C757D",
+        "NPW": "#002D62",
+        "Other": "#D4AF37",
+    };
 
     return (
         <div className="p-4 sm:p-8 bg-background min-h-full">
@@ -240,13 +291,31 @@ export const DashboardView: React.FC = () => {
 
                 <ChartContainer title="Lead Pipeline">
                     <ResponsiveContainer>
-                        <BarChart data={leadPipelineData}>
+                        <BarChart data={leadPipelineData} >
                             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                            <XAxis dataKey="name" stroke="#6b7280" fontSize={12} />
+                            {/* <XAxis dataKey="name" stroke="#6b7280" fontSize={12} /> */}
+                            <XAxis
+                                dataKey="name"
+                                stroke="#6b7280"
+                                fontSize={10}
+                                interval={0}
+                                angle={-30}
+                                textAnchor="end"
+                                padding={{ left: 30, right: 30, }}
+                            />
                             <YAxis stroke="#6b7280" fontSize={12} />
                             <Tooltip contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e5e7eb' }} />
-                            <Legend />
-                            <Bar dataKey="Leads" fill="#004080" />
+                            <Legend wrapperStyle={{ paddingTop: 20 }} />
+                            {/* <Bar dataKey="Leads" fill="#004080" /> */}
+                            <Bar dataKey="Leads">
+                                {leadPipelineData.map((entry, index) => (
+                                    <Cell
+                                        key={`cell-${index}`}
+                                        fill={STAGE_COLORS[entry.name] || "#6C757D"}
+                                    />
+                                ))}
+                            </Bar>
+
                         </BarChart>
                     </ResponsiveContainer>
                 </ChartContainer>
