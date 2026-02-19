@@ -23,6 +23,7 @@ export const TaskReminderPopup: React.FC = () => {
         reminderPopupOpen,
         closeReminderPopup,
         currentUser,
+        teamMembers
     } = useContext(DataContext);
 
     // If BOTH lists are empty or popup is closed → hide
@@ -32,19 +33,70 @@ export const TaskReminderPopup: React.FC = () => {
 
 
 
+    // const visibleTaskReminders = React.useMemo(() => {
+    //     if (!currentUser) return [];
+
+    //     // 👑 Super Admin sees everything
+    //     if (currentUser.role === UserRole.SuperAdmin) {
+    //         return taskReminders;
+    //     }
+
+    //     // 👤 Everyone else sees ONLY their tasks
+    //     return taskReminders.filter(
+    //         task => task.assignedTo === currentUser.name
+    //     );
+    // }, [taskReminders, currentUser]);
+
+
+    const normalize = (str: string | undefined) => str?.trim().toLowerCase() || "";
+
     const visibleTaskReminders = React.useMemo(() => {
         if (!currentUser) return [];
 
-        // 👑 Super Admin sees everything
-        if (currentUser.role === UserRole.SuperAdmin) {
-            return taskReminders;
-        }
+        const currentUserName = normalize(currentUser.name);
 
-        // 👤 Everyone else sees ONLY their tasks
-        return taskReminders.filter(
-            task => task.assignedTo === currentUser.name
-        );
-    }, [taskReminders, currentUser]);
+        const getUserRoleByName = (name: string) => {
+            const user = teamMembers.find(u => normalize(u.name) === normalize(name));
+            return user?.role || null;
+        };
+
+        switch (currentUser.role) {
+            case UserRole.SuperAdmin:
+                // SuperAdmin sees everything
+                return taskReminders;
+
+            case UserRole.Admin:
+                // Admin sees tasks assigned to them OR tasks they assigned
+                return taskReminders.filter(task => {
+                    const assignedTo = normalize(task.assignedTo);
+                    const assignedBy = normalize(task.assignedBy);
+                    return assignedTo === currentUserName || assignedBy === currentUserName;
+                });
+
+            case UserRole.Adviser:
+                // Adviser sees tasks assigned to them OR tasks assigned by Admin/SuperAdmin
+                return taskReminders.filter(task => {
+                    const assignedTo = normalize(task.assignedTo);
+                    const assignedByRole = getUserRoleByName(task.assignedBy);
+
+                    return (
+                        assignedTo === currentUserName ||
+                        assignedByRole === UserRole.Admin ||
+                        assignedByRole === UserRole.SuperAdmin
+                    );
+                });
+
+            default:
+                return [];
+        }
+    }, [taskReminders, currentUser, teamMembers]);
+
+    taskReminders.filter(task => {
+        console.log("Checking task:", task.title, "assignedTo:", task.assignedTo, "currentUser:", currentUser.name);
+        return normalize(task.assignedTo) === normalize(currentUser.name);
+    });
+
+
 
 
 

@@ -18,48 +18,72 @@
 //   return { date, time };
 // }
 
-export function splitDateTime(dateString: string): {
-  date: string;
-  time: string;
-} {
-  if (!dateString) return { date: "", time: "" };
+// export function splitDateTime(dateString: string): {
+//   date: string;
+//   time: string;
+// } {
+//   if (!dateString) return { date: "", time: "" };
 
-  const dateObj = new Date(dateString);
+//   const dateObj = new Date(dateString);
 
-  // Date in YYYY-MM-DD format
-  const date = dateObj.toLocaleDateString("en-CA");
+//   // Date in YYYY-MM-DD format
+//   const date = dateObj.toLocaleDateString("en-CA");
 
-  // Time in 12-hour format with AM/PM
-  const time = dateObj.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
+//   // Time in 12-hour format with AM/PM
+//   const time = dateObj.toLocaleTimeString("en-US", {
+//     hour: "2-digit",
+//     minute: "2-digit",
+//     hour12: true,
+//   });
 
-  return { date, time };
+//   return { date, time };
+// }
+
+/**
+ * Split a date-time string into date and time
+ * Date: DD/M/YYYY
+ * Time: 24-hour format HH:mm
+ */
+export function splitDateTime(dateTime: string | undefined) {
+  if (!dateTime) return { date: "", time: "" };
+
+  const dt = new Date(dateTime);
+
+  if (isNaN(dt.getTime())) return { date: "", time: "" };
+
+  const day = dt.getDate(); // 1-31
+  const month = dt.getMonth() + 1; // 0-indexed
+  const year = dt.getFullYear();
+
+  const hours = dt.getHours().toString().padStart(2, "0");
+  const minutes = dt.getMinutes().toString().padStart(2, "0");
+
+  return {
+    date: `${day}/${month}/${year}`, // e.g. 27/1/2026
+    time: `${hours}:${minutes}`, // e.g. 14:05 (24-hour)
+  };
 }
 
+/**
+ * Convert HH:mm or HH:mm:ss from DB to 24-hour display
+ */
 export function formatDbTime(time?: string): string {
   if (!time) return "";
 
   const [hour, minute] = time.split(":").map(Number);
+  const hh = hour.toString().padStart(2, "0");
+  const mm = minute.toString().padStart(2, "0");
 
-  const meridiem = hour >= 12 ? "PM" : "AM";
-  const hour12 = hour % 12 || 12;
-
-  return `${hour12.toString().padStart(2, "0")}:${minute
-    .toString()
-    .padStart(2, "0")} ${meridiem}`;
+  return `${hh}:${mm}`; // 24-hour
 }
 
 /**
- * Format a date string to YYYY-MM-DD (for <input type="date" />)
+ * Format a date for <input type="date" /> (YYYY-MM-DD)
  */
 export const formatDateForInput = (date?: string | Date | null): string => {
   if (!date) return "";
 
   const d = new Date(date);
-
   if (isNaN(d.getTime())) return "";
 
   const year = d.getFullYear();
@@ -70,18 +94,17 @@ export const formatDateForInput = (date?: string | Date | null): string => {
 };
 
 /**
- * Format a date string for display (UK format)
+ * Format a date for display (DD/MM/YYYY)
  */
 export const formatDateForDisplay = (date?: string | Date | null): string => {
   if (!date) return "—";
 
   const d = new Date(date);
-
   if (isNaN(d.getTime())) return "—";
 
-  return d.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+  const day = d.getDate();
+  const month = d.getMonth() + 1;
+  const year = d.getFullYear();
+
+  return `${day}/${month}/${year}`;
 };

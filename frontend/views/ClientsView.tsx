@@ -2431,28 +2431,6 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
     const navigate = useNavigate();
 
 
-
-
-
-
-    // useEffect(() => {
-    //     setEditedClient(client);
-    // }, [client]);
-
-    // useEffect(() => {
-    //     // Fetch the full hydrated client (includes applicants, notes, etc.)
-    //     const fetchClient = async () => {
-    //         try {
-    //             const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/clients/${client.id}`);
-    //             const data = await res.json();
-    //             setEditedClient(data);
-    //         } catch (err) {
-    //             console.error("Error fetching full client:", err);
-    //         }
-    //     };
-
-    //     if (client?.id) fetchClient();
-    // }, [client?.id]);
     useEffect(() => {
         const fetchClient = async () => {
             try {
@@ -2743,7 +2721,15 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
     };
 
     // const clientTasks = tasks.filter(task => task.clientId === client.id);
-    const clientTasks = tasks.filter(task => String(task.clientId) === String(client.id));
+    // const clientTasks = tasks.filter(task => String(task.clientId) === String(client.id));
+
+    const clientTasks = tasks
+        .filter(task => String(task.clientId) === String(client.id))
+        .sort((a, b) =>
+            new Date(b.created_at || "").getTime() -
+            new Date(a.created_at || "").getTime()
+        );
+
 
     const advisors = useMemo(() => teamMembers.filter(m => m.role === UserRole.Adviser).map(m => m.name), [teamMembers]);
     const admins = useMemo(() => teamMembers.filter(m => m.role === UserRole.Admin).map(m => m.name), [teamMembers]);
@@ -2897,7 +2883,9 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
         'Other': 'bg-gray-500 text-black',
     };
 
-
+    const getUserRole = (name: string): UserRole | undefined => {
+        return teamMembers.find(m => m.name === name)?.role;
+    };
     return (
         <div className="p-4 sm:p-8">
             <Modal title={taskToEdit ? "Edit Task" : "Create New Task"} isOpen={isTaskModalOpen} onClose={handleCloseTaskModal}>
@@ -3054,13 +3042,29 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                                     {clientTasks.map(t => (
                                         <li key={t.id} className="text-sm p-3 bg-gray-50 rounded border relative group">
                                             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
+                                                {/* <button
                                                     onClick={() => handleOpenEditTaskModal(t)}
                                                     className="text-gray-400 hover:text-secondary p-1"
                                                     aria-label="Edit task"
                                                 >
                                                     {EditIcon}
-                                                </button>
+                                                </button> */}
+                                                {(
+                                                    currentUser?.role === UserRole.SuperAdmin ||
+                                                    currentUser?.role === UserRole.Admin ||
+                                                    t.assignedTo === currentUser?.name ||
+                                                    t.assignedBy === currentUser?.name
+                                                ) && (
+                                                        <button
+                                                            onClick={() => handleOpenEditTaskModal(t)}
+                                                            className="text-gray-400 hover:text-secondary p-1"
+                                                            aria-label="Edit task"
+                                                        >
+                                                            {EditIcon}
+                                                        </button>
+                                                    )}
+
+
                                                 {/* 🗑️ Delete Button */}
 
                                                 {canDelete && (
@@ -3073,7 +3077,13 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                                                     </button>
                                                 )}
                                             </div>
+
+
                                             <p className="font-semibold text-text-primary pr-8">{t.title}</p>
+
+
+
+
                                             {t.description && <p className="text-xs text-text-secondary mt-1">{t.description}</p>}
                                             {/* <p className="text-xs text-text-secondary mt-2">Due: {t.dueDate}</p> */}
                                             <p className="text-xs text-text-secondary mt-2">Date:
@@ -3086,6 +3096,33 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                                                     : "—"}
                                             </p>
 
+                                            <div className="flex items-center justify-end">
+                                                {(() => {
+                                                    const role = getUserRole(t.assignedBy);
+                                                    const name = t.assignedBy;
+
+                                                    // if (!role) return null;
+                                                    if (role === UserRole.Adviser && name === currentUser?.name) return null;
+
+                                                    const roleStyles = {
+                                                        [UserRole.SuperAdmin]: "bg-purple-100 text-purple-700",
+                                                        [UserRole.Admin]: "bg-blue-100 text-blue-700",
+                                                        [UserRole.Adviser]: "bg-green-100 text-green-700",
+                                                    };
+
+                                                    const style = roleStyles[role] ?? "bg-gray-100 text-gray-700";
+                                                    return (
+                                                        <>
+                                                            {/* <span className='text-xs font-semibold'>{name} —</span> */}
+                                                            <span
+                                                                className={`text-xs px-2 py-1 rounded-full ${style}`}
+                                                            >
+                                                                {role}
+                                                            </span>
+                                                        </>
+                                                    );
+                                                })()}
+                                            </div>
 
                                         </li>
                                     ))}

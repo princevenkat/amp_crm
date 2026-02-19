@@ -4,6 +4,7 @@ import { AppointmentForm } from "../components/AppointmentForm";
 import { Appointment } from "@/types";
 import { Modal } from "@/components/ui/Modal";
 import { DeleteIcon, EditIcon } from "@/components/ui/Icons";
+import { splitDateTime } from "@/utils/dateUtils";
 
 export const AppointmentsView: React.FC = () => {
     const {
@@ -337,14 +338,26 @@ export const AppointmentsView: React.FC = () => {
                                                 minute: "2-digit",
                                             })
                                             : "—"} */}
-                                        {a.date
+                                        {/* {a.date
                                             ? (() => {
                                                 const dt = new Date(a.date);
                                                 const formattedDate = dt.toLocaleDateString('en-GB'); // DD/MM/YYYY
                                                 const formattedTime = dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
                                                 return `${formattedDate} ${formattedTime}`;
                                             })()
-                                            : "—"}
+                                            : "—"} */}
+                                        {a.date ? (() => {
+                                            const { date, time } = splitDateTime(a.date); // reuse your helper
+
+                                            return (
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span>{date}</span>
+                                                    <span className="bg-gray-200 text-gray-800 text-xs font-semibold px-2 py-0.5 rounded-full">
+                                                        {time}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })() : "—"}
                                     </td>
 
                                     <td className="p-2 border">{a.status}</td>

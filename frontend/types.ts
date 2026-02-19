@@ -504,6 +504,7 @@ export interface PasswordEntry {
   password?: string; // Stored encrypted in a real app, optional here for reveal logic
   memorablePhrase?: string; // Optional for reveal logic
   securityQuestions: SecurityQuestion[];
+  provider_lenders?: "Provider" | "Lender" | "Others";
 }
 
 export interface LedgerEntry {
@@ -618,6 +619,7 @@ export interface DataContextType {
   // ) => Promise<void>;
   passwords: PasswordEntry[];
   addPasswordEntry: (entry: Omit<PasswordEntry, "id">) => Promise<void>;
+
   fetchPasswords: () => Promise<void>;
   updatePasswordEntry: (
     entryId: string,

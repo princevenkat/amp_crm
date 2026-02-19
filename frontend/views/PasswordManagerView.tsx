@@ -462,33 +462,103 @@ export const PasswordManagerView: React.FC = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                 {/* Left Column: List */}
+                {/* <div className="md:col-span-1">
+                    <Card>
+                        <CardContent>
+                            {['Provider', 'Lender', 'Others'].map((type) => {
+                                // const entriesOfType = displayedPasswords.filter(e => e.provider_lenders === type);
+
+                                let entriesOfType = displayedPasswords.filter(e => e.provider_lenders === type);
+
+                                if (entriesOfType.length === 0) return null;
+
+                                // Sort entries alphabetically by 'service'
+                                entriesOfType = entriesOfType.sort((a, b) =>
+                                    a.service.localeCompare(b.service)
+                                );
+
+                                return (
+                                    <div key={type} className="mb-4">
+                                        <h4 className="font-semibold text-black mb-2">
+                                            <div className='flex justify-between items-center'>
+                                                <span>{type} </span>
+                                                <span className='bg-gray-200 text-gray-800 text-xs font-semibold px-2 py-0.5 rounded-full'>Total: {entriesOfType.length}</span>
+                                            </div>
+                                        </h4>
+                                        <ul className="space-y-2">
+                                            {entriesOfType.map(entry => (
+                                                <li key={entry.id}>
+                                                    <button
+                                                        onClick={() => handleSelectEntry(entry)}
+                                                        className={`w-full text-left p-3 rounded-md text-sm font-medium transition-colors ${selectedEntry?.id === entry.id && !isFormActive
+                                                            ? 'bg-primary text-white'
+                                                            : 'bg-gray-50 hover:bg-gray-100'
+                                                            }`}
+                                                    >
+                                                        {entry.service}
+                                                    </button>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                );
+                            })}
+                        </CardContent>
+                    </Card>
+                </div> */}
+
+
                 <div className="md:col-span-1">
                     <Card>
-                        <CardHeader>Providers ({displayedPasswords.length})</CardHeader>
                         <CardContent>
-                            <ul className="space-y-2">
-                                {displayedPasswords.map(entry => (
-                                    <li key={entry.id}>
-                                        <button
-                                            onClick={() => handleSelectEntry(entry)}
-                                            className={`w-full text-left p-3 rounded-md text-sm font-medium transition-colors ${selectedEntry?.id === entry.id && !isFormActive
-                                                ? 'bg-primary text-white'
-                                                : 'bg-gray-50 hover:bg-gray-100'
-                                                }`}
-                                        >
-                                            {entry.service}
-                                        </button>
-                                    </li>
-                                ))}
-                            </ul>
+                            {Array.from(new Set(displayedPasswords.map(e => e.provider_lenders))) // get unique types
+                                .sort() // sort types alphabetically
+                                .map((type) => {
+                                    let entriesOfType = displayedPasswords.filter(e => e.provider_lenders === type);
+
+                                    if (entriesOfType.length === 0) return null;
+
+                                    // Sort entries alphabetically by 'service'
+                                    entriesOfType = entriesOfType.sort((a, b) => a.service.localeCompare(b.service));
+
+                                    return (
+                                        <div key={type} className="mb-4">
+                                            {/* Header with count */}
+                                            <h4 className="font-semibold text-black mb-4">
+                                                <div className='flex justify-between items-center'>
+                                                    <span>{type} </span>
+                                                    <span className='bg-[#d4af37]/20 text-gray-800 text-xs font-semibold px-3 py-1 rounded-full'>
+                                                        Total: {entriesOfType.length}
+                                                    </span>
+                                                </div>
+                                            </h4>
+                                            <ul className="space-y-2">
+                                                {entriesOfType.map(entry => (
+                                                    <li key={entry.id}>
+                                                        <button
+                                                            onClick={() => handleSelectEntry(entry)}
+                                                            className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${selectedEntry?.id === entry.id && !isFormActive
+                                                                ? 'bg-primary text-white'
+                                                                : 'bg-gray-100  text-gray-600 hover:bg-gray-100'
+                                                                }`}
+                                                        >
+                                                            {entry.service}
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    );
+                                })}
                         </CardContent>
                     </Card>
                 </div>
 
+
                 {/* Right Column: Detail or Form */}
-                <div className="md:col-span-2">
+                <div className="md:col-span-3">
                     {isFormActive ? (
                         <PasswordForm
                             onSubmit={handleSave}

@@ -60,13 +60,20 @@ router.get("/", protect, async (req, res) => {
         let params = [];
 
         if (role === "Adviser") {
+            // query = `
+            //     SELECT t.*, COALESCE(c.caseReference, 'N/A') AS caseReference, c.name AS clientName
+            //     FROM tasks t
+            //     LEFT JOIN clients c ON t.clientId = c.id
+            //     WHERE LOWER(t.assignedTo) = ? OR LOWER(t.assignedBy) = ?
+            //     ORDER BY t.dueDate ASC
+            // `;
+
             query = `
-        SELECT t.*, COALESCE(c.caseReference, 'N/A') AS caseReference, c.name AS clientName
-        FROM tasks t
-        LEFT JOIN clients c ON t.clientId = c.id
-        WHERE LOWER(t.assignedTo) = ? OR LOWER(t.assignedBy) = ?
-        ORDER BY t.dueDate ASC
-      `;
+                SELECT t.*, COALESCE(c.caseReference, 'N/A') AS caseReference, c.name AS clientName
+                FROM tasks t
+                LEFT JOIN clients c ON t.clientId = c.id
+                ORDER BY t.dueDate ASC
+            `;
             params = [userIdentifier, userIdentifier];
         } else if (role === "Admin" || role === "Super Admin" || role === "Marketing") {
             query = `
@@ -172,6 +179,7 @@ router.post("/", protect, async (req, res) => {
 });
 
 // ✅ Update existing task (robust: partial updates, validation, auth checks)
+
 router.put("/:id", protect, async (req, res) => {
     const { id } = req.params;
 
