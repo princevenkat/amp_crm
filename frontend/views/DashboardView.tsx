@@ -31,68 +31,135 @@ const ChartContainer: React.FC<{ title: string; children: React.ReactNode }> = (
 const COLORS = ['#002D62', '#D4AF37', '#6C757D'];
 
 export const DashboardView: React.FC = () => {
-    const { clients, tasks, ledger } = useContext(DataContext);
+    // const { clients, tasks, ledger } = useContext(DataContext);
 
+    const { clients, tasks, ledger, currentUser } = useContext(DataContext);
+
+    // 1️⃣ Adviser Clients
+    const adviserClients = useMemo(() => {
+        if (!currentUser) return [];
+
+        const isAdmin =
+            currentUser.role === "Super Admin" ||
+            currentUser.role === "Admin";
+
+        if (isAdmin) {
+            return clients; // see all
+        }
+
+        // Adviser → only own clients
+        return clients.filter(
+            c => c.primaryAdvisor_id === currentUser.id
+        );
+    }, [clients, currentUser]);
+
+
+
+    // 2️⃣ Adviser Ledger (MUST come after adviserClients)
+    const adviserLedger = useMemo(() => {
+        if (!currentUser) return [];
+
+        const isAdmin =
+            currentUser.role === "Super Admin" ||
+            currentUser.role === "Admin";
+
+        if (isAdmin) {
+            return ledger; // see all
+        }
+
+        // Adviser → only ledger entries for their clients
+        const adviserClientIds = adviserClients.map(c => c.id);
+
+        return ledger.filter(entry =>
+            entry.clientId &&
+            adviserClientIds.includes(entry.clientId)
+        );
+    }, [ledger, adviserClients, currentUser]);
+
+
+
+    // 3️⃣ Total Revenue
+    const totalRevenue = useMemo(() => {
+        return adviserLedger
+            .filter(e => e.type !== 'Expense' && e.pay_status === 'Paid')
+            .reduce((acc, curr) => acc + Number(curr.amount), 0);
+    }, [adviserLedger]);
+
+
+    // 4️⃣ Revenue Chart
     const revenueData = useMemo(() => {
         const monthlyRevenue: { [key: string]: number } = {};
-        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-        // ledger.forEach(entry => {
-        //     if (entry.type !== 'Expense') {
-        //         const date = new Date(entry.date);
-        //         const month = date.getMonth();
-        //         const year = date.getFullYear();
-        //         const key = `${year}-${String(month).padStart(2, '0')}`;
-        //         if (!monthlyRevenue[key]) monthlyRevenue[key] = 0;
-        //         monthlyRevenue[key] += entry.amount;
-        //     }
-        // });
-        ledger.forEach(entry => {
-            if (entry.type !== 'Expense') {
+        adviserLedger.forEach(entry => {
+            if (entry.type !== 'Expense' && entry.pay_status === 'Paid') {
                 const date = new Date(entry.date);
                 const month = date.getMonth();
                 const year = date.getFullYear();
                 const key = `${year}-${String(month).padStart(2, '0')}`;
 
                 if (!monthlyRevenue[key]) monthlyRevenue[key] = 0;
-                monthlyRevenue[key] += Number(entry.amount); // ✅ convert to number
+                monthlyRevenue[key] += Number(entry.amount);
             }
         });
 
-
-
-
-        // ledger.forEach(entry => {
-        //     if (entry.type !== 'Expense' && entry.pay_status === 'Paid') {
-        //         const date = new Date(entry.date);
-        //         const month = date.getMonth();
-        //         const year = date.getFullYear();
-        //         const key = `${year}-${String(month).padStart(2, '0')}`;
-
-        //         if (!monthlyRevenue[key]) monthlyRevenue[key] = 0;
-        //         monthlyRevenue[key] += Number(entry.amount); // ensure number
-        //     }
-        // });
-        // console.log("Monthly Revenue (Paid Only):", monthlyRevenue);
-
-
         return Object.entries(monthlyRevenue)
-            .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
+            .sort(([a], [b]) => a.localeCompare(b))
             .map(([key, revenue]) => {
                 const [year, monthIndex] = key.split('-');
-                return { name: `${monthNames[parseInt(monthIndex, 10)]} '${year.slice(2)}`, Revenue: revenue };
+                return {
+                    name: `${monthNames[parseInt(monthIndex, 10)]} '${year.slice(2)}`,
+                    Revenue: revenue
+                };
             });
-    }, [ledger]);
+    }, [adviserLedger]);
 
+
+    // 5️⃣ Lead Pipeline
     const leadPipelineData = useMemo(() => {
-        const leads = clients.filter(c => c.status === 'Lead');
-        const stages: CaseStatus[] = ['Initial Enquiry', 'AIP', 'FMA Submitted', 'Offered'];
-        const stageCounts = stages.map(stage => ({
+        const leads = adviserClients.filter(c => c.status === 'Lead');
+        const stages: CaseStatus[] = [
+            'Initial Enquiry',
+            'AIP',
+            'FMA Submitted',
+            'Offered'
+        ];
+
+        return stages.map(stage => ({
             name: stage,
             Leads: leads.filter(l => l.caseStatus === stage).length,
         }));
-        return stageCounts;
-    }, [clients]);
+    }, [adviserClients]);
+
+
+    // 6️⃣ New Client Growth
+    const newClientData = useMemo(() => {
+        const monthlyNewClients: { [key: string]: number } = {};
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+        adviserClients.forEach(client => {
+            const date = new Date(client.createdDate);
+            const month = date.getMonth();
+            const year = date.getFullYear();
+            const key = `${year}-${String(month).padStart(2, '0')}`;
+
+            if (!monthlyNewClients[key]) monthlyNewClients[key] = 0;
+            monthlyNewClients[key]++;
+        });
+
+        return Object.entries(monthlyNewClients)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([key, count]) => {
+                const [year, monthIndex] = key.split('-');
+                return {
+                    name: `${monthNames[parseInt(monthIndex, 10)]} '${year.slice(2)}`,
+                    "New Clients": count
+                };
+            });
+    }, [adviserClients]);
+
 
     const taskStatusData = useMemo(() => {
         const statuses = Object.values(TaskStatus);
@@ -102,27 +169,8 @@ export const DashboardView: React.FC = () => {
         }));
     }, [tasks]);
 
-    const newClientData = useMemo(() => {
-        const monthlyNewClients: { [key: string]: number } = {};
-        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-        clients.forEach(client => {
-            const date = new Date(client.createdDate);
-            const month = date.getMonth();
-            const year = date.getFullYear();
-            const key = `${year}-${String(month).padStart(2, '0')}`;
-            if (!monthlyNewClients[key]) monthlyNewClients[key] = 0;
-            monthlyNewClients[key]++;
-        });
 
-        return Object.entries(monthlyNewClients)
-            .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
-            .map(([key, count]) => {
-                const [year, monthIndex] = key.split('-');
-                return { name: `${monthNames[parseInt(monthIndex, 10)]} '${year.slice(2)}`, "New Clients": count };
-            });
-
-    }, [clients]);
 
     // const totalRevenue = ledger.filter(e => e.type !== 'Expense').reduce((acc, curr) => acc + curr.amount, 0);
 
@@ -130,15 +178,39 @@ export const DashboardView: React.FC = () => {
     //     .filter(e => e.type !== 'Expense')
     //     .reduce((acc, curr) => acc + Number(curr.amount), 0);
 
-    const totalRevenue = ledger
-        .filter(e => e.type !== 'Expense' && e.pay_status === 'Paid')
-        .reduce((acc, curr) => acc + Number(curr.amount), 0);
+    // const totalRevenue = ledger
+    //     .filter(e => e.type !== 'Expense' && e.pay_status === 'Paid')
+    //     .reduce((acc, curr) => acc + Number(curr.amount), 0);
 
-    const clientsWonCount = clients.filter(c => c.caseStatus === 'Completed').length;
-    const activeClientsCount = clients.filter(c => c.status === 'Active').length;
-    const activeLeadsCount = clients.filter(
-        c => c.status === 'Pipeline' || c.status === 'Lead'
-    ).length;
+
+
+
+    // const totalRevenue = adviserLedger
+    //     .filter(e => e.type !== 'Expense' && e.pay_status === 'Paid')
+    //     .reduce((acc, curr) => acc + Number(curr.amount), 0);
+
+
+    // const clientsWonCount = clients.filter(c => c.caseStatus === 'Completed').length;
+    // const activeClientsCount = clients.filter(c => c.status === 'Active').length;
+    // const activeLeadsCount = clients.filter(
+    //     c => c.status === 'Pipeline' || c.status === 'Lead'
+    // ).length;
+
+
+    const clientsWonCount = adviserClients
+        .filter(c => c.caseStatus === 'Completed').length;
+
+    const activeClientsCount = adviserClients
+        .filter(c => c.status === 'Active').length;
+
+    const activeLeadsCount = adviserClients
+        .filter(c => c.status === 'Pipeline' || c.status === 'Lead').length;
+
+
+
+    console.log("Ledger Raw:", ledger);
+    console.log("Adviser Clients:", adviserClients);
+
 
     return (
         <div className="p-4 sm:p-8 bg-background min-h-full">
@@ -216,3 +288,5 @@ export const DashboardView: React.FC = () => {
         </div>
     );
 };
+
+// 

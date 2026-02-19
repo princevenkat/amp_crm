@@ -6,39 +6,86 @@ import { protect } from '../middleware/authMiddleware.js';
 const router = express.Router();
 
 // ================== GET ALL LEDGER ENTRIES ==================
+// router.get('/', protect, async (req, res) => {
+//     const { id, role } = req.user;
+//     const { ownerId, clientId } = req.query;
+
+//     try {
+//         const FULL_ACCESS_ROLES = ['Admin', 'Super Admin'];
+//         let query = 'SELECT * FROM ledger_entries WHERE 1=1';
+//         const params = [];
+
+//         if (clientId) {
+//             query += ' AND clientId = ?';
+//             params.push(clientId);
+//         }
+
+//         if (FULL_ACCESS_ROLES.includes(role)) {
+//             if (ownerId) {
+//                 query += ' AND ownerId = ?';
+//                 params.push(ownerId);
+//             }
+//         } else {
+//             query += ' AND ownerId = ?';
+//             params.push(id);
+//         }
+
+//         query += ' ORDER BY date DESC';
+//         const [entries] = await db.query(query, params);
+//         res.json(entries);
+//     } catch (error) {
+//         console.error('Failed to get ledger entries:', error);
+//         res.status(500).json({ message: 'Server error' });
+//     }
+// });
+
 router.get('/', protect, async (req, res) => {
     const { id, role } = req.user;
-    const { ownerId, clientId } = req.query;
+    const { clientId } = req.query;
 
     try {
         const FULL_ACCESS_ROLES = ['Admin', 'Super Admin'];
-        let query = 'SELECT * FROM ledger_entries WHERE 1=1';
-        const params = [];
-
-        if (clientId) {
-            query += ' AND clientId = ?';
-            params.push(clientId);
-        }
+        let query;
+        let params = [];
 
         if (FULL_ACCESS_ROLES.includes(role)) {
-            if (ownerId) {
-                query += ' AND ownerId = ?';
-                params.push(ownerId);
+            // Admin & Super Admin → see everything
+            query = 'SELECT * FROM ledger_entries WHERE 1=1';
+
+            if (clientId) {
+                query += ' AND clientId = ?';
+                params.push(clientId);
             }
+
+            query += ' ORDER BY date DESC';
+
         } else {
-            query += ' AND ownerId = ?';
-            params.push(id);
+            // Adviser → only ledger of their clients
+            query = `
+                SELECT l.*
+                FROM ledger_entries l
+                JOIN clients c ON l.clientId = c.id
+                WHERE c.primaryAdvisor_id = ?
+            `;
+
+            params.push(id); // 👈 THIS is the adviserId
+
+            if (clientId) {
+                query += ' AND l.clientId = ?';
+                params.push(clientId);
+            }
+
+            query += ' ORDER BY l.date DESC';
         }
 
-        query += ' ORDER BY date DESC';
         const [entries] = await db.query(query, params);
         res.json(entries);
+
     } catch (error) {
         console.error('Failed to get ledger entries:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
-
 
 // Create a new ledger entry
 router.post('/', protect, async (req, res) => {
