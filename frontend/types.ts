@@ -46,7 +46,7 @@ export enum ContactType {
   Accountant = "Accountant",
   Surveyor = "Surveyor",
   EstateAgent = "Estate Agent",
-  Clinics = "Clinics",
+  // Clinics = "Clinics",
 }
 
 export interface Applicant {

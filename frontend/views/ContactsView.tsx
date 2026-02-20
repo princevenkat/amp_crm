@@ -17,7 +17,7 @@ export const ContactsView: React.FC = () => {
   // Sorting state
   const [sortConfig, setSortConfig] = useState<{ key: keyof Contact; direction: 'asc' | 'desc' } | null>(null);
   const [selectedType, setSelectedType] = useState(''); // <-- new state for type filter
-  const contactTypes = ['Lender', 'Provider', 'Solicitor', 'Accountant', 'Surveyor', 'EstateAgent', 'Clinics'].sort();
+  const contactTypes = ['Lender', 'Provider', 'Solicitor', 'Accountant', 'Surveyor', 'EstateAgent'].sort();
 
 
   // const lenders = contacts.filter(c => c.type === 'Lender');

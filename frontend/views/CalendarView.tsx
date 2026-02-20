@@ -111,10 +111,19 @@ const CalendarDay: React.FC<{
 
                 {/* Appointments */}
                 {appointments.map(appt => {
-                    const { date, time } = splitDateTime(appt.date);
+                    // const { date, time } = splitDateTime(appt.date);
 
-                    // Format date as DD/MM/YYYY
-                    const formattedDate = new Date(date).toLocaleDateString('en-GB');
+                    // // Format date as DD/MM/YYYY
+                    // const formattedDate = new Date(date).toLocaleDateString('en-GB');
+
+                    const appointmentDate = new Date(appt.date);
+
+                    const formattedDate = appointmentDate.toLocaleDateString('en-GB');
+                    const formattedTime = appointmentDate.toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false,
+                    });
 
                     return (
                         <div
@@ -126,7 +135,7 @@ const CalendarDay: React.FC<{
                             📅 <span className="font-semibold">{appt.title}</span>
                             <br />
                             <span className="text-xs text-gray-600">
-                                {formattedDate} {time}
+                                {formattedDate} {formattedTime}
                             </span>
                         </div>
                     );
@@ -695,7 +704,7 @@ export const CalendarView: React.FC = () => {
                                             new Date(a.date).getTime() - new Date(b.date).getTime()
                                     )
                                     .map(appt => {
-                                        const { date, time } = splitDateTime(appt.date);
+                                        // const { date, time } = splitDateTime(appt.date);
                                         const client = clients.find(c => c.id === appt.clientId);
 
                                         return (
