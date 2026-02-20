@@ -666,33 +666,128 @@ router.put('/:id', protect, async (req, res) => {
 
 
         // --- applicants update ---
+        // if (merged.applicants) {
+        //     await connection.query('DELETE FROM applicants WHERE clientId = ?', [id]);
+        //     for (const app of merged.applicants) {
+        //         await connection.query(
+        //             `INSERT INTO applicants 
+        //     (clientId, title, firstName, middleName, surname, gender, dob, homeTelephone, mobileNumber, email, currentAddress, noOfDependents, nationality, introducer) 
+        //     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        //             [
+        //                 id,
+        //                 app.title || '',
+        //                 app.firstName || '',
+        //                 app.middleName || '',
+        //                 app.surname || '',
+        //                 app.gender || '',
+        //                 app.dob || null,
+        //                 app.homeTelephone || '',
+        //                 app.mobileNumber || '',
+        //                 app.email || '',
+        //                 app.currentAddress || '',
+        //                 app.noOfDependents || 0,
+        //                 app.nationality || '',
+        //                 app.introducer || '',
+        //                 app.introducer || '',
+        //                 app.introducer || '',
+        //                 // updated_at = NOW()
+        //             ]
+        //         );
+        //     }
+        // }
+
+
+        // --- applicants update ---
         if (merged.applicants) {
-            await connection.query('DELETE FROM applicants WHERE clientId = ?', [id]);
+
+            // Get existing applicants
+            const [existingApplicants] = await connection.query(
+                'SELECT id FROM applicants WHERE clientId = ?',
+                [id]
+            );
+
+            const existingIds = existingApplicants.map(a => a.id);
+            const incomingIds = merged.applicants
+                .filter(a => a.id)
+                .map(a => a.id);
+
+            // 🗑 Delete removed applicants
+            for (const existingId of existingIds) {
+                if (!incomingIds.includes(existingId)) {
+                    await connection.query(
+                        'DELETE FROM applicants WHERE id = ?',
+                        [existingId]
+                    );
+                }
+            }
+
+            // ➕ Insert or ✏️ Update
             for (const app of merged.applicants) {
-                await connection.query(
-                    `INSERT INTO applicants 
-            (clientId, title, firstName, middleName, surname, gender, dob, homeTelephone, mobileNumber, email, currentAddress, noOfDependents, nationality, introducer) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [
-                        id,
-                        app.title || '',
-                        app.firstName || '',
-                        app.middleName || '',
-                        app.surname || '',
-                        app.gender || '',
-                        app.dob || null,
-                        app.homeTelephone || '',
-                        app.mobileNumber || '',
-                        app.email || '',
-                        app.currentAddress || '',
-                        app.noOfDependents || 0,
-                        app.nationality || '',
-                        app.introducer || '',
-                        app.introducer || '',
-                        app.introducer || '',
-                        // updated_at = NOW()
-                    ]
-                );
+
+                if (app.id) {
+                    // UPDATE existing applicant
+                    await connection.query(
+                        `UPDATE applicants SET
+                    title = ?,
+                    firstName = ?,
+                    middleName = ?,
+                    surname = ?,
+                    gender = ?,
+                    dob = ?,
+                    homeTelephone = ?,
+                    mobileNumber = ?,
+                    email = ?,
+                    currentAddress = ?,
+                    noOfDependents = ?,
+                    nationality = ?,
+                    introducer = ?
+                 WHERE id = ?`,
+                        [
+                            app.title || '',
+                            app.firstName || '',
+                            app.middleName || '',
+                            app.surname || '',
+                            app.gender || '',
+                            app.dob || null,
+                            app.homeTelephone || '',
+                            app.mobileNumber || '',
+                            app.email || '',
+                            app.currentAddress || '',
+                            app.noOfDependents || 0,
+                            app.nationality || '',
+                            app.introducer || '',
+                            app.id
+                        ]
+                    );
+                } else {
+                    // INSERT new applicant
+                    const newId = `app-${uuidv4()}`;
+
+                    await connection.query(
+                        `INSERT INTO applicants
+                (id, clientId, title, firstName, middleName, surname, gender, dob,
+                 homeTelephone, mobileNumber, email, currentAddress,
+                 noOfDependents, nationality, introducer)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                        [
+                            newId,
+                            id,
+                            app.title || '',
+                            app.firstName || '',
+                            app.middleName || '',
+                            app.surname || '',
+                            app.gender || '',
+                            app.dob || null,
+                            app.homeTelephone || '',
+                            app.mobileNumber || '',
+                            app.email || '',
+                            app.currentAddress || '',
+                            app.noOfDependents || 0,
+                            app.nationality || '',
+                            app.introducer || '',
+                        ]
+                    );
+                }
             }
         }
 

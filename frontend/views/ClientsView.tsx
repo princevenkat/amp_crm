@@ -1905,7 +1905,7 @@ const AssociatedContactsEditor: React.FC<{
     const accountants = getContactsByType(ContactType.Accountant);
     const surveyors = getContactsByType(ContactType.Surveyor);
     const estateAgents = getContactsByType(ContactType.EstateAgent);
-    const clinics = getContactsByType(ContactType.Clinics);
+    // const clinics = getContactsByType(ContactType.Clinics);
 
     return (
         <FormSectionNew title="">
@@ -3200,7 +3200,7 @@ export const ClientsView: React.FC = () => {
     // }, [searchTerm, clients]);
 
 
-    type SortKey = 'name' | 'product' | 'lastContacted' | 'introducer' | 'createdDate' | 'caseReference' | '';
+    type SortKey = 'name' | 'product' | 'primaryAdvisor' | 'lastContacted' | 'introducer' | 'createdDate' | 'caseReference' | '';
     type SortOrder = 'asc' | 'desc';
 
     const [sortKey, setSortKey] = useState<SortKey>('');
@@ -3257,6 +3257,11 @@ export const ClientsView: React.FC = () => {
                 //     valA = a.caseStatus || '';
                 //     valB = b.caseStatus || '';
                 //     break;
+
+                case 'primaryAdvisor':
+                    valA = a.primaryAdvisor?.toLowerCase() || '';
+                    valB = b.primaryAdvisor?.toLowerCase() || '';
+                    break;
 
                 case 'lastContacted':
                     valA = a.lastContacted ? new Date(a.lastContacted).getTime() : 0;
@@ -3410,6 +3415,7 @@ export const ClientsView: React.FC = () => {
                             {/* <th className="px-6 py-3 font-medium text-text-secondary">Status</th> */}
                             <th className="px-6 py-3 font-medium text-text-secondary cursor-pointer select-none" >Status</th>
                             <th className="px-6 py-3 font-medium text-text-secondary cursor-pointer select-none" onClick={() => handleSort('product')}>Product <SortIcon active={sortKey === 'product'} /></th>
+                            <th className="px-6 py-3 font-medium text-text-secondary cursor-pointer select-none" onClick={() => handleSort('primaryAdvisor')}>Adviser <SortIcon active={sortKey === 'primaryAdvisor'} /></th>
                             <th className="px-6 py-3 font-medium text-text-secondary cursor-pointer select-none" onClick={() => handleSort('lastContacted')}>Last Accessed <SortIcon active={sortKey === 'lastContacted'} /> </th>
                             <th className="px-6 py-3 font-medium text-text-secondary cursor-pointer select-none" onClick={() => handleSort('introducer')}>Introducer <SortIcon active={sortKey === 'introducer'} /> </th>
                             <th className="px-6 py-3 font-medium text-text-secondary">Actions</th>
@@ -3478,10 +3484,15 @@ export const ClientsView: React.FC = () => {
                                         ) : 'N/A'}
                                     </td>
                                     <td className="px-6 py-4">
-                                        {businessWrittenDisplayMap[client.productDetails?.businessWritten || 'N/A']}
-                                        {/* {client.productDetails?.businessWritten || 'N/A'} */}
+                                        {businessWrittenDisplayMap[client.productDetails?.businessWritten || 'N/A']}                                        {/* {client.productDetails?.businessWritten || 'N/A'} */}
 
                                     </td>
+
+                                    <td>
+                                        {client.primaryAdvisor}
+                                    </td>
+
+
                                     <td className="px-6 py-4">
                                         {client.lastContacted
                                             ? new Date(client.lastContacted).toLocaleDateString("en-GB", {
