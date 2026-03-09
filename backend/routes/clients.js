@@ -1161,6 +1161,28 @@ router.delete('/:id', protect, async (req, res) => {
 
 
 
+router.get('/:id', protect, async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const [rows] = await db.query(
+            "SELECT * FROM clients WHERE id = ?",
+            [id]
+        );
+
+        if (!rows.length) {
+            return res.status(404).json({ message: "Client not found" });
+        }
+
+        const client = await hydrateClient(rows[0]);
+
+        res.json(client);
+    } catch (error) {
+        console.error("Failed to get client:", error);
+        res.status(500).json({ message: "Server error getting client" });
+    }
+});
+
 
 router.post("/:id/duplicate", protect, async (req, res) => {
     const { id } = req.params;

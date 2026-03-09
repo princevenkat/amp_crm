@@ -3437,18 +3437,25 @@ export const ClientsView: React.FC = () => {
                             // ✅ client exists here
                             const [firstName, ...rest] = client.name?.trim().split(" ") || [];
                             const surname = rest.join(" ");
+
+                            console.log(client.createdDate);
+                            console.log(new Date(client.createdDate));
+
                             return (
                                 <tr key={client.id} className="border-b border-gray-200 hover:bg-gray-50">
                                     <td className="px-6 py-4">
                                         {
-                                            client.createdDate
-                                                ? new Date(client.createdDate).toLocaleDateString("en-GB", {
+                                            client.applicants[0].created_at
+                                                ? new Date(client.applicants[0].created_at).toLocaleDateString("en-GB", {
                                                     day: "2-digit",
                                                     month: "2-digit",
                                                     year: "numeric",
                                                 })
                                                 : "N/A"
                                         }
+
+
+
                                     </td>
 
                                     <td className="px-6 py-4">
