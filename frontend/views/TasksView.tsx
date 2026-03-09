@@ -150,22 +150,57 @@ export const TasksView: React.FC = () => {
             );
         });
 
+        // return filtered.sort((a, b) => {
+        //     let aVal: any = a[sortKey];
+        //     let bVal: any = b[sortKey];
+
+        //     if (sortKey === 'dueDate' || sortKey === 'created_at') {
+        //         aVal = new Date(aVal).getTime();
+        //         bVal = new Date(bVal).getTime();
+        //     }
+
+        //     if (typeof aVal === 'string') {
+        //         return sortOrder === 'asc'
+        //             ? aVal.localeCompare(bVal)
+        //             : bVal.localeCompare(aVal);
+        //     }
+
+        //     return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+        // });
         return filtered.sort((a, b) => {
             let aVal: any = a[sortKey];
             let bVal: any = b[sortKey];
 
-            if (sortKey === 'dueDate' || sortKey === 'created_at') {
-                aVal = new Date(aVal).getTime();
-                bVal = new Date(bVal).getTime();
+            if (sortKey === "dueDate") {
+                const getDateTime = (task: Task) => {
+                    const date = new Date(task.dueDate);
+
+                    if (task.dueTime) {
+                        const [hours, minutes] = task.dueTime.split(":").map(Number);
+                        date.setHours(hours || 0, minutes || 0, 0, 0);
+                    } else {
+                        date.setHours(0, 0, 0, 0);
+                    }
+
+                    return date.getTime();
+                };
+
+                aVal = getDateTime(a);
+                bVal = getDateTime(b);
             }
 
-            if (typeof aVal === 'string') {
-                return sortOrder === 'asc'
+            if (sortKey === "created_at") {
+                aVal = new Date(a.created_at).getTime();
+                bVal = new Date(b.created_at).getTime();
+            }
+
+            if (typeof aVal === "string") {
+                return sortOrder === "asc"
                     ? aVal.localeCompare(bVal)
                     : bVal.localeCompare(aVal);
             }
 
-            return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+            return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
         });
     }, [
         tasks,
@@ -397,7 +432,17 @@ export const TasksView: React.FC = () => {
                                 >
                                     <td className="px-6 py-2">{client?.caseReference || '—'}</td>
                                     <td className="px-6 py-2">{task.status}</td>
-                                    <td className="px-6 py-2">{new Date(task.dueDate).toLocaleDateString()} ({getRelativeDueDate(task.dueDate)})</td>
+                                    <td className="px-6 py-2">
+                                        {task.dueDate
+                                            ? new Date(task.dueDate).toLocaleDateString("en-GB", {
+                                                day: "2-digit",
+                                                month: "numeric",
+                                                year: "numeric",
+                                            })
+                                            : "—"}
+
+                                        {/* {new Date(task.dueDate).toLocaleDateString()} ({getRelativeDueDate(task.dueDate)}) */}
+                                    </td>
                                     <td className="px-6 py-2">
                                         {formatDbTime(task.dueTime)}
                                     </td>

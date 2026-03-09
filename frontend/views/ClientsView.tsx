@@ -1834,7 +1834,17 @@ const DocumentsView: React.FC<{ client: Client }> = ({ client }) => {
                                 <td className="px-4 py-2">
                                     <span className="bg-gray-500/10 text-gray-600 px-2 py-0.5 text-xs rounded-full uppercase">{doc.fileType}</span>
                                 </td>
-                                <td className="px-4 py-2 text-text-secondary">{doc.uploadDate}</td>
+                                <td className="px-4 py-2 text-text-secondary">
+                                    {/* {doc.uploadDate} */}
+                                    {doc.uploadDate
+                                        ? new Date(doc.uploadDate).toLocaleDateString("en-GB", {
+                                            day: "2-digit",
+                                            month: "numeric",
+                                            year: "numeric",
+                                        })
+                                        : "—"}
+
+                                </td>
                                 <td className="px-4 py-2 space-x-2">
                                     <a
                                         href={doc.url}
