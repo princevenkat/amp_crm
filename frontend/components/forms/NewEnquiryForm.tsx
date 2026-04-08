@@ -71,40 +71,96 @@ const ApplicantFormFields: React.FC<{ applicantData: Applicant; onChange: (field
 export const NewEnquiryForm: React.FC<NewEnquiryFormProps> = ({ onSubmit, onCancel }) => {
   const [applicantData, setApplicantData] = useState<Applicant>({ ...emptyApplicant });
 
+  const [submitting, setSubmitting] = useState(false);
+
   const handleApplicantChange = (field: keyof Applicant, value: any) => {
     setApplicantData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // const handleSubmit = (e: React.FormEvent) => {
+  //   e.preventDefault();
+
+  //   const formatDate = (date: Date) => date.toISOString().split('T')[0];
+
+  //   const submissionData: Omit<Client, 'id' | 'avatar'> = {
+  //     caseReference: `ENQ-${Date.now().toString().slice(-6)}`,
+  //     primaryAdvisor: '', // Default value
+  //     admin: '', // Default value
+  //     applicationType: 'Single',
+  //     applicants: [applicantData],
+  //     name: `${applicantData.firstName} ${applicantData.surname}`,
+  //     email: applicantData.email,
+  //     phone: applicantData.mobileNumber,
+  //     status: 'Lead',
+  //     caseStatus: 'Initial Enquiry',
+  //     lastContacted: formatDate(new Date()),   // ✅ Only YYYY-MM-DD
+  //     createdDate: formatDate(new Date()),     // ✅ Only YYYY-MM-DD
+  //     product: { type: 'New Enquiry' },
+  //     value: 0,
+  //     documents: [],
+  //     property: {
+  //       address: applicantData.currentAddress, propertyValue: 0, purchasePrice: 0, dateOfPurchase: '', yearBuilt: '',
+  //       propertyType: '', isExLocal: false, bedrooms: 0, livingRooms: 0, kitchens: 0,
+  //       bathrooms: 0, separateToilets: 0, hasGarageOrParking: false
+  //     }
+  //   };
+
+  //   onSubmit(submissionData);
+  // };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const formatDate = (date: Date) => date.toISOString().split('T')[0];
+    if (submitting) return; // ✅ BLOCK DOUBLE CLICK
 
-    const submissionData: Omit<Client, 'id' | 'avatar'> = {
-      caseReference: `ENQ-${Date.now().toString().slice(-6)}`,
-      primaryAdvisor: '', // Default value
-      admin: '', // Default value
-      applicationType: 'Single',
-      applicants: [applicantData],
-      name: `${applicantData.firstName} ${applicantData.surname}`,
-      email: applicantData.email,
-      phone: applicantData.mobileNumber,
-      status: 'Lead',
-      caseStatus: 'Initial Enquiry',
-      lastContacted: formatDate(new Date()),   // ✅ Only YYYY-MM-DD
-      createdDate: formatDate(new Date()),     // ✅ Only YYYY-MM-DD
-      product: { type: 'New Enquiry' },
-      value: 0,
-      documents: [],
-      property: {
-        address: applicantData.currentAddress, propertyValue: 0, purchasePrice: 0, dateOfPurchase: '', yearBuilt: '',
-        propertyType: '', isExLocal: false, bedrooms: 0, livingRooms: 0, kitchens: 0,
-        bathrooms: 0, separateToilets: 0, hasGarageOrParking: false
-      }
-    };
+    setSubmitting(true);
 
-    onSubmit(submissionData);
+    try {
+      const formatDate = (date: Date) => date.toISOString().split('T')[0];
+
+      const submissionData: Omit<Client, 'id' | 'avatar'> = {
+        caseReference: `ENQ-${Date.now().toString().slice(-6)}`,
+        primaryAdvisor: '',
+        admin: '',
+        applicationType: 'Single',
+        applicants: [applicantData],
+        name: `${applicantData.firstName} ${applicantData.surname}`,
+        email: applicantData.email,
+        phone: applicantData.mobileNumber,
+        status: 'Lead',
+        caseStatus: 'Initial Enquiry',
+        lastContacted: formatDate(new Date()),
+        createdDate: formatDate(new Date()),
+        product: { type: 'New Enquiry' },
+        value: 0,
+        documents: [],
+        property: {
+          address: applicantData.currentAddress,
+          propertyValue: 0,
+          purchasePrice: 0,
+          dateOfPurchase: '',
+          yearBuilt: '',
+          propertyType: '',
+          isExLocal: false,
+          bedrooms: 0,
+          livingRooms: 0,
+          kitchens: 0,
+          bathrooms: 0,
+          separateToilets: 0,
+          hasGarageOrParking: false
+        }
+      };
+
+      await onSubmit(submissionData); // ✅ IMPORTANT: await
+
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setSubmitting(false); // ✅ RESET
+    }
   };
+
+
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 text-sm">
@@ -115,7 +171,16 @@ export const NewEnquiryForm: React.FC<NewEnquiryFormProps> = ({ onSubmit, onCanc
 
       <div className="flex justify-end gap-4 pt-4 border-t">
         <button type="button" onClick={onCancel} className="bg-gray-200 hover:bg-gray-300 text-text-primary font-semibold py-2 px-4 rounded-md">Cancel</button>
-        <button type="submit" className="bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-md">Create Enquiry</button>
+        {/* <button type="submit" className="bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-md">Create Enquiry</button> */}
+        <button
+          type="submit"
+          disabled={submitting}
+          className={`font-semibold py-2 px-4 rounded-md text-white 
+    ${submitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary hover:bg-secondary'}
+  `}
+        >
+          {submitting ? 'Saving...' : 'Create Enquiry'}
+        </button>
       </div>
     </form>
   );
