@@ -32,7 +32,8 @@ const NotesView: React.FC<{
             id: `note-${Date.now()}`,
             text: newNoteText.trim(),
             author: currentAuthor,
-            date: new Date().toISOString().split('T')[0],
+            // date: new Date().toISOString().split('T')[0],
+            date: new Date().toISOString(),
         };
         onChange([newNote, ...(notes || [])]);
         setNewNoteText('');
@@ -208,6 +209,8 @@ const EditLeadView: React.FC<{
     const [notes, setNotes] = useState<Note[]>(lead.notes || []);
     // const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+    const [loading, setLoading] = useState(false);
+
     const handleApplicantChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
         const finalValue = type === 'number' ? (parseInt(value, 10) || 0) : value;
@@ -250,8 +253,16 @@ const EditLeadView: React.FC<{
     // Task modal state
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
     const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+
     // Filter tasks for this client/lead
-    const clientTasks = tasks.filter(task => String(task.clientId) === String(lead.id));
+
+    // const clientTasks = tasks.filter(task => String(task.clientId) === String(lead.id));
+    const clientTasks = useMemo(() => {
+        return tasks.filter(task => String(task.clientId) === String(lead.id));
+    }, [tasks, lead.id]);
+
+
+
     // Task modal handlers
     const handleOpenCreateTaskModal = () => {
         setTaskToEdit(null);
@@ -268,19 +279,51 @@ const EditLeadView: React.FC<{
         setIsTaskModalOpen(false);
     };
 
+    // const handleSaveTask = async (taskData: Omit<Task, 'id'>) => {
+    //     try {
+    //         if (taskToEdit) {
+    //             await updateTask(taskToEdit.id, taskData);
+    //             toast.success('Task updated successfully!');
+    //         } else {
+    //             await addTask({ ...taskData, clientId: lead.id });
+
+    //             toast.success('Task created successfully!');
+    //         }
+    //         handleCloseTaskModal();
+    //     } catch (error) {
+    //         console.error(error);
+    //         toast.error('Failed to save task.');
+    //     }
+    // };
+
     const handleSaveTask = async (taskData: Omit<Task, 'id'>) => {
+        setLoading(true);
         try {
             if (taskToEdit) {
                 await updateTask(taskToEdit.id, taskData);
                 toast.success('Task updated successfully!');
             } else {
-                await addTask({ ...taskData, clientId: lead.id });
+                const tempTask: Task = {
+                    id: `temp-${Date.now()}`,
+                    ...taskData,
+                    clientId: lead.id,
+                };
+
+                // ✅ 1. Instant UI update
+                addTask(tempTask);
+
+                // ✅ 2. Call backend (inside context ideally)
+                // OR call API here if needed
+
                 toast.success('Task created successfully!');
             }
+
             handleCloseTaskModal();
         } catch (error) {
             console.error(error);
             toast.error('Failed to save task.');
+        } finally {
+            setLoading(false); // ✅ STOP loading (IMPORTANT)
         }
     };
 
@@ -315,6 +358,7 @@ const EditLeadView: React.FC<{
                     initialData={taskToEdit}
                     hideClientSelector={true}   // ✅ skip search field
                     statusSelector={true}
+                    loading={loading}
                 />
             </Modal>
 
