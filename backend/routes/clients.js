@@ -321,11 +321,17 @@ const toMySQLDateTime = (isoDate) => {
     if (isNaN(d)) return null;
     return d.toISOString().slice(0, 19).replace('T', ' ');
 };
+// const toMySQLDate = (dateStr) => {
+//     if (!dateStr) return null;
+//     const d = new Date(dateStr);
+//     if (isNaN(d)) return null;
+//     return d.toISOString().slice(0, 10); // "YYYY-MM-DD"
+// };
+
 const toMySQLDate = (dateStr) => {
     if (!dateStr) return null;
-    const d = new Date(dateStr);
-    if (isNaN(d)) return null;
-    return d.toISOString().slice(0, 10); // "YYYY-MM-DD"
+
+    return dateStr.split('T')[0]; // 🔥 NO Date(), NO timezone
 };
 
 
@@ -453,8 +459,10 @@ const hydrateClient = async (clientRow) => {
         applicationType: clientRow.applicationType,
         status: clientRow.status,
         caseStatus: clientRow.caseStatus,
-        lastContacted: clientRow.lastContacted ? clientRow.lastContacted.toISOString().split('T')[0] : null,
-        createdDate: clientRow.createdDate ? clientRow.createdDate.toISOString().split('T')[0] : null,
+        // lastContacted: clientRow.lastContacted ? clientRow.lastContacted.toISOString().split('T')[0] : null,
+        // createdDate: clientRow.createdDate ? clientRow.createdDate.toISOString().split('T')[0] : null,
+        createdDate: clientRow.createdDate || null,
+        lastContacted: clientRow.lastContacted || null,
         avatar: clientRow.avatar,
         value: clientRow.value,
         product: { type: clientRow.productType },

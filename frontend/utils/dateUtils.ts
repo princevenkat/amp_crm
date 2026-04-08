@@ -93,6 +93,15 @@ export const formatDateForInput = (date?: string | Date | null): string => {
   return `${year}-${month}-${day}`;
 };
 
+const formatDateSafe = (value?: string) => {
+  if (!value) return "—";
+
+  const clean = value.includes("T") ? value.split("T")[0] : value.split(" ")[0];
+
+  const [y, m, d] = clean.split("-");
+  return `${d}/${m}/${y}`;
+};
+
 /**
  * Format a date for display (DD/MM/YYYY)
  */
