@@ -2021,7 +2021,7 @@ const NotesView: React.FC<{
 
     const { currentUser } = useContext(DataContext);
 
-    console.log(currentUser.role)
+    // console.log(currentUser.role)
 
     // const currentAuthor = currentUser
     //     ? `${currentUser.role} ${currentUser.name}`
@@ -2082,7 +2082,22 @@ const NotesView: React.FC<{
     };
 
 
-    console.log(notes.map(n => n.date));
+
+    // console.log(notes.map(n => n.date));
+
+    const formatDate = (value?: string) => {
+        if (!value) return "N/A";
+
+        // 🔥 Handle ISO + MySQL formats
+        const clean = value.includes("T")
+            ? value.split("T")[0]   // ISO format
+            : value.split(" ")[0];  // MySQL format
+
+        const [y, m, d] = clean.split("-");
+
+        return `${d}/${m}/${y}`;
+    };
+
     if (!isEditing) {
         return (
             <div>
@@ -2098,13 +2113,7 @@ const NotesView: React.FC<{
                                             {role}
                                         </span>
                                         - {note.author.replace(role, '').trim()
-                                        } on {note.date
-                                            ? new Date(note.date).toLocaleDateString("en-GB", {
-                                                day: "2-digit",
-                                                month: "numeric",
-                                                year: "numeric",
-                                            })
-                                            : "N/A"}
+                                        } on {formatDate(note.date)}
                                     </p>
                                 </li>
                             )
