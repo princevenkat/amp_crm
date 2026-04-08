@@ -801,13 +801,38 @@ router.put('/:id', protect, async (req, res) => {
         }
 
         // --- notes update ---
+        // if (merged.notes) {
+        //     await connection.query('DELETE FROM notes WHERE clientId = ?', [id]);
+        //     for (const note of merged.notes) {
+        //         const noteId = note.id?.startsWith('note-') ? note.id : `note-${uuidv4()}`;
+        //         await connection.query(
+        //             'INSERT INTO notes (id, clientId, text, author) VALUES (?, ?, ?, ?)',
+        //             [noteId, id, note.text || '', note.author || '']
+        //         );
+        //     }
+        // }
+
         if (merged.notes) {
             await connection.query('DELETE FROM notes WHERE clientId = ?', [id]);
+
             for (const note of merged.notes) {
-                const noteId = note.id?.startsWith('note-') ? note.id : `note-${uuidv4()}`;
+                const noteId = note.id?.startsWith('note-')
+                    ? note.id
+                    : `note-${uuidv4()}`;
+
+                const noteDate = note.date
+                    ? new Date(note.date)
+                    : new Date(); // fallback only for new notes
+
                 await connection.query(
-                    'INSERT INTO notes (id, clientId, text, author) VALUES (?, ?, ?, ?)',
-                    [noteId, id, note.text || '', note.author || '']
+                    'INSERT INTO notes (id, clientId, text, author, date) VALUES (?, ?, ?, ?, ?)',
+                    [
+                        noteId,
+                        id,
+                        note.text || '',
+                        note.author || '',
+                        noteDate // ✅ THIS WAS MISSING
+                    ]
                 );
             }
         }

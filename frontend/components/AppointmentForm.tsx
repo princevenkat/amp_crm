@@ -4,7 +4,8 @@ import JoditEditor from "jodit-react";
 
 
 
-
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 type Props = {
     appointment?: Appointment;
@@ -264,23 +265,74 @@ export const AppointmentForm: React.FC<Props> = ({
                 {/* Start Time */}
                 <div>
                     <label className="block font-medium text-text-secondary mb-1">Start Time</label>
-                    <input
+                    {/* <input
                         type="time"
                         name="time"
                         value={form.time || ""}
                         onChange={handleChange}
                         className="w-full bg-surface border border-gray-300 rounded-md p-2"
+                    /> */}
+
+                    <DatePicker
+                        selected={
+                            form.time
+                                ? new Date(`1970-01-01T${form.time}`)
+                                : null
+                        }
+                        onChange={(date: Date | null) => {
+                            if (!date) return;
+
+                            const hours = date.getHours().toString().padStart(2, "0");
+                            const minutes = date.getMinutes().toString().padStart(2, "0");
+
+                            setForm(prev => ({
+                                ...prev,
+                                time: `${hours}:${minutes}`,
+                            }));
+                        }}
+                        showTimeSelect
+                        showTimeSelectOnly
+                        timeIntervals={5} // change to 1, 5, 10 etc
+                        timeCaption="Time"
+                        dateFormat="HH:mm" // ✅ 24-hour
+                        timeFormat="HH:mm"
+                        className="w-full border border-gray-300 rounded-md p-2"
                     />
                 </div>
                 {/* End Time */}
                 <div>
                     <label className="block font-medium text-text-secondary mb-1">End Time</label>
-                    <input
+                    {/* <input
                         type="time"
                         name="endTime"
                         value={form.endTime || ""}
                         onChange={handleChange}
                         className="w-full bg-surface border border-gray-300 rounded-md p-2"
+                    /> */}
+
+                    <DatePicker
+                        selected={
+                            form.endTime
+                                ? new Date(`1970-01-01T${form.endTime}`)
+                                : null
+                        }
+                        onChange={(date: Date | null) => {
+                            if (!date) return;
+
+                            const hours = date.getHours().toString().padStart(2, "0");
+                            const minutes = date.getMinutes().toString().padStart(2, "0");
+
+                            setForm(prev => ({
+                                ...prev,
+                                endTime: `${hours}:${minutes}`,
+                            }));
+                        }}
+                        showTimeSelect
+                        showTimeSelectOnly
+                        timeIntervals={5}
+                        dateFormat="HH:mm"
+                        timeFormat="HH:mm"
+                        className="w-full border border-gray-300 rounded-md p-2"
                     />
                 </div>
             </div>
