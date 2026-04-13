@@ -52,7 +52,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         localStorage.setItem('currentView', view);
     };
 
-
+    const [previousView, setPreviousView] = useState<View | null>(null);
 
 
     const [selectedClientIdForNav, setSelectedClientIdForNav] = useState<string | null>(null);
@@ -736,6 +736,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         deleteAppointment,
         reloadTasks,
         reloadAppointments,
+
+        previousView,
+        setPreviousView,
     };
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

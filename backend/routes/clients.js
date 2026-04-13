@@ -1352,4 +1352,17 @@ router.post("/:id/duplicate", protect, async (req, res) => {
 
 
 
+
+router.get('/completed', protect, async (req, res) => {
+    const [rows] = await db.query(`
+        SELECT * FROM clients 
+        WHERE caseStatus = 'Completed'
+        ORDER BY createdDate DESC
+    `);
+
+    const hydrated = await Promise.all(rows.map(hydrateClient));
+    res.json(hydrated);
+});
+
+
 export default router;

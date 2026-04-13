@@ -27,6 +27,11 @@ export const NAV_SECTIONS: NavItem[][] = [
     { id: View.Dashboard, label: "Dashboard", icon: DashboardIcon },
     { id: View.Deals, label: "Pipeline", icon: DealsIcon },
     { id: View.Leads, label: "Clients", icon: LeadsIcon },
+    {
+      id: View.ArchiveCompleted,
+      label: "Completed / Archvie Clients",
+      icon: LeadsIcon,
+    },
     { id: View.Contacts, label: "Contacts", icon: ContactsIcon },
     { id: View.Tasks, label: "Tasks", icon: TasksIcon },
     { id: View.Appointment, label: "Appointments", icon: ProposalsIcon },

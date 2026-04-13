@@ -1,6 +1,7 @@
 export enum View {
   Dashboard = "Dashboard",
   Leads = "Leads",
+  ArchiveCompleted = "Archive",
   Contacts = "Contacts",
   Deals = "Deals",
   Tasks = "Tasks",
@@ -676,4 +677,7 @@ export interface DataContextType {
 
   reloadTasks: () => Promise<void>; // ✅ ADD
   reloadAppointments: () => Promise<void>; // ✅ ADD
+
+  previousView: View | null;
+  setPreviousView: (view: View | null) => void;
 }

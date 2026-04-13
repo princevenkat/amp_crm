@@ -32,12 +32,13 @@ import { ResetPasswordView } from "./views/ResetPasswordView";
 import { TaskReminderPopup } from './components/TaskReminderPopup';
 import { AppointmentsView } from './views/AppointmentsView';
 import { AppointmentReminderPopup } from "./components/AppointmentReminderPopup";
+import { ArchiveCompleted } from './views/ArchiveCompleted';
 
 
 
 const ADVISER_VIEWS = [
     View.Dashboard, View.Deals, View.Leads, View.Contacts, View.Tasks, View.Calendar,
-    View.PasswordManager, View.Appointment, View.Settings
+    View.PasswordManager, View.Appointment, View.Settings, View.ArchiveCompleted
 ];
 const ADMIN_VIEWS = [...ADVISER_VIEWS, View.Team];
 
@@ -209,151 +210,13 @@ const Navbar: React.FC<{ onLogout: () => void; onMenuClick: () => void; }> = ({ 
     )
 };
 
-// const App: React.FC = () => {
-//     const { currentView, setCurrentView, currentUser, login, logout, loading } = useContext(DataContext);
-//     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-//     const renderView = () => {
-//         if (!currentUser || !hasAccess(currentView, currentUser.role)) {
-//             return <AccessDenied />;
-//         }
-//         switch (currentView) {
-//             case View.Dashboard: return <DashboardView />;
-//             case View.Leads: return <ClientsView />;
-//             case View.Contacts: return <ContactsView />;
-//             case View.Deals: return <DealsView />;
-//             case View.Tasks: return <TasksView />;
-//             case View.Calendar: return <CalendarView />;
-//             case View.EmailTemplates: return <EmailTemplatesView />;
-//             case View.Proposals: return <ProposalsView />;
-//             // case View.AiAssistant: return <AiAssistantView />;
-//             case View.Team: return <TeamView />;
-//             case View.Settings: return <AdminView />;
-//             case View.PasswordManager: return <PasswordManagerView />;
-//             case View.BusinessLedger: return <BusinessLedgerView />;
-//             default: return <DashboardView />;
-//         }
-//     };
-
-//     useEffect(() => {
-//         if (!currentUser) return;
-
-//         // Only set default if currentView is not yet set
-//         if (!currentView) {
-//             if (currentUser.role === UserRole.Marketing) {
-//                 setCurrentView(View.Tasks);
-//             } else {
-//                 setCurrentView(View.Dashboard);
-//             }
-//         }
-//     }, [currentUser, currentView, setCurrentView]);
-
-
-//     const handleSetView = useCallback((view: View) => {
-//         setCurrentView(view);
-//         setIsSidebarOpen(false); // Close sidebar on nav item click
-//     }, [setCurrentView]);
-
-//     if (loading) {
-//         return (
-//             <div className="flex items-center justify-center min-h-screen bg-background">
-//                 <p className="text-text-secondary">Loading Application...</p>
-//             </div>
-//         );
-//     }
-
-//     if (!currentUser) {
-//         return <LoginView onLogin={login} />;
-//     }
-
-//     // return (
-//     //     <div className="flex h-screen bg-background">
-//     //         <Sidebar
-//     //             currentView={currentView}
-//     //             setView={handleSetView}
-//     //             isOpen={isSidebarOpen}
-//     //             setIsOpen={setIsSidebarOpen}
-//     //         />
-//     //         <main className="flex-1 flex flex-col lg:ml-64">
-//     //             <Navbar onLogout={logout} onMenuClick={() => setIsSidebarOpen(true)} />
-//     //             <div className="flex-1 overflow-y-auto bg-background">
-//     //                 {renderView()}
-//     //             </div>
-//     //         </main>
-
-
-//     //     </div>
-//     // );
-
-
-//     return (
-//         <BrowserRouter>
-//             <Routes>
-//                 {/* 🟢 Password reset page (public route) */}
-//                 <Route path="/reset-password" element={<ResetPasswordView />} />
-
-//                 {/* 🟢 Main application (protected area) */}
-//                 <Route
-//                     path="*"
-//                     element={
-//                         !currentUser ? (
-//                             <LoginView onLogin={login} />
-//                         ) : (
-//                             <div className="flex h-screen bg-background">
-//                                 <Sidebar
-//                                     currentView={currentView}
-//                                     setView={handleSetView}
-//                                     isOpen={isSidebarOpen}
-//                                     setIsOpen={setIsSidebarOpen}
-//                                 />
-//                                 <main className="flex-1 flex flex-col lg:ml-64">
-//                                     <Navbar onLogout={logout} onMenuClick={() => setIsSidebarOpen(true)} />
-//                                     <div className="flex-1 overflow-y-auto bg-background">
-//                                         {renderView()}
-//                                     </div>
-//                                 </main>
-//                             </div>
-//                         )
-//                     }
-//                 />
-//                 {/* 👇 Catch-all route (404) */}
-//                 <Route path="*" element={<NotFoundView />} />
-//             </Routes>
-
-//         </BrowserRouter>
-//     );
-// };
 
 const App: React.FC = () => {
     const { currentView, setCurrentView, currentUser, login, logout, loading } = useContext(DataContext);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-    // const renderView = () => {
-    //     // if (!currentUser || !hasAccess(currentView, currentUser.role)) {
-    //     //     return <AccessDenied />;
-    //     // }
 
-    //     switch (currentView) {
-    //         case View.Dashboard: return <DashboardView />;
-    //         case View.Leads: return <ClientsView />;
-    //         case View.Contacts: return <ContactsView />;
-    //         case View.Deals: return <DealsView />;
-    //         case View.Tasks: return <TasksView />;
-    //         case View.Calendar: return <CalendarView />;
-    //         case View.EmailTemplates: return <EmailTemplatesView />;
-    //         case View.Proposals: return <ProposalsView />;
-    //         case View.Team: return <TeamView />;
-    //         case View.Settings: return <AdminView />;
-    //         case View.PasswordManager: return <PasswordManagerView />;
-    //         case View.BusinessLedger: return <BusinessLedgerView />;
-
-    //         // 🟢 Marketing fallback must NOT be dashboard
-    //         default:
-    //             return currentUser?.role === UserRole.Marketing
-    //                 ? <TasksView />  // ✅ Marketing fallback
-    //                 : <DashboardView />;
-    //     }
-    // };
 
     const renderView = () => {
         if (!currentUser) return <LoginView onLogin={login} />;
@@ -375,6 +238,7 @@ const App: React.FC = () => {
         switch (viewToRender) {
             case View.Dashboard: return <DashboardView />;
             case View.Leads: return <ClientsView />;
+            case View.ArchiveCompleted: return <ArchiveCompleted />;
             case View.Contacts: return <ContactsView />;
             case View.Deals: return <DealsView />;
             case View.Tasks: return <TasksView />;
@@ -400,10 +264,7 @@ const App: React.FC = () => {
             setCurrentView(View.Leads);
 
             if (id) {
-                // store selected client ID in context
-                // you already use selectedTaskIdForNav for tasks
-                // do same for clients
-                // Example:
+
                 localStorage.setItem("openClientId", id);
             }
         }

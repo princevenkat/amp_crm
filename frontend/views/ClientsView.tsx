@@ -8,7 +8,7 @@ import { Modal } from '../components/ui/Modal';
 import { NewClientForm } from '../components/forms/NewClientForm';
 import { NewTaskForm } from '../components/forms/NewTaskForm';
 import { PlusIcon, SearchIcon, MinusIcon, EditIcon } from '../components/ui/Icons';
-import { ContactType, TaskStatus, UserRole, ProtectionItem } from '../types';
+import { ContactType, TaskStatus, UserRole, ProtectionItem, View } from '../types';
 
 import { formatCurrency } from "@/utils/formatCurrency";
 import { formatDateForInput, formatDateForDisplay } from "@/utils/dateUtils";
@@ -2391,7 +2391,7 @@ export const CaseWorkerView: React.FC<CaseWorkerViewProps> = ({
 
 
 const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ client, onBack }) => {
-    const { tasks, contacts, addTask, addContact, updateClient, deleteClient, updateTask, deleteTask, currentUser, teamMembers, loadClients } = useContext(DataContext);
+    const { tasks, contacts, addTask, addContact, updateClient, deleteClient, updateTask, deleteTask, currentUser, teamMembers, loadClients, previousView, setCurrentView, setPreviousView } = useContext(DataContext);
 
     const [isEditing, setIsEditing] = useState(false);
     const [editedClient, setEditedClient] = useState<Client>(client);
@@ -2857,6 +2857,18 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
     const getUserRole = (name: string): UserRole | undefined => {
         return teamMembers.find(m => m.name === name)?.role;
     };
+
+
+    const handleBack = () => {
+        if (previousView === View.ArchiveCompleted) {
+            setCurrentView(View.ArchiveCompleted);
+        } else {
+            setCurrentView(View.Leads);
+        }
+
+        setPreviousView(null); // always reset
+    };
+
     return (
         <div className="p-4 sm:p-8">
             <Modal title={taskToEdit ? "Edit Task" : "Create New Task"} isOpen={isTaskModalOpen} onClose={handleCloseTaskModal}>
@@ -2868,7 +2880,15 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                     hideClientSelector={true}
                 />
             </Modal>
-            <button onClick={onBack} className="mb-6 text-sm text-secondary hover:underline">&larr; Back to Clients</button>
+
+
+            <button onClick={onBack} className="mb-6 text-sm text-secondary hover:underline">
+                &larr; {previousView === View.ArchiveCompleted ? "Back to Archive" : "Back to Clients"}
+            </button>
+
+
+
+
             <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-8 gap-4">
                 <div className="flex items-center">
                     {/* <img src={client.avatar} alt={client.name} className="w-16 h-16 sm:w-20 sm:h-20 rounded-full mr-4 sm:mr-6" /> */}
@@ -2959,7 +2979,7 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                 </div>
             </div>
             <div className="flex flex-col-reverse sm:flex-row justify-end mb-4 gap-2">
-                {isEditing ? (
+                {/* {isEditing ? (
                     <>
                         <button onClick={handleCancel} className="bg-gray-200 hover:bg-gray-300 text-text-primary font-semibold py-2 px-4 rounded-md">Cancel</button>
                         <button onClick={handleSave} className="bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-md">Save Changes</button>
@@ -2980,6 +3000,50 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                         )}
                         <button onClick={() => setIsEditing(true)} className="bg-secondary hover:bg-primary text-white font-semibold py-2 px-4 rounded-md">Edit Client</button>
                     </>
+                )} */}
+
+                {previousView !== View.ArchiveCompleted && (
+                    <div className="flex flex-col-reverse sm:flex-row justify-end mb-4 gap-2">
+                        {isEditing ? (
+                            <>
+                                <button
+                                    onClick={handleCancel}
+                                    className="bg-gray-200 hover:bg-gray-300 text-text-primary font-semibold py-2 px-4 rounded-md"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSave}
+                                    className="bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-md"
+                                >
+                                    Save Changes
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <DuplicateButton
+                                    clientId={client.id}
+                                    onDuplicate={() => window.location.reload()}
+                                />
+
+                                {canDelete && (
+                                    <button
+                                        onClick={handleDelete}
+                                        className="bg-danger/10 hover:bg-danger/20 text-danger font-semibold py-2 px-4 rounded-md"
+                                    >
+                                        Delete Client
+                                    </button>
+                                )}
+
+                                <button
+                                    onClick={() => setIsEditing(true)}
+                                    className="bg-secondary hover:bg-primary text-white font-semibold py-2 px-4 rounded-md"
+                                >
+                                    Edit Client
+                                </button>
+                            </>
+                        )}
+                    </div>
                 )}
             </div>
 
@@ -3278,8 +3342,26 @@ export const ClientsView: React.FC = () => {
         }
     }
 
+    // if (selectedClient) {
+    //     return <ClientProfileView client={selectedClient} onBack={() => setSelectedClient(null)} />;
+    // }
+
+    const { previousView, setPreviousView, setCurrentView } = useContext(DataContext);
+
     if (selectedClient) {
-        return <ClientProfileView client={selectedClient} onBack={() => setSelectedClient(null)} />;
+        return (
+            <ClientProfileView
+                client={selectedClient}
+                onBack={() => {
+                    if (previousView === View.ArchiveCompleted) {
+                        setCurrentView(View.ArchiveCompleted);
+                        setPreviousView(null);
+                    } else {
+                        setSelectedClient(null);
+                    }
+                }}
+            />
+        );
     }
 
     if (isCreatingClient) {
@@ -3485,7 +3567,10 @@ export const ClientsView: React.FC = () => {
                                         {client.applicants?.[0]?.introducer || 'N/A'}
                                     </td>
                                     <td className="px-6 py-4">
-                                        <button onClick={() => setSelectedClient(client)} className="text-green-600 hover:underline font-semibold">View</button>
+                                        <button onClick={() => {
+                                            setPreviousView(null); // 🔥 RESET
+                                            setSelectedClient(client);
+                                        }} className="text-green-600 hover:underline font-semibold">View</button>
                                         {/* {client.status === 'Archived' && (
                                         <button
                                             onClick={() => handleRetrieveClient(client)}
