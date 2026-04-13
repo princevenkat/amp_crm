@@ -128,10 +128,23 @@ export const TasksView: React.FC = () => {
     const filteredTasks = useMemo(() => {
         const search = searchTerm.toLowerCase();
 
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const next7Days = new Date();
+        next7Days.setDate(today.getDate() + 7);
+        next7Days.setHours(23, 59, 59, 999);
+
+
         const filtered = tasks.filter(task => {
             const client = task.clientId
                 ? clients.find(c => c.id === task.clientId)
                 : null;
+
+            const dueDate = new Date(task.dueDate);
+
+            const isWithinNext7Days =
+                dueDate >= today && dueDate <= next7Days;
 
             const matchesSearch =
                 !search ||
@@ -143,12 +156,35 @@ export const TasksView: React.FC = () => {
                 client?.caseReference?.toLowerCase().includes(search);
 
             return (
+                isWithinNext7Days &&   // ✅ THIS is the missing piece
                 matchesSearch &&
                 (!statusFilter || task.status === statusFilter) &&
                 (!clientFilter || client?.name === clientFilter) &&
                 (!assigneeFilter || task.assignedTo === assigneeFilter)
             );
         });
+
+        // const filtered = tasks.filter(task => {
+        //     const client = task.clientId
+        //         ? clients.find(c => c.id === task.clientId)
+        //         : null;
+
+        //     const matchesSearch =
+        //         !search ||
+        //         task.title.toLowerCase().includes(search) ||
+        //         task.status.toLowerCase().includes(search) ||
+        //         task.assignedTo.toLowerCase().includes(search) ||
+        //         task.assignedBy.toLowerCase().includes(search) ||
+        //         client?.name?.toLowerCase().includes(search) ||
+        //         client?.caseReference?.toLowerCase().includes(search);
+
+        //     return (
+        //         matchesSearch &&
+        //         (!statusFilter || task.status === statusFilter) &&
+        //         (!clientFilter || client?.name === clientFilter) &&
+        //         (!assigneeFilter || task.assignedTo === assigneeFilter)
+        //     );
+        // });
 
         // return filtered.sort((a, b) => {
         //     let aVal: any = a[sortKey];
