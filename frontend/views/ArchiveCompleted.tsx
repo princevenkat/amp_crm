@@ -75,7 +75,7 @@ export const ArchiveCompleted = () => {
 
     const completedClients = useMemo(() => {
         let result = clients.filter(client =>
-            ["completed", "renewal", 'npw'].includes(
+            ["renewal", 'npw'].includes(
                 (client.caseStatus || "").trim().toLowerCase()
             ) &&
             (
