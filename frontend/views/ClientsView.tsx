@@ -1952,11 +1952,6 @@ const AssociatedContactsEditor: React.FC<{
 };
 
 
-
-
-
-
-
 const roleColors: Record<string, string> = {
     Admin: 'bg-blue-500 text-white',
     Adviser: 'bg-green-500 text-white',
@@ -2265,11 +2260,13 @@ interface CaseWorker {
     profession: string;
 }
 
+
 interface CaseWorkerViewProps {
     caseWorker: CaseWorker;
     isEditing: boolean;
     onChange: (updated: CaseWorker) => void;
 }
+
 
 export const CaseWorkerView: React.FC<CaseWorkerViewProps> = ({
     caseWorker,
@@ -2387,7 +2384,6 @@ export const CaseWorkerView: React.FC<CaseWorkerViewProps> = ({
         </div>
     );
 };
-
 
 
 const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ client, onBack }) => {
@@ -2982,6 +2978,7 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                 </div>
             </div>
             <div className="flex flex-col-reverse sm:flex-row justify-end mb-4 gap-2">
+
                 {/* {isEditing ? (
                     <>
                         <button onClick={handleCancel} className="bg-gray-200 hover:bg-gray-300 text-text-primary font-semibold py-2 px-4 rounded-md">Cancel</button>
@@ -3004,7 +3001,6 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                         <button onClick={() => setIsEditing(true)} className="bg-secondary hover:bg-primary text-white font-semibold py-2 px-4 rounded-md">Edit Client</button>
                     </>
                 )} */}
-
 
                 {isCompleted ? (
                     // ✅ ONLY DUPLICATE FOR COMPLETED
@@ -3129,13 +3125,6 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                                     {clientTasks.map(t => (
                                         <li key={t.id} className="text-sm p-3 bg-gray-50 rounded border relative group">
                                             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                {/* <button
-                                                    onClick={() => handleOpenEditTaskModal(t)}
-                                                    className="text-gray-400 hover:text-secondary p-1"
-                                                    aria-label="Edit task"
-                                                >
-                                                    {EditIcon}
-                                                </button> */}
                                                 {(
                                                     currentUser?.role === UserRole.SuperAdmin ||
                                                     currentUser?.role === UserRole.Admin ||
@@ -3168,11 +3157,7 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
 
                                             <p className="font-semibold text-text-primary pr-8">{t.title}</p>
 
-
-
-
                                             {t.description && <p className="text-xs text-text-secondary mt-1">{t.description}</p>}
-                                            {/* <p className="text-xs text-text-secondary mt-2">Due: {t.dueDate}</p> */}
                                             <p className="text-xs text-text-secondary mt-2">Date:
                                                 {t.dueDate
                                                     ? new Date(t.dueDate).toLocaleDateString("en-GB", {
@@ -3200,7 +3185,6 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                                                     const style = roleStyles[role] ?? "bg-gray-100 text-gray-700";
                                                     return (
                                                         <>
-                                                            {/* <span className='text-xs font-semibold'>{name} —</span> */}
                                                             <span
                                                                 className={`text-xs px-2 py-1 rounded-full ${style}`}
                                                             >
@@ -3237,6 +3221,7 @@ const CreateClientView: React.FC<{ onSubmit: (client: Omit<Client, 'id' | 'avata
         </div>
     );
 };
+
 
 export const ClientsView: React.FC = () => {
     const { clients, addClient, updateClient, selectedClientIdForNav, setSelectedClientIdForNav } = useContext(DataContext);

@@ -1297,7 +1297,12 @@ router.post("/:id/duplicate", protect, async (req, res) => {
                 oldClient.email,
                 oldClient.phone,
                 oldClient.applicationType,
-                "Active",
+                // "Active",
+                // 🔥 ONLY CHANGE THIS
+                oldClient.caseStatus === "Completed"
+                    ? "Lead"
+                    : oldClient.status,
+
                 "Initial Enquiry",
                 req.user.name,           // primaryAdvisor
                 req.user.id,             // primaryAdvisor_id
