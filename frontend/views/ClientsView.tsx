@@ -2865,8 +2865,13 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
         setPreviousView(null); // always reset
     };
 
+    // const isCompleted =
+    //     client.caseStatus?.trim().toLowerCase() === "completed";
+
     const isCompleted =
-        client.caseStatus?.trim().toLowerCase() === "completed";
+        ["completed", "renewal"].includes(
+            (client.caseStatus || "").trim().toLowerCase()
+        );
 
     return (
         <div className="p-4 sm:p-8">
@@ -3003,13 +3008,20 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                 )} */}
 
                 {isCompleted ? (
-                    // ✅ ONLY DUPLICATE FOR COMPLETED
-                    <DuplicateButton
-                        clientId={client.id}
-                        onDuplicate={(newId) => {
-                            window.location.reload();
-                        }}
-                    />
+                    <>
+                        <DuplicateButton
+                            clientId={client.id}
+                            onDuplicate={(newId) => {
+                                window.location.reload();
+                            }}
+                        />
+                        <button
+                            onClick={() => setIsEditing(true)}
+                            className="bg-secondary hover:bg-primary text-white font-semibold py-2 px-4 rounded-md"
+                        >
+                            Edit Client
+                        </button>
+                    </>
                 ) : isEditing ? (
                     // ✅ NORMAL EDIT MODE
                     <>
@@ -3310,7 +3322,8 @@ export const ClientsView: React.FC = () => {
 
         let result = clients.filter(client =>
             client.status !== 'Lead' &&
-            client.caseStatus?.trim().toLowerCase() !== 'completed' && // 🔥 ADD THIS
+            // client.caseStatus?.trim().toLowerCase() !== 'npw' && // 🔥 ADD THIS
+            !["npw", "renewal"].includes((client.caseStatus || "").trim().toLowerCase()) &&
             (
                 client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 client.email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -3483,11 +3496,11 @@ export const ClientsView: React.FC = () => {
                             <option value="FMA Submitted">FMA Submitted</option>
                             <option value="Offered">Offered</option>
                             <option value="Exchanged">Exchanged</option>
-                            {/* <option value="Completed">Completed</option> */}
-                            <option value="Renewal">Renewal</option>
+                            <option value="Completed">Completed</option>
+                            {/* <option value="Renewal">Renewal</option> */}
                             <option value="On Risk">On Risk</option>
                             <option value="Commission Due">Commission Due</option>
-                            <option value="NPW">NPW</option>
+                            {/* <option value="NPW">NPW</option> */}
                             <option value="Other">Other</option>
                         </select>
                     </div>

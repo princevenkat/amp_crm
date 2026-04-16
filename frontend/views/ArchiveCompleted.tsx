@@ -45,7 +45,7 @@ export const ArchiveCompleted = () => {
     // };
 
 
-    type SortKey = 'name' | 'product' | 'primaryAdvisor' | 'lastContacted' | 'introducer' | 'createdDate' | 'caseReference' | '';
+    type SortKey = 'name' | 'product' | 'status' | 'primaryAdvisor' | 'lastContacted' | 'introducer' | 'createdDate' | 'caseReference' | '';
     type SortOrder = 'asc' | 'desc';
 
     const [sortKey, setSortKey] = useState<SortKey>('');
@@ -75,7 +75,9 @@ export const ArchiveCompleted = () => {
 
     const completedClients = useMemo(() => {
         let result = clients.filter(client =>
-            client.caseStatus?.trim().toLowerCase() === "completed" &&
+            ["completed", "renewal", 'npw'].includes(
+                (client.caseStatus || "").trim().toLowerCase()
+            ) &&
             (
                 client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 client.email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -102,10 +104,10 @@ export const ArchiveCompleted = () => {
                     valB = b.productDetails?.businessWritten || '';
                     break;
 
-                // case 'status':
-                //     valA = a.caseStatus || '';
-                //     valB = b.caseStatus || '';
-                //     break;
+                case 'status':
+                    valA = a.caseStatus || '';
+                    valB = b.caseStatus || '';
+                    break;
 
                 case 'primaryAdvisor':
                     valA = a.primaryAdvisor?.toLowerCase() || '';
@@ -216,10 +218,10 @@ export const ArchiveCompleted = () => {
         // 'Offered': 'bg-orange-500 text-white',
         // 'Exchanged': 'bg-indigo-500 text-white',
         'Completed': 'bg-green-500 text-white',
-        // 'Renewal': 'bg-gray-600 text-white',
+        'Renewal': 'bg-gray-600 text-white',
         // 'On Risk': 'bg-red-500 text-white',
         // 'Commission Due': 'bg-pink-500 text-white',
-        // 'NPW': 'bg-cyan-500 text-white',
+        'NPW': 'bg-cyan-500 text-white',
         // 'Other': 'bg-gray-500 text-black',
     };
 
@@ -353,7 +355,7 @@ export const ArchiveCompleted = () => {
                                 onClick={() => handleSort('name')}
                             > First Name <SortIcon active={sortKey === 'name'} /></th>
                             <th className="px-6 py-3 font-medium text-text-secondary cursor-pointer select-none" onClick={() => handleSort('name')}>Surname <SortIcon active={sortKey === 'name'} /></th>
-                            <th className="px-6 py-3 font-medium text-text-secondary cursor-pointer select-none" >Status</th>
+                            <th className="px-6 py-3 font-medium text-text-secondary cursor-pointer select-none" onClick={() => handleSort('status')}>Status <SortIcon active={sortKey === 'status'} /></th>
                             <th className="px-6 py-3 font-medium text-text-secondary cursor-pointer select-none" onClick={() => handleSort('product')}>Product <SortIcon active={sortKey === 'product'} /></th>
                             <th className="px-6 py-3 font-medium text-text-secondary cursor-pointer select-none" onClick={() => handleSort('primaryAdvisor')}>Adviser <SortIcon active={sortKey === 'primaryAdvisor'} /></th>
                             <th className="px-6 py-3 font-medium text-text-secondary cursor-pointer select-none" onClick={() => handleSort('lastContacted')}>Last Accessed <SortIcon active={sortKey === 'lastContacted'} /> </th>

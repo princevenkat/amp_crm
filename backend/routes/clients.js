@@ -1194,6 +1194,20 @@ router.delete('/:id', protect, async (req, res) => {
 
 
 
+router.get('/completed', protect, async (req, res) => {
+    const [rows] = await db.query(`
+        SELECT * FROM clients 
+        WHERE caseStatus IN ('Completed', 'Renewal','NPW')
+        ORDER BY createdDate DESC
+    `);
+
+    const hydrated = await Promise.all(rows.map(hydrateClient));
+    res.json(hydrated);
+
+    console.log("Completed route hit");
+});
+
+
 router.get('/:id', protect, async (req, res) => {
     const { id } = req.params;
 
@@ -1300,7 +1314,7 @@ router.post("/:id/duplicate", protect, async (req, res) => {
                 // "Active",
                 // 🔥 ONLY CHANGE THIS
                 oldClient.caseStatus === "Completed"
-                    ? "Lead"
+                    ? "Pipeline"
                     : oldClient.status,
 
                 "Initial Enquiry",
@@ -1358,16 +1372,18 @@ router.post("/:id/duplicate", protect, async (req, res) => {
 
 
 
-router.get('/completed', protect, async (req, res) => {
-    const [rows] = await db.query(`
-        SELECT * FROM clients 
-        WHERE caseStatus = 'Completed'
-        ORDER BY createdDate DESC
-    `);
+// router.get('/completed', protect, async (req, res) => {
+//     const [rows] = await db.query(`
+//         SELECT * FROM clients 
+//         WHERE caseStatus = 'Completed'
+//         ORDER BY createdDate DESC
+//     `);
 
-    const hydrated = await Promise.all(rows.map(hydrateClient));
-    res.json(hydrated);
-});
+//     const hydrated = await Promise.all(rows.map(hydrateClient));
+//     res.json(hydrated);
+// });
+
+
 
 
 export default router;

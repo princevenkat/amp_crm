@@ -35,6 +35,9 @@ import { AppointmentReminderPopup } from "./components/AppointmentReminderPopup"
 import { ArchiveCompleted } from './views/ArchiveCompleted';
 
 
+import useGlobalNavigationGuard from "./utils/useGlobalNavigationGuard";
+
+
 
 const ADVISER_VIEWS = [
     View.Dashboard, View.Deals, View.Leads, View.Contacts, View.Tasks, View.Calendar,
@@ -216,6 +219,24 @@ const App: React.FC = () => {
     const { currentView, setCurrentView, currentUser, login, logout, loading } = useContext(DataContext);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+    const [isBlocking, setIsBlocking] = useState(false);
+
+    useGlobalNavigationGuard(isBlocking);
+
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (!isBlocking) return;
+            e.preventDefault();
+            e.returnValue = "";
+        };
+
+        window.addEventListener("beforeunload", handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener("beforeunload", handleBeforeUnload);
+        };
+    }, [isBlocking]);
+
 
 
     const renderView = () => {
@@ -301,6 +322,8 @@ const App: React.FC = () => {
     if (!currentUser) {
         return <LoginView onLogin={login} />;
     }
+
+
 
     return (
         <BrowserRouter>

@@ -140,8 +140,10 @@ export const TasksView: React.FC = () => {
             }
 
             if (sortKey === "created_at") {
-                aVal = new Date(a.created_at).getTime();
-                bVal = new Date(b.created_at).getTime();
+                // aVal = new Date(a.created_at).getTime();
+                // bVal = new Date(b.created_at).getTime();
+                aVal = a.created_at ? new Date(a.created_at).getTime() : 0;
+                bVal = b.created_at ? new Date(b.created_at).getTime() : 0;
             }
 
             if (typeof aVal === "string") {
