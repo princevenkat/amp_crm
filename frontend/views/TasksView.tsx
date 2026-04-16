@@ -52,16 +52,6 @@ export const TasksView: React.FC = () => {
         setIsModalOpen(false);
     };
 
-    // const filteredTasks = useMemo(() => {
-    //     return tasks.filter(task => {
-    //         const client = task.clientId ? clients.find(c => c.id === task.clientId) : null;
-    //         return (
-    //             (!statusFilter || task.status === statusFilter) &&
-    //             (!clientFilter || (client?.name === clientFilter)) &&
-    //             (!assigneeFilter || task.assignedTo === assigneeFilter)
-    //         );
-    //     }).sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-    // }, [tasks, statusFilter, clientFilter, assigneeFilter, clients]);
 
 
     // Table Column Sort
@@ -83,47 +73,6 @@ export const TasksView: React.FC = () => {
         }
     };
 
-    // const filteredTasks = useMemo(() => {
-    //     const filtered = tasks.filter(task => {
-    //         const client = task.clientId
-    //             ? clients.find(c => c.id === task.clientId)
-    //             : null;
-
-    //         return (
-    //             (!statusFilter || task.status === statusFilter) &&
-    //             (!clientFilter || client?.name === clientFilter) &&
-    //             (!assigneeFilter || task.assignedTo === assigneeFilter)
-    //         );
-    //     });
-
-    //     return filtered.sort((a, b) => {
-    //         let aVal: any = a[sortKey];
-    //         let bVal: any = b[sortKey];
-
-    //         // Date columns
-    //         if (sortKey === 'dueDate' || sortKey === 'created_at') {
-    //             aVal = new Date(aVal).getTime();
-    //             bVal = new Date(bVal).getTime();
-    //         }
-
-    //         // String columns
-    //         if (typeof aVal === 'string') {
-    //             return sortOrder === 'asc'
-    //                 ? aVal.localeCompare(bVal)
-    //                 : bVal.localeCompare(aVal);
-    //         }
-
-    //         return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
-    //     });
-    // }, [
-    //     tasks,
-    //     clients,
-    //     statusFilter,
-    //     clientFilter,
-    //     assigneeFilter,
-    //     sortKey,
-    //     sortOrder,
-    // ]);
 
     const filteredTasks = useMemo(() => {
         const search = searchTerm.toLowerCase();
@@ -143,8 +92,11 @@ export const TasksView: React.FC = () => {
 
             const dueDate = new Date(task.dueDate);
 
-            const isWithinNext7Days =
-                dueDate >= today && dueDate <= next7Days;
+            // const isWithinNext7Days =
+            //     dueDate >= today && dueDate <= next7Days;
+
+            const isRelevantTask =
+                dueDate <= next7Days; // 🔥 includes overdue + next 7 days
 
             const matchesSearch =
                 !search ||
@@ -156,7 +108,7 @@ export const TasksView: React.FC = () => {
                 client?.caseReference?.toLowerCase().includes(search);
 
             return (
-                isWithinNext7Days &&   // ✅ THIS is the missing piece
+                isRelevantTask &&   // ✅ THIS is the missing piece
                 matchesSearch &&
                 (!statusFilter || task.status === statusFilter) &&
                 (!clientFilter || client?.name === clientFilter) &&
@@ -164,45 +116,7 @@ export const TasksView: React.FC = () => {
             );
         });
 
-        // const filtered = tasks.filter(task => {
-        //     const client = task.clientId
-        //         ? clients.find(c => c.id === task.clientId)
-        //         : null;
 
-        //     const matchesSearch =
-        //         !search ||
-        //         task.title.toLowerCase().includes(search) ||
-        //         task.status.toLowerCase().includes(search) ||
-        //         task.assignedTo.toLowerCase().includes(search) ||
-        //         task.assignedBy.toLowerCase().includes(search) ||
-        //         client?.name?.toLowerCase().includes(search) ||
-        //         client?.caseReference?.toLowerCase().includes(search);
-
-        //     return (
-        //         matchesSearch &&
-        //         (!statusFilter || task.status === statusFilter) &&
-        //         (!clientFilter || client?.name === clientFilter) &&
-        //         (!assigneeFilter || task.assignedTo === assigneeFilter)
-        //     );
-        // });
-
-        // return filtered.sort((a, b) => {
-        //     let aVal: any = a[sortKey];
-        //     let bVal: any = b[sortKey];
-
-        //     if (sortKey === 'dueDate' || sortKey === 'created_at') {
-        //         aVal = new Date(aVal).getTime();
-        //         bVal = new Date(bVal).getTime();
-        //     }
-
-        //     if (typeof aVal === 'string') {
-        //         return sortOrder === 'asc'
-        //             ? aVal.localeCompare(bVal)
-        //             : bVal.localeCompare(aVal);
-        //     }
-
-        //     return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
-        // });
         return filtered.sort((a, b) => {
             let aVal: any = a[sortKey];
             let bVal: any = b[sortKey];
@@ -249,7 +163,29 @@ export const TasksView: React.FC = () => {
         sortOrder,
     ]);
 
+    const groupedTasks = useMemo(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
+        const overdue: Task[] = [];
+        const todayTasks: Task[] = [];
+        const upcoming: Task[] = [];
+
+        filteredTasks.forEach(task => {
+            const dueDate = new Date(task.dueDate);
+            dueDate.setHours(0, 0, 0, 0);
+
+            if (dueDate < today) {
+                overdue.push(task);
+            } else if (dueDate.getTime() === today.getTime()) {
+                todayTasks.push(task);
+            } else {
+                upcoming.push(task);
+            }
+        });
+
+        return { overdue, today: todayTasks, upcoming };
+    }, [filteredTasks]);
 
     const getRelativeDueDate = (dueDate: string) => {
         const today = new Date();
@@ -333,6 +269,114 @@ export const TasksView: React.FC = () => {
         window.open(url, "_blank", "noopener,noreferrer");
     };
 
+
+
+    const renderTable = (taskList: Task[]) => (
+        <div className="bg-surface rounded-lg shadow-sm border border-gray-200 overflow-x-auto my-6">
+
+            <div className="flex gap-3 mb-4">
+                <button
+                    onClick={() => setActiveTab("overdue")}
+                    className={`px-4 py-2 rounded ${activeTab === "overdue"
+                        ? "bg-red-500 text-white"
+                        : "bg-gray-200"
+                        }`}
+                >
+                    🔴 Overdue ({groupedTasks.overdue.length})
+                </button>
+
+                <button
+                    onClick={() => setActiveTab("today")}
+                    className={`px-4 py-2 rounded ${activeTab === "today"
+                        ? "bg-yellow-400 text-black"
+                        : "bg-gray-200"
+                        }`}
+                >
+                    🟡 Today ({groupedTasks.today.length})
+                </button>
+
+                <button
+                    onClick={() => setActiveTab("upcoming")}
+                    className={`px-4 py-2 rounded ${activeTab === "upcoming"
+                        ? "bg-green-500 text-white"
+                        : "bg-gray-200"
+                        }`}
+                >
+                    🟢 Next 7 Days ({groupedTasks.upcoming.length})
+                </button>
+            </div>
+
+            <table className="min-w-full text-sm text-left">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                        <th className="px-6 py-3">Case Reference</th>
+                        <SortableTh label="Case Status" column="status" />
+                        <SortableTh label="Date Due" column="dueDate" />
+                        <th className="px-6 py-3">Time Due</th>
+                        <th className="px-6 py-3">Client</th>
+                        <th className="px-6 py-3">Task</th>
+                        <SortableTh label="Assigned To" column="assignedTo" />
+                        <SortableTh label="Assigned By" column="assignedBy" />
+                        <SortableTh label="Date Created" column="created_at" />
+                        <th className="px-6 py-3">Action</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {taskList.length === 0 && (
+                        <tr>
+                            <td colSpan={10} className="text-center py-4 text-gray-500">
+                                No tasks found.
+                            </td>
+                        </tr>
+                    )}
+
+                    {taskList.map(task => {
+                        const client = task.clientId
+                            ? clients.find(c => c.id === task.clientId)
+                            : null;
+
+                        return (
+                            <tr
+                                key={task.id}
+                                className={`border-b ${isTaskOverdue(task.dueDate) ? 'bg-red-100' : ''
+                                    }`}
+                            >
+                                <td className="px-6 py-2">{client?.caseReference || '—'}</td>
+                                <td className="px-6 py-2">{task.status}</td>
+                                <td className="px-6 py-2">
+                                    {task.dueDate
+                                        ? new Date(task.dueDate).toLocaleDateString("en-GB")
+                                        : "—"}
+                                </td>
+                                <td className="px-6 py-2">{formatDbTime(task.dueTime)}</td>
+                                <td className="px-6 py-2">
+                                    {client?.name?.split(' ').slice(-1)[0] || 'Unknown'}
+                                </td>
+                                <td className="px-6 py-2">{task.title}</td>
+                                <td className="px-6 py-2">{task.assignedTo}</td>
+                                <td className="px-6 py-2">{task.assignedBy}</td>
+                                <td className="px-6 py-2">{formatDate(task.created_at)}</td>
+                                <td className="px-6 py-2 flex gap-5">
+                                    <button onClick={() => { setTaskToEdit(task); setIsModalOpen(true); }}>
+                                        {EditIcon}
+                                    </button>
+                                    <button onClick={() => deleteTask(task.id)}>
+                                        {DeleteIcon}
+                                    </button>
+                                </td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+        </div>
+    );
+
+
+    type TaskTab = "overdue" | "today" | "upcoming";
+
+    const [activeTab, setActiveTab] = useState<TaskTab>("overdue");
 
     return (
         <div className="p-4 sm:p-8">
@@ -418,22 +462,17 @@ export const TasksView: React.FC = () => {
                 </select>
             </div>
 
+
+
+            {activeTab === "overdue" && renderTable(groupedTasks.overdue)}
+            {activeTab === "today" && renderTable(groupedTasks.today)}
+            {activeTab === "upcoming" && renderTable(groupedTasks.upcoming)}
+
             {/* Table */}
-            <div className="bg-surface rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
+            {/* <div className="bg-surface rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
                 <table className="min-w-full text-sm text-left">
                     <thead className="bg-gray-50 border-b border-gray-200">
-                        {/* <tr>                            
-                            <th className="px-6 py-3 font-medium text-text-secondary">Case Reference</th>
-                            <th className="px-6 py-3 font-medium text-text-secondary">Case Status</th>
-                            <th className="px-6 py-3 font-medium text-text-secondary">Date Due</th>
-                            <th className="px-6 py-3 font-medium text-text-secondary">Time Due</th>
-                            <th className="px-6 py-3 font-medium text-text-secondary">Client (Surname)</th>
-                            <th className="px-6 py-3 font-medium text-text-secondary">Task</th>
-                            <th className="px-6 py-3 font-medium text-text-secondary">Assigned to</th>
-                            <th className="px-6 py-3 font-medium text-text-secondary">Assigned by</th>
-                            <th className="px-6 py-3 font-medium text-text-secondary">Date created</th>
-                            <th className="px-6 py-3 font-medium text-text-secondary">Action </th>
-                        </tr> */}
+
                         <tr>
                             <th className="px-6 py-3 font-medium text-text-secondary">Case Reference</th>
 
@@ -477,7 +516,6 @@ export const TasksView: React.FC = () => {
                                             })
                                             : "—"}
 
-                                        {/* {new Date(task.dueDate).toLocaleDateString()} ({getRelativeDueDate(task.dueDate)}) */}
                                     </td>
                                     <td className="px-6 py-2">
                                         {formatDbTime(task.dueTime)}
@@ -487,13 +525,7 @@ export const TasksView: React.FC = () => {
                                     <td className="px-6 py-2">{task.assignedTo}</td>
                                     <td className="px-6 py-2">{task.assignedBy}</td>
                                     <td className="px-6 py-2">{formatDate(task.created_at)}</td>
-                                    {/* <td className="px-6 py-4">
-                                        {client?.caseStatus && (
-                                            <span className={`px-2 py-1 rounded ${caseStatusColors[client.caseStatus] || 'bg-gray-200'}`}>
-                                                {client.caseStatus}
-                                            </span>
-                                        )}
-                                    </td> */}
+
                                     <td className="px-6 py-2 flex gap-5">
                                         <button onClick={() => { setTaskToEdit(task); setIsModalOpen(true); }} className={`text-sm font-semibold text-black ${isTaskOverdue(task.dueDate) ? 'text-black' : ''
                                             }`}>
@@ -513,7 +545,7 @@ export const TasksView: React.FC = () => {
                         })}
                     </tbody>
                 </table>
-            </div>
+            </div> */}
         </div>
     );
 };

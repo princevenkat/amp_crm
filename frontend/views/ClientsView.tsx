@@ -2869,6 +2869,9 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
         setPreviousView(null); // always reset
     };
 
+    const isCompleted =
+        client.caseStatus?.trim().toLowerCase() === "completed";
+
     return (
         <div className="p-4 sm:p-8">
             <Modal title={taskToEdit ? "Edit Task" : "Create New Task"} isOpen={isTaskModalOpen} onClose={handleCloseTaskModal}>
@@ -3002,7 +3005,60 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                     </>
                 )} */}
 
-                {previousView !== View.ArchiveCompleted && (
+
+                {isCompleted ? (
+                    // ✅ ONLY DUPLICATE FOR COMPLETED
+                    <DuplicateButton
+                        clientId={client.id}
+                        onDuplicate={(newId) => {
+                            window.location.reload();
+                        }}
+                    />
+                ) : isEditing ? (
+                    // ✅ NORMAL EDIT MODE
+                    <>
+                        <button
+                            onClick={handleCancel}
+                            className="bg-gray-200 hover:bg-gray-300 text-text-primary font-semibold py-2 px-4 rounded-md"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleSave}
+                            className="bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-md"
+                        >
+                            Save Changes
+                        </button>
+                    </>
+                ) : (
+                    // ✅ NORMAL VIEW MODE
+                    <>
+                        <DuplicateButton
+                            clientId={client.id}
+                            onDuplicate={(newId) => {
+                                window.location.reload();
+                            }}
+                        />
+
+                        {canDelete && (
+                            <button
+                                onClick={handleDelete}
+                                className="bg-danger/10 hover:bg-danger/20 text-danger font-semibold py-2 px-4 rounded-md"
+                            >
+                                Delete Client
+                            </button>
+                        )}
+
+                        <button
+                            onClick={() => setIsEditing(true)}
+                            className="bg-secondary hover:bg-primary text-white font-semibold py-2 px-4 rounded-md"
+                        >
+                            Edit Client
+                        </button>
+                    </>
+                )}
+
+                {/* {previousView !== View.ArchiveCompleted && (
                     <div className="flex flex-col-reverse sm:flex-row justify-end mb-4 gap-2">
                         {isEditing ? (
                             <>
@@ -3021,10 +3077,6 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                             </>
                         ) : (
                             <>
-                                <DuplicateButton
-                                    clientId={client.id}
-                                    onDuplicate={() => window.location.reload()}
-                                />
 
                                 {canDelete && (
                                     <button
@@ -3044,7 +3096,7 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                             </>
                         )}
                     </div>
-                )}
+                )} */}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -3264,10 +3316,20 @@ export const ClientsView: React.FC = () => {
     // }, [searchTerm, clients, caseStatusFilter]);
 
     const filteredClients = useMemo(() => {
+        // let result = clients.filter(client =>
+        //     client.status !== 'Lead' &&
+        //     (client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        //         client.email.toLowerCase().includes(searchTerm.toLowerCase())) &&
+        //     (caseStatusFilter ? client.caseStatus === caseStatusFilter : true)
+        // );
+
         let result = clients.filter(client =>
             client.status !== 'Lead' &&
-            (client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                client.email.toLowerCase().includes(searchTerm.toLowerCase())) &&
+            client.caseStatus?.trim().toLowerCase() !== 'completed' && // 🔥 ADD THIS
+            (
+                client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                client.email.toLowerCase().includes(searchTerm.toLowerCase())
+            ) &&
             (caseStatusFilter ? client.caseStatus === caseStatusFilter : true)
         );
 
@@ -3436,7 +3498,7 @@ export const ClientsView: React.FC = () => {
                             <option value="FMA Submitted">FMA Submitted</option>
                             <option value="Offered">Offered</option>
                             <option value="Exchanged">Exchanged</option>
-                            <option value="Completed">Completed</option>
+                            {/* <option value="Completed">Completed</option> */}
                             <option value="Renewal">Renewal</option>
                             <option value="On Risk">On Risk</option>
                             <option value="Commission Due">Commission Due</option>

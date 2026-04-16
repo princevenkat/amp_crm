@@ -5,6 +5,7 @@ import { DataContext } from "../contexts/DataContext";
 import { useNavigate } from "react-router-dom";
 import { View } from "@/types";
 import type { Client, Contact, Task, Applicant, PropertyDetails, ProductDetails, BusinessWrittenType, ProfessionalContact, EstateAgentContact, LimitedCompanyDetails, Document, CaseStatus, Note, TeamMember } from '../types';
+import * as XLSX from "xlsx";
 
 
 import { businessWrittenDisplayMap } from "../constants";
@@ -224,12 +225,113 @@ export const ArchiveCompleted = () => {
 
 
 
+    const handleExport = () => {
+        if (!completedClients.length) {
+            alert("No data to export");
+            return;
+        }
 
+        const json = JSON.stringify(completedClients, null, 2);
+
+        const blob = new Blob([json], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "completed_clients.json";
+        link.click();
+
+        URL.revokeObjectURL(url);
+    };
+
+    const handleExportCSV = () => {
+        const rows = completedClients.map(c => ({
+            Name: c.name,
+            Email: c.email,
+            CaseReference: c.caseReference,
+            CaseStatus: c.caseStatus,
+            Advisor: c.primaryAdvisor,
+            Product: c.productDetails?.businessWritten,
+            CreatedDate: c.createdDate,
+        }));
+
+        const csv = [
+            Object.keys(rows[0]).join(","),
+            ...rows.map(r => Object.values(r).join(","))
+        ].join("\n");
+
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "completed_clients.csv";
+        link.click();
+
+        URL.revokeObjectURL(url);
+    };
+
+    // const handleExportExcel = () => {
+    //     if (!completedClients.length) {
+    //         alert("No data to export");
+    //         return;
+    //     }
+
+    //     const rows = completedClients.map(client => ({
+    //         // BASIC
+    //         Name: client.name,
+    //         Email: client.email,
+    //         Phone: client.phone,
+    //         CaseReference: client.caseReference,
+    //         CaseStatus: client.caseStatus,
+    //         Advisor: client.primaryAdvisor,
+    //         CreatedDate: client.createdDate,
+    //         LastContacted: client.lastContacted,
+
+    //         // APPLICANT (FIRST)
+    //         Applicant1_Name: client.applicants?.[0]
+    //             ? `${client.applicants[0].firstName} ${client.applicants[0].surname}`
+    //             : "",
+    //         Applicant1_DOB: client.applicants?.[0]?.dob,
+    //         Applicant1_Email: client.applicants?.[0]?.email,
+    //         Applicant1_Phone: client.applicants?.[0]?.mobileNumber,
+
+    //         // SECOND APPLICANT
+    //         Applicant2_Name: client.applicants?.[1]
+    //             ? `${client.applicants[1].firstName} ${client.applicants[1].surname}`
+    //             : "",
+
+    //         // PROPERTY
+    //         Property_Address: client.property?.address,
+    //         Property_Value: client.property?.propertyValue,
+
+    //         // PRODUCT
+    //         Product: client.productDetails?.businessWritten,
+    //         Mortgage_Type: client.productDetails?.mortgage?.mortgageType,
+    //         Loan_Amount: client.productDetails?.mortgage?.mortgageLoanAmount,
+
+    //         // NOTES (JOIN)
+    //         Notes: client.notes?.map(n => n.text).join(" | "),
+    //     }));
+
+    //     const worksheet = XLSX.utils.json_to_sheet(rows);
+    //     const workbook = XLSX.utils.book_new();
+
+    //     XLSX.utils.book_append_sheet(workbook, worksheet, "Clients");
+
+    //     XLSX.writeFile(workbook, "completed_clients.xlsx");
+    // };
 
     return (
         <div className="p-4 sm:p-8">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold">Archive Clients</h1>
+                <button
+                    onClick={handleExportCSV}
+                    className="bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-md"
+                >
+                    Export
+                </button>
             </div>
 
             <div className="bg-surface rounded-lg shadow-sm border border-gray-200 overflow-x-auto">

@@ -29,7 +29,7 @@ export const NAV_SECTIONS: NavItem[][] = [
     { id: View.Leads, label: "Clients", icon: LeadsIcon },
     {
       id: View.ArchiveCompleted,
-      label: "Completed / Archvie Clients",
+      label: "Archived",
       icon: LeadsIcon,
     },
     { id: View.Contacts, label: "Contacts", icon: ContactsIcon },
