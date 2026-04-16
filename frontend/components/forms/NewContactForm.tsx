@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import type { Contact } from '../../types';
 import { ContactType } from '../../types';
 import JoditEditor from "jodit-react";
@@ -38,7 +38,19 @@ export const NewContactForm: React.FC<NewContactFormProps> = ({ onSubmit, onCanc
     onSubmit(formData);
   };
 
+  const editor = useRef(null);
 
+  const config = useMemo(() => ({
+    readonly: false,
+    height: 120,
+    toolbarAdaptive: false,
+    toolbarSticky: false,
+    buttons: [
+      "bold", "italic", "underline", "|",
+      "ul", "ol", "|",
+      "undo", "redo"
+    ],
+  }), []);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 text-sm">
@@ -75,21 +87,9 @@ export const NewContactForm: React.FC<NewContactFormProps> = ({ onSubmit, onCanc
           ></textarea> */}
 
           <JoditEditor
-            ref={useRef(null)}
+            ref={editor}
             value={formData.notes || ""}
-            config={{
-              readonly: false,
-              height: 120,
-              toolbarAdaptive: false,
-              toolbarSticky: false,
-
-              buttons: [
-                "bold", "italic", "underline", "|", "brush", "|", "ul", "ol", "|", "undo", "redo"
-              ],
-
-              removeButtons: [
-                "font", "fontsize", "paragraph", "image", "video", "file", "table", "link", "fullsize", "eraser", "align", "cut", "copy", "paste", "hr", "spellcheck", "symbol",],
-            }}
+            config={config}
             onBlur={(content) => {
               setFormData(prev => ({ ...prev, notes: content }));
             }}
