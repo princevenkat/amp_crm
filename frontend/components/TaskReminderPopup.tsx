@@ -142,6 +142,15 @@ export const TaskReminderPopup: React.FC = () => {
     }
 
 
+    const sortedTaskReminders = React.useMemo(() => {
+        return [...visibleTaskReminders].sort((a, b) => {
+            const dateTimeA = new Date(`${a.dueDate}T${a.dueTime || "00:00"}`).getTime();
+            const dateTimeB = new Date(`${b.dueDate}T${b.dueTime || "00:00"}`).getTime();
+
+            return dateTimeA - dateTimeB;
+        });
+    }, [visibleTaskReminders]);
+
     return (
         // <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
         <Draggable
@@ -217,7 +226,7 @@ export const TaskReminderPopup: React.FC = () => {
                                     <div className="mb-4">
                                         <h3 className="text-sm font-bold text-blue-700 mb-2">Tasks Due Soon</h3>
                                         <ul className="space-y-2">
-                                            {visibleTaskReminders.map(task => (
+                                            {sortedTaskReminders.map(task => (
                                                 <li key={task.id} className="border rounded-lg p-4 bg-gray-50 hover:shadow transition">
                                                     <strong className="text-md text-gray-900">{task.title}</strong>
 
