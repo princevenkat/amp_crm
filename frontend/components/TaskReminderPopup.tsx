@@ -91,10 +91,23 @@ export const TaskReminderPopup: React.FC = () => {
         }
     }, [taskReminders, currentUser, teamMembers]);
 
+
+    const sortedTaskReminders = React.useMemo(() => {
+        return [...visibleTaskReminders].sort((a, b) => {
+            const dateTimeA = new Date(`${a.dueDate}T${a.dueTime || "00:00"}`).getTime();
+            const dateTimeB = new Date(`${b.dueDate}T${b.dueTime || "00:00"}`).getTime();
+
+            return dateTimeA - dateTimeB;
+        });
+    }, [visibleTaskReminders]);
+
     taskReminders.filter(task => {
         console.log("Checking task:", task.title, "assignedTo:", task.assignedTo, "currentUser:", currentUser.name);
         return normalize(task.assignedTo) === normalize(currentUser.name);
     });
+
+
+
 
 
 
@@ -142,14 +155,7 @@ export const TaskReminderPopup: React.FC = () => {
     }
 
 
-    const sortedTaskReminders = React.useMemo(() => {
-        return [...visibleTaskReminders].sort((a, b) => {
-            const dateTimeA = new Date(`${a.dueDate}T${a.dueTime || "00:00"}`).getTime();
-            const dateTimeB = new Date(`${b.dueDate}T${b.dueTime || "00:00"}`).getTime();
 
-            return dateTimeA - dateTimeB;
-        });
-    }, [visibleTaskReminders]);
 
     return (
         // <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
