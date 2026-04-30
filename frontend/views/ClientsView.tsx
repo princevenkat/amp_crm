@@ -2984,7 +2984,7 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
             </div>
             <div className="flex flex-col-reverse sm:flex-row justify-end mb-4 gap-2">
 
-                {/* {isEditing ? (
+                {isEditing ? (
                     <>
                         <button onClick={handleCancel} className="bg-gray-200 hover:bg-gray-300 text-text-primary font-semibold py-2 px-4 rounded-md">Cancel</button>
                         <button onClick={handleSave} className="bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-md">Save Changes</button>
@@ -3005,9 +3005,9 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                         )}
                         <button onClick={() => setIsEditing(true)} className="bg-secondary hover:bg-primary text-white font-semibold py-2 px-4 rounded-md">Edit Client</button>
                     </>
-                )} */}
+                )}
 
-                {isCompleted ? (
+                {/* {isCompleted ? (
                     <>
                         <DuplicateButton
                             clientId={client.id}
@@ -3021,6 +3021,7 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                         >
                             Edit Client
                         </button>
+                        
                     </>
                 ) : isEditing ? (
                     // ✅ NORMAL EDIT MODE
@@ -3063,8 +3064,9 @@ const ClientProfileView: React.FC<{ client: Client; onBack: () => void }> = ({ c
                         >
                             Edit Client
                         </button>
+
                     </>
-                )}
+                )} */}
 
                 {/* {previousView !== View.ArchiveCompleted && (
                     <div className="flex flex-col-reverse sm:flex-row justify-end mb-4 gap-2">
