@@ -16,7 +16,7 @@ const emptyFormState: Omit<Contact, 'id'> = {
   phone: '',
   company: '',
   address: '',
-  type: ContactType.Clinics,
+  type: ContactType.Lender,
   notes: '',
 };
 
