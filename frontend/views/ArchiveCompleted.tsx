@@ -7,7 +7,7 @@ import { View } from "@/types";
 import type { Client, Contact, Task, Applicant, PropertyDetails, ProductDetails, BusinessWrittenType, ProfessionalContact, EstateAgentContact, LimitedCompanyDetails, Document, CaseStatus, Note, TeamMember } from '../types';
 import * as XLSX from "xlsx";
 
-
+import { PlusIcon, SearchIcon, MinusIcon, EditIcon } from '../components/ui/Icons';
 import { businessWrittenDisplayMap } from "../constants";
 
 export const ArchiveCompleted = () => {
@@ -328,15 +328,31 @@ export const ArchiveCompleted = () => {
         <div className="p-4 sm:p-8">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold">Archive Clients</h1>
-                <button
-                    onClick={handleExportCSV}
-                    className="bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-md"
-                >
-                    Export
-                </button>
+
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
+                    <div className="relative w-full sm:w-auto">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                            {SearchIcon}
+                        </span>
+                        <input
+                            type="text"
+                            placeholder="Search clients..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="bg-surface border border-gray-200 rounded-lg py-2 pl-10 pr-4 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 w-full"
+                        />
+                    </div>
+                    <button
+                        onClick={handleExportCSV}
+                        className="bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-md"
+                    >
+                        Export
+                    </button>
+                </div>
             </div>
 
             <div className="bg-surface rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
+
                 <table className="min-w-full text-sm text-left">
                     <thead className="bg-gray-50 border-b border-gray-200">
                         <tr>
