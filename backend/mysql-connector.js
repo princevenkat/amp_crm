@@ -32,23 +32,30 @@ console.log("===================================");
 
 const pool = mysql.createPool(dbConfig);
 
-// Test the connection when the application starts
-try {
-  const connection = await pool.getConnection();
+// Test connection WITHOUT top-level await
+pool
+  .getConnection()
+  .then(async (connection) => {
+    try {
+      console.log("✅ MYSQL CONNECTION SUCCESS");
 
-  console.log("✅ MYSQL CONNECTION SUCCESS");
+      const [rows] = await connection.query("SELECT 1 AS test");
 
-  const [rows] = await connection.query("SELECT 1 AS test");
-
-  console.log("✅ MYSQL TEST QUERY:", rows);
-
-  connection.release();
-} catch (error) {
-  console.error("❌ MYSQL CONNECTION FAILED");
-  console.error("Code:", error?.code);
-  console.error("Message:", error?.message);
-  console.error("Errno:", error?.errno);
-  console.error("SQL State:", error?.sqlState);
-}
+      console.log("✅ MYSQL TEST QUERY:", rows);
+    } catch (error) {
+      console.error("❌ MYSQL TEST QUERY FAILED");
+      console.error("Code:", error?.code);
+      console.error("Message:", error?.message);
+    } finally {
+      connection.release();
+    }
+  })
+  .catch((error) => {
+    console.error("❌ MYSQL CONNECTION FAILED");
+    console.error("Code:", error?.code);
+    console.error("Message:", error?.message);
+    console.error("Errno:", error?.errno);
+    console.error("SQL State:", error?.sqlState);
+  });
 
 export default pool;
