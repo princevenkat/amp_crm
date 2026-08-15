@@ -56,8 +56,19 @@ router.post("/login", async (req, res) => {
       token: generateToken(user.id, user.role),
     });
   } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({ message: "Server error during login." });
+    console.error("========== LOGIN ERROR ==========");
+    console.error("Error name:", error?.name);
+    console.error("Error code:", error?.code);
+    console.error("Error errno:", error?.errno);
+    console.error("Error sqlState:", error?.sqlState);
+    console.error("Error sqlMessage:", error?.sqlMessage);
+    console.error("Error message:", error?.message);
+    console.error("=================================");
+
+    res.status(500).json({
+      message: "Server error during login.",
+      error: process.env.NODE_ENV === "production" ? undefined : error.message,
+    });
   }
 });
 
