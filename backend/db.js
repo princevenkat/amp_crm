@@ -460,7 +460,6 @@ export const initializeDatabase = async () => {
       }
     });
   }
-
   if (needsWrite || !db.data) {
     await db.write();
     console.log("Database initialized, passwords hashed, and saved.");
