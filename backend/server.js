@@ -18,10 +18,6 @@ import path from "path";
 
 const startServer = async () => {
   try {
-    // Initialize the database and wait for it to be ready
-    await initializeDatabase();
-    console.log("Database initialized successfully.");
-
     const app = express();
     const PORT = process.env.PORT || 3001;
 
@@ -41,7 +37,6 @@ const startServer = async () => {
     app.use("/api/clients", clientRoutes);
 
     // Serve uploaded files
-    //app.use('/uploads', express.static(path.join(path.resolve(), 'backend/uploads')));
     app.use(
       "/uploads",
       express.static(path.join(process.cwd(), "backend/uploads")),
@@ -61,6 +56,10 @@ const startServer = async () => {
       res.send("CRM Backend is running!");
     });
 
+    // Initialize the database first, then start listening
+    await initializeDatabase();
+    console.log("Database initialized successfully.");
+
     app.listen(PORT, () => {
       console.log(`Server is running on http://localhost:${PORT}`);
     });
@@ -70,4 +69,5 @@ const startServer = async () => {
   }
 };
 
+// Kick off the application safely
 startServer();
