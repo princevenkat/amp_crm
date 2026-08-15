@@ -1,14 +1,6 @@
 import mysql from "mysql2/promise";
 import "dotenv/config";
 
-const requiredEnv = ["DB_HOST", "DB_USER", "DB_PASSWORD", "DB_DATABASE"];
-
-for (const key of requiredEnv) {
-  if (!process.env[key]) {
-    throw new Error(`Missing required environment variable: ${key}`);
-  }
-}
-
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
   port: Number(process.env.DB_PORT || 3306),
@@ -17,38 +9,18 @@ const pool = mysql.createPool({
   database: process.env.DB_DATABASE,
 
   waitForConnections: true,
-  connectionLimit: 2,
+  connectionLimit: 5,
   queueLimit: 0,
-
-  connectTimeout: 10000,
-  enableKeepAlive: true,
-  keepAliveInitialDelay: 0,
-
   dateStrings: true,
+  connectTimeout: 10000,
 });
 
-console.log("MySQL pool configured:", {
+console.log("MySQL Connection Pool created:", {
   host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT || 3306),
+  port: process.env.DB_PORT || 3306,
   user: process.env.DB_USER,
   database: process.env.DB_DATABASE,
+  hasPassword: !!process.env.DB_PASSWORD,
 });
-
-try {
-  const connection = await pool.getConnection();
-
-  await connection.ping();
-
-  console.log("✅ MySQL connection successful");
-
-  connection.release();
-} catch (error) {
-  console.error("❌ MySQL connection failed:", {
-    code: error.code,
-    message: error.message,
-    errno: error.errno,
-    sqlState: error.sqlState,
-  });
-}
 
 export default pool;
