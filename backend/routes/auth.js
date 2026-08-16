@@ -3,9 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 // import { db } from '../db.js';
 import { protect } from "../middleware/authMiddleware.js";
-// import pool from "../mysql-connector.js";
-
-import { query } from "../mysql-connector.js";
+import pool from "../mysql-connector.js";
 
 import crypto from "crypto";
 import nodemailer from "nodemailer";
@@ -33,9 +31,10 @@ router.post("/login", async (req, res) => {
   }
 
   try {
-    const [rows] = await query("SELECT * FROM team_members WHERE email = ?", [
-      email,
-    ]);
+    const [rows] = await pool.query(
+      "SELECT * FROM team_members WHERE email = ?",
+      [email],
+    );
 
     if (rows.length === 0) {
       return res.status(401).json({ message: "Invalid credentials" });
@@ -57,19 +56,8 @@ router.post("/login", async (req, res) => {
       token: generateToken(user.id, user.role),
     });
   } catch (error) {
-    console.error("========== LOGIN ERROR ==========");
-    console.error("Error name:", error?.name);
-    console.error("Error code:", error?.code);
-    console.error("Error errno:", error?.errno);
-    console.error("Error sqlState:", error?.sqlState);
-    console.error("Error sqlMessage:", error?.sqlMessage);
-    console.error("Error message:", error?.message);
-    console.error("=================================");
-
-    res.status(500).json({
-      message: "Server error during login.",
-      error: process.env.NODE_ENV === "production" ? undefined : error.message,
-    });
+    console.error("Login error:", error);
+    res.status(500).json({ message: "Server error during login." });
   }
 });
 
@@ -98,7 +86,7 @@ router.post("/password", protect, async (req, res) => {
 
   try {
     // 1. Fetch user by ID
-    const [rows] = await query("SELECT * FROM team_members WHERE id = ?", [
+    const [rows] = await pool.query("SELECT * FROM team_members WHERE id = ?", [
       userId,
     ]);
 
@@ -119,7 +107,7 @@ router.post("/password", protect, async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 
     // 4. Update password in DB
-    await query("UPDATE team_members SET password = ? WHERE id = ?", [
+    await pool.query("UPDATE team_members SET password = ? WHERE id = ?", [
       hashedPassword,
       userId,
     ]);
@@ -145,9 +133,10 @@ router.post("/forgot-password", async (req, res) => {
   // console.log("Email user:", process.env.EMAIL_USER);
   // console.log("Email pass length:", process.env.EMAIL_PASS?.length);
   try {
-    const [rows] = await query("SELECT * FROM team_members WHERE email = ?", [
-      email,
-    ]);
+    const [rows] = await pool.query(
+      "SELECT * FROM team_members WHERE email = ?",
+      [email],
+    );
     if (rows.length === 0) {
       return res
         .status(200)
@@ -211,7 +200,7 @@ router.post("/reset-password", async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-    await query("UPDATE team_members SET password = ? WHERE id = ?", [
+    await pool.query("UPDATE team_members SET password = ? WHERE id = ?", [
       hashedPassword,
       userId,
     ]);
