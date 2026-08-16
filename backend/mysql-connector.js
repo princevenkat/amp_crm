@@ -1,61 +1,66 @@
 import mysql from "mysql2/promise";
 import "dotenv/config";
 
-const dbConfig = {
-  host: process.env.DB_HOST || "localhost",
+const pool = mysql.createPool({
+  host: process.env.DB_HOST,
   port: Number(process.env.DB_PORT || 3306),
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_DATABASE || "crm_db",
-
+  user: "u720807186_advance_crm",
+  password: "tBsrSa5!C",
+  database: "u720807186_advance_crm",
   waitForConnections: true,
-  connectionLimit: 5,
+  connectionLimit: 10,
   queueLimit: 0,
-
-  connectTimeout: 10000,
-
+  connectTimeout: 20000,
   enableKeepAlive: true,
   keepAliveInitialDelay: 10000,
-
   dateStrings: true,
-};
-
-console.log("========== MYSQL CONFIG ==========");
-console.log({
-  host: dbConfig.host,
-  port: dbConfig.port,
-  user: dbConfig.user,
-  database: dbConfig.database,
-  passwordConfigured: Boolean(dbConfig.password),
 });
-console.log("===================================");
 
-const pool = mysql.createPool(dbConfig);
+console.log("MySQL connection pool created.");
 
-// Test connection WITHOUT top-level await
-pool
-  .getConnection()
-  .then(async (connection) => {
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export async function query(sql, values = []) {
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    let connection;
+
     try {
-      console.log("✅ MYSQL CONNECTION SUCCESS");
+      connection = await pool.getConnection();
+      await connection.ping();
 
-      const [rows] = await connection.query("SELECT 1 AS test");
-
-      console.log("✅ MYSQL TEST QUERY:", rows);
-    } catch (error) {
-      console.error("❌ MYSQL TEST QUERY FAILED");
-      console.error("Code:", error?.code);
-      console.error("Message:", error?.message);
-    } finally {
+      const result = await connection.query(sql, values);
       connection.release();
+      connection = null;
+
+      return result;
+    } catch (error) {
+      console.error(`Database attempt ${attempt} failed:`, {
+        code: error.code,
+        message: error.message,
+      });
+
+      if (connection) {
+        connection.destroy();
+        connection = null;
+      }
+
+      const retryable = [
+        "PROTOCOL_CONNECTION_LOST",
+        "ECONNRESET",
+        "ETIMEDOUT",
+      ].includes(error.code);
+
+      if (!retryable || attempt === 2) {
+        throw error;
+      }
+
+      await delay(1000);
+    } finally {
+      if (connection) {
+        connection.release();
+      }
     }
-  })
-  .catch((error) => {
-    console.error("❌ MYSQL CONNECTION FAILED");
-    console.error("Code:", error?.code);
-    console.error("Message:", error?.message);
-    console.error("Errno:", error?.errno);
-    console.error("SQL State:", error?.sqlState);
-  });
+  }
+}
 
 export default pool;
