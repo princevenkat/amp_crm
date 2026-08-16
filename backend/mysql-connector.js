@@ -16,6 +16,15 @@ const pool = mysql.createPool({
   dateStrings: true,
 });
 
+try {
+  const connection = await pool.getConnection();
+  await connection.query("SELECT 1");
+  connection.release();
+  console.log("Direct MySQL test successful");
+} catch (error) {
+  console.error("Direct MySQL test failed:", error.code, error.message);
+}
+
 console.log("MySQL connection pool created.");
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
