@@ -16,16 +16,26 @@ const pool = mysql.createPool({
   dateStrings: true,
 });
 
-try {
-  const connection = await pool.getConnection();
-  await connection.query("SELECT 1");
-  connection.release();
-  console.log("Direct MySQL test successful");
-} catch (error) {
-  console.error("Direct MySQL test failed:", error.code, error.message);
+console.log("MySQL connection pool created.");
+
+async function testDatabaseConnection() {
+  let connection;
+
+  try {
+    connection = await pool.getConnection();
+    await connection.query("SELECT 1");
+    console.log("Direct MySQL test successful");
+  } catch (error) {
+    console.error("Direct MySQL test failed:", {
+      code: error.code,
+      message: error.message,
+    });
+  } finally {
+    if (connection) connection.release();
+  }
 }
 
-console.log("MySQL connection pool created.");
+testDatabaseConnection();
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -35,9 +45,9 @@ export async function query(sql, values = []) {
 
     try {
       connection = await pool.getConnection();
-      await connection.ping();
 
-      const result = await connection.query(sql, values);
+      const [result] = await connection.query(sql, values);
+
       connection.release();
       connection = null;
 
@@ -48,10 +58,7 @@ export async function query(sql, values = []) {
         message: error.message,
       });
 
-      if (connection) {
-        connection.destroy();
-        connection = null;
-      }
+      if (connection) connection.destroy();
 
       const retryable = [
         "PROTOCOL_CONNECTION_LOST",
@@ -64,10 +71,6 @@ export async function query(sql, values = []) {
       }
 
       await delay(1000);
-    } finally {
-      if (connection) {
-        connection.release();
-      }
     }
   }
 }
