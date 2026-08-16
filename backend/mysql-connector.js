@@ -4,9 +4,9 @@ import "dotenv/config";
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
   port: Number(process.env.DB_PORT || 3306),
-  user: "u720807186_advance_crm",
-  password: "tBsrSa5!C",
-  database: "u720807186_advance_crm",
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_DATABASE,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
